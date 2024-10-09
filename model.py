@@ -3,7 +3,8 @@ import torch.nn as nn
 from typing import Sequence
 from monai.networks.layers.factories import Conv
 from monai.utils import ensure_tuple_rep
-from monai.networks.nets import TwoConv, Down, UpCat, UnetOutBlock, UnetrBasicBlock, UnetrPrUpBlock, UnetrUpBlock, ViT
+from monai.networks.nets.basic_unet import TwoConv, Down, UpCat, UnetOutBlock
+from monai.networks.nets.vit import UnetrBasicBlock, UnetrPrUpBlock, UnetrUpBlock, ViT
 
 
 class Projector(nn.Module):
