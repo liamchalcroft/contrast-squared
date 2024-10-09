@@ -107,12 +107,13 @@ def run_model(args, device, train_loader, train_transform):
         def state_dict(self):
             return self.metric
 
+    params = list(encoder.parameters()) + list(projector.parameters())
     try:
         opt = torch.optim.AdamW(
-            encoder.parameters(), projector.parameters(), args.lr, fused=torch.cuda.is_available()
+            params, args.lr, fused=torch.cuda.is_available()
         )
     except:
-        opt = torch.optim.AdamW(encoder.parameters(), projector.parameters(), args.lr)
+        opt = torch.optim.AdamW(params, args.lr, fused=torch.cuda.is_available())
     # Try to load most recent weight
     if args.resume or args.resume_best:
         encoder.load_state_dict(
