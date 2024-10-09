@@ -12,7 +12,7 @@ def load_and_preprocess(file_path):
     img = nib.as_closest_canonical(img)
 
     # Get the data
-    data = img.get_fdata()
+    data = img.get_fdata().astype(np.uint16)
     
     return data
 
