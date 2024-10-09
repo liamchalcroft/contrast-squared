@@ -237,10 +237,10 @@ def run_model(args, device, train_loader, train_transform):
               {
                   "examples": [
                       wandb.Image(
-                          grid_image1[0].numpy(), caption="Image view #1"
+                          grid_image1[0].cpu().numpy(), caption="Image view #1"
                       ),
                       wandb.Image(
-                          grid_image2[0].numpy(), caption="Image view #2"
+                          grid_image2[0].cpu().numpy(), caption="Image view #2"
                       ),
                   ]
               }
