@@ -9,7 +9,7 @@ def load_and_preprocess(file_path):
     img = nib.load(file_path)
 
     # Ensure RAS orientation using nibabel
-    img = nib.orientations.as_closest_canonical(img)
+    img = nib.as_closest_canonical(img)
 
     # Get the data
     data = img.get_fdata()
