@@ -5,6 +5,18 @@ from monai.networks.layers.factories import Conv
 from monai.utils import ensure_tuple_rep
 from monai.networks.nets import TwoConv, Down, UpCat, UnetOutBlock, UnetrBasicBlock, UnetrPrUpBlock, UnetrUpBlock, ViT
 
+
+class Projector(nn.Module):
+    def __init__(self, in_features: int, hidden_size: int, out_features: int):
+        super().__init__()
+        self.fc1 = nn.Linear(in_features, hidden_size)
+        self.fc2 = nn.Linear(hidden_size, out_features)
+
+    def forward(self, x: torch.Tensor):
+        x = torch.nn.functional.gelu(self.fc1(x))
+        x = self.fc2(x)
+        return x
+
 class UNetEncoder(nn.Module):
 
     def __init__(
