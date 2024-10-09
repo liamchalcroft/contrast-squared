@@ -9,7 +9,7 @@ import argparse
 import monai as mn
 from contextlib import nullcontext
 from tqdm import tqdm
-from torchvision import make_grid
+from torchvision.utils import make_grid
 logging.getLogger("monai").setLevel(logging.ERROR)
 import warnings
 
