@@ -27,7 +27,7 @@ def get_second_channel(x):
 def get_augmentations(keys, ptch):
     augment_image = [
         mn.transforms.RandBiasFieldD(keys=keys, prob=1, coeff_range=(0, 0.3)),
-        mn.transforms.Rand2DElasticD(keys=keys, prob=1, spacing=20, magnitude_range=(0, 2),
+        mn.transforms.Rand2DElasticD(keys=keys, prob=1, spacing=40, magnitude_range=(0, 2),
                                        rotate_range=20, shear_range=0.5, translate_range=10, scale_range=0.1,
                                        mode="bilinear", padding_mode="zeros"),
         mn.transforms.RandSpatialCropD(
