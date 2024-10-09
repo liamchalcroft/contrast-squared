@@ -82,7 +82,7 @@ def run_model(args, device, train_loader, train_transform):
     wandb.watch(encoder, projector)
 
     if args.loss == "simclr":
-        crit = mn.losses.SimCLRLoss()
+        crit = mn.losses.ContrastiveLoss()
     elif args.loss == "barlow":
         crit = mn.losses.BarlowLoss()
 
