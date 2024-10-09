@@ -41,10 +41,9 @@ def process_files(input_dir, output_dir):
     # Create output directory if it doesn't exist
     os.makedirs(output_dir, exist_ok=True)
     
-    print(os.path.join(input_dir, "*/fg_mask.nii"))
     # Find all NIfTI files
     nifti_files = glob.glob(
-        os.path.join(input_dir, "*/fg_mask.nii"),
+        os.path.join(input_dir, "*/*/fg_mask.nii"),
     )
     nifti_dicts = [
         {
