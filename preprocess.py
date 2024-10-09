@@ -27,7 +27,7 @@ def get_second_channel(x):
 def get_augmentations(keys, ptch):
     augment_image = [
         mn.transforms.Rand2DElasticd(keys=keys, prob=1, spacing=(20,20), magnitude_range=(0, 2),
-                                       rotate_range=20, shear_range=10, translate_range=10, scale_range=0.1,
+                                       rotate_range=20, shear_range=5, translate_range=5, scale_range=0.1,
                                        mode="bilinear", padding_mode="zeros"),
         mn.transforms.RandSpatialCropD(
             keys=keys, roi_size=ptch, random_size=False
