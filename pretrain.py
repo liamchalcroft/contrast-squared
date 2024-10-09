@@ -326,10 +326,13 @@ def set_up():
         print("Allocated:", round(torch.cuda.memory_allocated(0) / 1024**3, 1), "GB")
         print("Cached:   ", round(torch.cuda.memory_reserved(0) / 1024**3, 1), "GB")
     if args.data == "mprage":
+        debug_loader, _ = preprocess.get_mprage_loader(batch_size=1, device=device, lowres=args.lowres)
         train_loader, train_transform = preprocess.get_mprage_loader(batch_size=args.batch_size, device=device, lowres=args.lowres)
     elif args.data == "bloch":
+        debug_loader, _ = preprocess.get_bloch_loader(batch_size=1, device=device, lowres=args.lowres, same_contrast=True)
         train_loader, train_transform = preprocess.get_bloch_loader(batch_size=args.batch_size, device=device, lowres=args.lowres, same_contrast=True)
     elif args.data == "bloch-paired":
+        debug_loader, _ = preprocess.get_bloch_loader(batch_size=1, device=device, lowres=args.lowres, same_contrast=False)
         train_loader, train_transform = preprocess.get_bloch_loader(batch_size=args.batch_size, device=device, lowres=args.lowres, same_contrast=False)
 
     if args.debug:
@@ -345,7 +348,7 @@ def set_up():
             separate_folder=False,
             print_log=False,
         )
-        for i, batch in enumerate(train_loader):
+        for i, batch in enumerate(debug_loader):
             if i > 5:
                 break
             else:
