@@ -39,7 +39,7 @@ def get_augmentations(keys, ptch):
         mn.transforms.RandAxisFlipd(keys=keys, prob=1),
         mn.transforms.RandAxisFlipd(keys=keys, prob=1),
         mn.transforms.RandGibbsNoised(keys=keys, prob=1, alpha=(0, 0.8)),
-        mn.transforms.RandGaussianNoised(keys=keys, prob=1, mean=0.0, std=0.1)
+        mn.transforms.RandRicianNoised(keys=keys, prob=1, mean=0.0, std=0.2, relative=True, sample_std=True)
           ]
     
     return augment_image
