@@ -12,7 +12,7 @@ def load_and_preprocess(file_path):
     
     # Ensure RAS orientation
     orient = transforms.Orientation(axcodes="RAS")
-    data = orient(data)
+    data = orient(data[None, ...])[0]
     
     return data
 
