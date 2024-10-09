@@ -17,7 +17,7 @@ class Projector(nn.Module):
         x = self.fc2(x)
         return x
 
-class UNetEncoder(nn.Module):
+class CNNEncoder(nn.Module):
 
     def __init__(
         self,
@@ -49,7 +49,7 @@ class UNetEncoder(nn.Module):
         return x4
 
 
-class UNet(nn.Module):
+class CNNUNet(nn.Module):
 
     def __init__(
         self,
@@ -100,7 +100,7 @@ class UNet(nn.Module):
         return logits
     
 
-class UNETREncoder(nn.Module):
+class ViTEncoder(nn.Module):
     def __init__(
         self,
         in_channels: int,
@@ -152,7 +152,7 @@ class UNETREncoder(nn.Module):
         return x
 
 
-class UNETR(nn.Module):
+class ViTUNet(nn.Module):
     def __init__(
         self,
         in_channels: int,

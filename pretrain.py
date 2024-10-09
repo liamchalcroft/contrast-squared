@@ -21,8 +21,8 @@ warnings.filterwarnings("ignore", category=FutureWarning, module="pandas")
 
 def run_model(args, device, train_loader, train_transform):
     
-    if args.net == "unet":
-        encoder = model.UNetEncoder(
+    if args.net == "cnn":
+        encoder = model.CNNEncoder(
             spatial_dims=2, 
             in_channels=1, 
             features=(32, 64, 128, 256, 512, 768), 
@@ -31,8 +31,8 @@ def run_model(args, device, train_loader, train_transform):
             bias=True, 
             dropout=0.2
         ).to(device)
-    elif args.net == "unetr":
-        encoder = model.UNETREncoder(
+    elif args.net == "vit":
+        encoder = model.ViTEncoder(
             spatial_dims=2,
             in_channels=1,
             img_size=(96 if args.lowres else 192),
