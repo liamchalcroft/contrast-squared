@@ -175,7 +175,9 @@ def get_mprage_loader(
             mn.transforms.ToTensorD(dtype=torch.float32, keys=["image1"], device=device)]
     
     generate_views = [
-       mn.transforms.CopyItemsD(keys=["image1"], names=["image2"]),
+      mn.transforms.ScaleIntensityRangePercentilesD(keys=["image1"],
+            lower=0.5,upper=99.5,b_min=0,b_max=1,clip=True,channel_wise=True),
+      mn.transforms.CopyItemsD(keys=["image1"], names=["image2"]),
     ]
 
     augment_image1 = get_augmentations(["image1"], ptch)
