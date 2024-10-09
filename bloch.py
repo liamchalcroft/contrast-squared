@@ -342,9 +342,9 @@ class MONAIBlochTransform(Transform):
 class MONAIBlochTransformD(MapTransform):
     def __init__(self, keys, num_ch=1, **kwargs):
         super().__init__(keys)
-        self.transform = MONAIBlochTransform(num_ch=num_ch, **kwargs)
+        self.bloch = MONAIBlochTransform(num_ch=num_ch, **kwargs)
 
     def __call__(self, data):
         for key in self.keys:
-            data[key] = self.transform(data[key])
+            data[key] = self.bloch(data[key])
         return data
