@@ -335,7 +335,8 @@ class MONAIBlochTransform(Transform):
         super().__init__()
         self.bloch = BlochTransform(num_ch=num_ch, **kwargs)
 
-    def __call__(self, pd, r1, r2s, mt):
+    def __call__(self, mpm):
+        pd, r1, r2s, mt = torch.chunk(mpm, 4, dim=0)
         return self.bloch(pd, r1, r2s, mt)
     
 
