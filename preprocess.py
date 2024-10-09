@@ -141,3 +141,67 @@ def get_bloch_loader(
     )
 
     return train_loader, train_transform
+
+def get_mprage_loader(
+    batch_size=1,
+    device="cpu",
+    lowres=False,
+):
+    train_files = glob.glob(
+        os.path.join("/home/lchalcroft/MPM_DATA/slices/*_mprage.nii"),
+    )
+    train_dict = [
+        {"image1": f,}
+        for f in train_files
+    ]
+
+    shuffle(train_dict)
+
+    ptch = 96 if lowres else 192
+
+    prepare_mprage = [mn.transforms.CopyItemsD(keys=["image1"], names=["path"]),
+            mn.transforms.LoadImageD(keys=["image1"], image_only=True),
+            mn.transforms.EnsureChannelFirstD(keys=["image1"]),
+            mn.transforms.LambdaD(keys=["image1"], func=mn.transforms.SignalFillEmpty()),
+            mn.transforms.ClipPercentilesD(
+                keys=["image1"],
+                lower=0.5,
+                upper=99.5,
+            ),  # just clip extreme values, don't rescale
+            mn.transforms.LambdaD(keys=["image1"], func=mn.transforms.SignalFillEmpty()),
+            mn.transforms.SpacingD(keys=["image1"], pixdim=2 if lowres else 1),
+            mn.transforms.ToTensorD(dtype=torch.float32, keys=["image1"], device=device)]
+    
+    generate_views = [
+       mn.transforms.CopyItemsD(keys=["image1"], names=["image2"]),
+    ]
+
+    augment_image1 = get_augmentations(["image1"], ptch)
+    augment_image2 = get_augmentations(["image2"], ptch)
+
+    prepare_image1 = get_prepare_data(["image1"], ptch)
+    prepare_image2 = get_prepare_data(["image2"], ptch)
+
+    train_transform = mn.transforms.Compose(
+        transforms=[
+            *prepare_mprage,
+            *generate_views,
+            *augment_image1,
+            *augment_image2,
+            *prepare_image1,
+            *prepare_image2,
+        ]
+    )
+
+    train_data = mn.data.Dataset(train_dict, transform=train_transform)
+
+    train_loader = DataLoader(
+        train_data,
+        batch_size=batch_size,
+        shuffle=True,
+        sampler=None,
+        batch_sampler=None,
+        num_workers=0,
+    )
+
+    return train_loader, train_transform
