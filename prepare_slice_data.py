@@ -68,9 +68,7 @@ def process_files(input_dir, output_dir):
         mprage_path = nifti_dict["mprage"]
 
         # Get name for subject - want to just have the diagnosis and the scan number separated by an underscore
-        subject_name = os.path.basename(mask_path).split("/")[-3:-1]
-        subject_name = subject_name[0] + "_" + subject_name[1]
-        print(f"Subject name: {subject_name}")
+        subject_name = os.path.basename(mask_path).split("/fg_mask.nii")[0].split("MPM_DATA/")[1].replace("/", "_")
 
         # Load and preprocess the image
         mask_data = load_and_preprocess(mask_path)
