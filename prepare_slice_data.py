@@ -53,6 +53,8 @@ def process_files(input_dir, output_dir):
             "r2s": f.replace("fg_mask.nii", "masked_r2s.nii"),
             "mt": f.replace("fg_mask.nii", "masked_mt.nii"),
             "mprage": f.replace("fg_mask.nii", "sim_mprage.nii"),
+            "seg": f.replace("fg_mask.nii", "mb_labels.nii"),
+            "lesion": f.replace("fg_mask.nii", "lesion.nii"),
         }
         for f in nifti_files
     ]
@@ -66,6 +68,8 @@ def process_files(input_dir, output_dir):
         r2s_path = nifti_dict["r2s"]
         mt_path = nifti_dict["mt"]
         mprage_path = nifti_dict["mprage"]
+        seg_path = nifti_dict["seg"]
+        lesion_path = nifti_dict["lesion"]
 
         # Get name for subject - want to just have the diagnosis and the scan number separated by an underscore
         subject_name = mask_path.split("/fg_mask.nii")[0].split("MPM_DATA/")[1].replace("/", "_")
@@ -77,7 +81,11 @@ def process_files(input_dir, output_dir):
         r2s_data = load_and_preprocess(r2s_path)
         mt_data = load_and_preprocess(mt_path)
         mprage_data = load_and_preprocess(mprage_path)
-
+        seg_data = load_and_preprocess(seg_path)
+        if os.path.exists(lesion_path):
+            lesion_data = load_and_preprocess(lesion_path)
+        else:
+            lesion_data = np.zeros_like(mask_data)
         # Get affine matrices
         orig_affine = nib.load(mask_path).affine
         
@@ -113,6 +121,18 @@ def process_files(input_dir, output_dir):
             # MPRAGE
             slice_data = mprage_data[:,:,slice_idx]
             output_filename = f"{subject_name}_slice_{i:03d}_mprage.nii.gz"
+            output_path = os.path.join(output_dir, output_filename)
+            save_2d_nifti(slice_data, output_path, orig_affine)
+
+            # SEG
+            slice_data = seg_data[:,:,slice_idx]
+            output_filename = f"{subject_name}_slice_{i:03d}_seg.nii.gz"
+            output_path = os.path.join(output_dir, output_filename)
+            save_2d_nifti(slice_data, output_path, orig_affine)
+
+            # LESION
+            slice_data = lesion_data[:,:,slice_idx]
+            output_filename = f"{subject_name}_slice_{i:03d}_lesion.nii.gz"
             output_path = os.path.join(output_dir, output_filename)
             save_2d_nifti(slice_data, output_path, orig_affine)
 
