@@ -4,7 +4,7 @@ import numpy as np
 import nibabel as nib
 from tqdm import tqdm
 
-def load_and_preprocess(file_path):
+def load_and_preprocess(file_path, dtype=np.int32):
     # Load the image
     img = nib.load(file_path)
 
@@ -12,7 +12,7 @@ def load_and_preprocess(file_path):
     img = nib.as_closest_canonical(img)
 
     # Get the data
-    data = img.get_fdata().astype(np.int32)
+    data = img.get_fdata().astype(dtype)
     
     return data
 
@@ -75,17 +75,17 @@ def process_files(input_dir, output_dir):
         subject_name = mask_path.split("/fg_mask.nii")[0].split("MPM_DATA/")[1].replace("/", "_")
 
         # Load and preprocess the image
-        mask_data = load_and_preprocess(mask_path)
-        pd_data = load_and_preprocess(pd_path)
-        r1_data = load_and_preprocess(r1_path)
-        r2s_data = load_and_preprocess(r2s_path)
-        mt_data = load_and_preprocess(mt_path)
-        mprage_data = load_and_preprocess(mprage_path)
-        seg_data = load_and_preprocess(seg_path)
+        mask_data = load_and_preprocess(mask_path, dtype=np.uint8)
+        pd_data = load_and_preprocess(pd_path, dtype=np.int32)
+        r1_data = load_and_preprocess(r1_path, dtype=np.float32)
+        r2s_data = load_and_preprocess(r2s_path, dtype=np.float32)
+        mt_data = load_and_preprocess(mt_path, dtype=np.float32)
+        mprage_data = load_and_preprocess(mprage_path, dtype=np.float32)
+        seg_data = load_and_preprocess(seg_path, dtype=np.uint8)
         if os.path.exists(lesion_path):
-            lesion_data = load_and_preprocess(lesion_path)
+            lesion_data = load_and_preprocess(lesion_path, dtype=np.uint8)
         else:
-            lesion_data = np.zeros_like(mask_data)
+            lesion_data = np.zeros_like(mask_data, dtype=np.uint8)
         # Get affine matrices
         orig_affine = nib.load(mask_path).affine
         
