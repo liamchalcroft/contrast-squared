@@ -140,7 +140,7 @@ def get_bloch_loader(
         shuffle=True,
         sampler=None,
         batch_sampler=None,
-        num_workers=8,
+        num_workers=24,
     )
 
     return train_loader, train_transform
@@ -206,7 +206,7 @@ def get_mprage_loader(
         shuffle=True,
         sampler=None,
         batch_sampler=None,
-        num_workers=8,
+        num_workers=24,
     )
 
     return train_loader, train_transform
