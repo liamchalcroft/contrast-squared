@@ -48,13 +48,14 @@ def get_prepare_data(keys, ptch):
     prepare_data = [
         mn.transforms.LambdaD(
                 keys=keys, func=mn.transforms.SignalFillEmpty()
-            ),
-            mn.transforms.ResizeD(
-                keys=keys, spatial_size=(ptch, ptch)
-            ),
-            mn.transforms.ToTensorD(
-                dtype=torch.float32, keys=keys
-            ),
+        ),
+        mn.transforms.NormalizeIntensityD(keys=keys, channel_wise=True),
+        mn.transforms.ResizeD(
+            keys=keys, spatial_size=(ptch, ptch)
+        ),
+        mn.transforms.ToTensorD(
+            dtype=torch.float32, keys=keys
+        ),
     ]
     return prepare_data
 
