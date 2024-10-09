@@ -69,7 +69,7 @@ def run_model(args, device, train_loader, train_transform):
     print()
 
     wandb.init(
-        project="synthbloch",
+        project="contrast-squared",
         entity="atlas-ploras",
         save_code=True,
         name=args.name,
