@@ -5,6 +5,7 @@ from torch.utils.data import DataLoader
 import torch
 from random import shuffle, seed
 from bloch import MONAIBlochTransformD
+from utils import ClipPercentilesD
 
 seed(786)
 
@@ -86,7 +87,7 @@ def get_bloch_loader(
             mn.transforms.EnsureChannelFirstD(keys=["image1"]),
             mn.transforms.LambdaD(keys=["image1"], func=mn.transforms.SignalFillEmpty()),
             mn.transforms.LambdaD(keys=["image1"], func=rescale_mpm),
-            mn.transforms.ClipPercentilesD(
+            ClipPercentilesD(
                 keys=["image1"],
                 lower=0.5,
                 upper=99.5,
@@ -163,7 +164,7 @@ def get_mprage_loader(
             mn.transforms.LoadImageD(keys=["image1"], image_only=True),
             mn.transforms.EnsureChannelFirstD(keys=["image1"]),
             mn.transforms.LambdaD(keys=["image1"], func=mn.transforms.SignalFillEmpty()),
-            mn.transforms.ClipPercentilesD(
+            ClipPercentilesD(
                 keys=["image1"],
                 lower=0.5,
                 upper=99.5,
