@@ -41,6 +41,7 @@ def process_files(input_dir, output_dir):
     # Create output directory if it doesn't exist
     os.makedirs(output_dir, exist_ok=True)
     
+    print(os.path.join(input_dir, "*/fg_mask.nii"))
     # Find all NIfTI files
     nifti_files = glob.glob(
         os.path.join(input_dir, "*/fg_mask.nii"),
@@ -118,6 +119,6 @@ def process_files(input_dir, output_dir):
             save_2d_nifti(slice_data, output_path, orig_affine)
 
 if __name__ == "__main__":
-    input_directory = "/home/lchalcroft/MPM_DATA"
+    input_directory = "/home/lchalcroft/MPM_DATA/"
     output_directory = "/home/lchalcroft/MPM_DATA/slices"
     process_files(input_directory, output_directory)
