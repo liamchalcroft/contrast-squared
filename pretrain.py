@@ -9,6 +9,7 @@ import argparse
 import monai as mn
 from contextlib import nullcontext
 from tqdm import tqdm
+from torchvision import make_grid
 logging.getLogger("monai").setLevel(logging.ERROR)
 import warnings
 
@@ -210,6 +211,41 @@ def run_model(args, device, train_loader, train_transform):
             )
         wandb.log({"train/lr": opt.param_groups[0]["lr"]})
         lr_scheduler.step()
+
+        # Upload some sample pairs to wandb
+        img1_list = []
+        img2_list = []
+        for i in range(16):
+            img1_list.append(img1[i,0])
+            img2_list.append(img2[i,0])
+        grid_image1 = make_grid(
+                      img1_list,
+                      nrow=int(4),
+                      padding=5,
+                      normalize=True,
+                      scale_each=True,
+                  )
+        grid_image2 = make_grid(
+                      img2_list,
+                      nrow=int(4),
+                      padding=5,
+                      normalize=True,
+                      scale_each=True,
+                  )
+        print(grid_image1.shape)
+        wandb.log(
+              {
+                  "examples": [
+                      wandb.Image(
+                          grid_image1[0].numpy(), caption="Image view #1"
+                      ),
+                      wandb.Image(
+                          grid_image2[0].numpy(), caption="Image view #2"
+                      ),
+                  ]
+              }
+          )
+
 
         if epoch_loss < metric_best:
             metric_best = epoch_loss
