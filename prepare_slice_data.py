@@ -58,7 +58,7 @@ def process_files(input_dir, output_dir):
     ]
 
     
-    for nifti_dict in tqdm(nifti_dicts, desc="Processing files"):
+    for nifti_dict in tqdm(nifti_dicts, desc="Processing files", total=len(nifti_dicts)):
         # Get file paths
         mask_path = nifti_dict["mask"]
         pd_path = nifti_dict["pd"]
