@@ -64,7 +64,7 @@ def get_bloch_loader(
     same_contrast=False,
 ):
     train_files = glob.glob(
-        os.path.join("/home/lchalcroft/MPM_DATA/slices/*_pd.nii"),
+        os.path.join("/home/lchalcroft/MPM_DATA/slices/*_pd.nii.gz"),
     )
     train_dict = [
         {
@@ -149,7 +149,7 @@ def get_mprage_loader(
     lowres=False,
 ):
     train_files = glob.glob(
-        os.path.join("/home/lchalcroft/MPM_DATA/slices/*_mprage.nii"),
+        os.path.join("/home/lchalcroft/MPM_DATA/slices/*_mprage.nii.gz"),
     )
     train_dict = [
         {"image1": f,}
