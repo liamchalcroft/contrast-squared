@@ -4,7 +4,8 @@ from typing import Sequence
 from monai.networks.layers.factories import Conv
 from monai.utils import ensure_tuple_rep
 from monai.networks.nets.basic_unet import TwoConv, Down, UpCat
-from monai.networks.nets.vit import UnetrBasicBlock, UnetOutBlock, UnetrPrUpBlock, UnetrUpBlock, ViT
+from monai.networks.nets.unetr import UnetrBasicBlock, UnetOutBlock, UnetrPrUpBlock, UnetrUpBlock
+from monai.networks.nets.vit import ViT
 
 
 class Projector(nn.Module):
