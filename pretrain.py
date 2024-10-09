@@ -216,8 +216,8 @@ def run_model(args, device, train_loader, train_transform):
         img1_list = []
         img2_list = []
         for i in range(16):
-            img1_list.append(img1[i,0])
-            img2_list.append(img2[i,0])
+            img1_list.append(img1[i])
+            img2_list.append(img2[i])
         grid_image1 = make_grid(
                       img1_list,
                       nrow=int(4),
