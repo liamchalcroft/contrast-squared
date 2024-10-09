@@ -2,12 +2,16 @@ import os
 import glob
 import numpy as np
 import nibabel as nib
-from monai import transforms
 from tqdm import tqdm
 
 def load_and_preprocess(file_path):
     # Load the image
     img = nib.load(file_path)
+
+    # Ensure RAS orientation using nibabel
+    img = nib.orientations.as_closest_canonical(img)
+
+    # Get the data
     data = img.get_fdata()
     
     return data
@@ -27,7 +31,7 @@ def find_brain_slices(data, threshold=0.05):
 def save_2d_nifti(data, output_path, affine):
     # Create a new affine for 2D
     affine_2d = affine.copy()
-    affine_2d = affine_2d[:3, :3]  # Remove z-dimension
+    # affine_2d = affine_2d[:3, :3]  # Remove z-dimension
     
     # Save as 2D NIfTI
     img_2d = nib.Nifti1Image(data, affine_2d)
