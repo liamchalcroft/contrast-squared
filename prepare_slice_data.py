@@ -9,10 +9,11 @@ def load_and_preprocess(file_path):
     # Load the image
     img = nib.load(file_path)
     data = img.get_fdata()
+    affine = img.affine
     
     # Ensure RAS orientation
     orient = transforms.Orientation(axcodes="RAS")
-    data = orient(data[None, ...])[0]
+    data = orient(data[None, ...], affine=affine)[0]
     
     return data
 
