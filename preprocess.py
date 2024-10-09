@@ -170,7 +170,7 @@ def get_mprage_loader(
                 upper=99.5,
             ),  # just clip extreme values, don't rescale
             mn.transforms.LambdaD(keys=["image1"], func=mn.transforms.SignalFillEmpty()),
-            mn.transforms.SpacingD(keys=["image1"], pixdim=2 if lowres else 1),
+            # mn.transforms.SpacingD(keys=["image1"], pixdim=2 if lowres else 1),
             mn.transforms.ToTensorD(dtype=torch.float32, keys=["image1"], device=device)]
     
     generate_views = [
