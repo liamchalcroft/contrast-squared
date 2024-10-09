@@ -277,6 +277,7 @@ class BlochTransform(cc.Transform):
         }
         self.sequence = ensure_list(sequence)
         self.field_strength = field_strength
+        self.num_ch = num_ch
 
     def sample(self, param, key, sequence):
         if isinstance(param, (float, int)):
