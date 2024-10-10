@@ -226,67 +226,68 @@ def run_model(args, device, train_loader, train_transform):
             progress_bar.set_postfix(
                 {"loss": epoch_loss / (step + 1 - step_deficit)}
             )
+
+            if step == 0:
+                # Upload some sample pairs to wandb
+                img1_list = []
+                img2_list = []
+                recon1_list = []
+                recon2_list = []
+                for i in range(4):
+                    img1_list.append(img1[i][..., img1.shape[-1]//2])
+                    img2_list.append(img2[i][..., img2.shape[-1]//2])
+                    recon1_list.append(recon1[i][..., recon1.shape[-1]//2])
+                    recon2_list.append(recon2[i][..., recon2.shape[-1]//2])
+                grid_image1 = make_grid(
+                            img1_list,
+                            nrow=int(2),
+                            padding=5,
+                            normalize=True,
+                            scale_each=True,
+                        )
+                grid_image2 = make_grid(
+                            img2_list,
+                            nrow=int(2),
+                            padding=5,
+                            normalize=True,
+                            scale_each=True,
+                        )
+                grid_recon1 = make_grid(
+                            recon1_list,
+                            nrow=int(2),
+                            padding=5,
+                            normalize=True,
+                            scale_each=True,
+                        )
+                grid_recon2 = make_grid(
+                            recon2_list,
+                            nrow=int(2),
+                            padding=5,
+                            normalize=True,
+                            scale_each=True,
+                        )
+                print(grid_image1.shape)
+                wandb.log(
+                    {
+                        "examples": [
+                            wandb.Image(
+                                grid_image1[0].cpu().numpy(), caption="Image view #1"
+                            ),
+                            wandb.Image(
+                                grid_image2[0].cpu().numpy(), caption="Image view #2"
+                            ),
+                            wandb.Image(
+                                grid_recon1[0].cpu().numpy(), caption="Recon view #1"
+                            ),
+                            wandb.Image(
+                                grid_recon2[0].cpu().numpy(), caption="Recon view #2"
+                            ),
+                        ]
+                    }
+                )
+        
         wandb.log({"train/lr": opt.param_groups[0]["lr"]})
         lr_scheduler.step()
-
-        # Upload some sample pairs to wandb
-        img1_list = []
-        img2_list = []
-        recon1_list = []
-        recon2_list = []
-        for i in range(4):
-            img1_list.append(img1[i][..., img1.shape[-1]//2])
-            img2_list.append(img2[i][..., img2.shape[-1]//2])
-            recon1_list.append(recon1[i][..., recon1.shape[-1]//2])
-            recon2_list.append(recon2[i][..., recon2.shape[-1]//2])
-        grid_image1 = make_grid(
-                      img1_list,
-                      nrow=int(2),
-                      padding=5,
-                      normalize=True,
-                      scale_each=True,
-                  )
-        grid_image2 = make_grid(
-                      img2_list,
-                      nrow=int(2),
-                      padding=5,
-                      normalize=True,
-                      scale_each=True,
-                  )
-        grid_recon1 = make_grid(
-                      recon1_list,
-                      nrow=int(2),
-                      padding=5,
-                      normalize=True,
-                      scale_each=True,
-                  )
-        grid_recon2 = make_grid(
-                      recon2_list,
-                      nrow=int(2),
-                      padding=5,
-                      normalize=True,
-                      scale_each=True,
-                  )
-        print(grid_image1.shape)
-        wandb.log(
-              {
-                  "examples": [
-                      wandb.Image(
-                          grid_image1[0].cpu().numpy(), caption="Image view #1"
-                      ),
-                      wandb.Image(
-                          grid_image2[0].cpu().numpy(), caption="Image view #2"
-                      ),
-                      wandb.Image(
-                          grid_recon1[0].cpu().numpy(), caption="Recon view #1"
-                      ),
-                      wandb.Image(
-                          grid_recon2[0].cpu().numpy(), caption="Recon view #2"
-                      ),
-                  ]
-              }
-          )
-
 
         if epoch_loss < metric_best:
             metric_best = epoch_loss
