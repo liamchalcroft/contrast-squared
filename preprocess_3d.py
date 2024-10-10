@@ -48,7 +48,7 @@ def get_augmentations(keys, ptch):
         ),
         mn.transforms.RandGibbsNoised(keys=keys, prob=1, alpha=(0, 0.8)),
         mn.transforms.RandRicianNoised(keys=keys, prob=1, mean=0.0, std=0.2, relative=False, sample_std=True),
-        mn.transforms.RandCoarseDropoutD(keys=keys, prob=1, holes=0, max_holes=20, spatial_size=5, max_spatial_size=30, fill_value=0)
+        mn.transforms.RandCoarseDropoutD(keys=keys, prob=1, holes=1, max_holes=20, spatial_size=5, max_spatial_size=30, fill_value=0)
           ]
     
     augment_image = [*spatial_augs, *recon_store, *intensity_augs]
