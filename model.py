@@ -56,7 +56,7 @@ class Reconstructor(nn.Module):
             print(f"Spatial len: {spatial_len}")
             spatial_len = spatial_len ** (1 / self.spatial_dims)
             print(f"Spatial len: {spatial_len}")
-            spatial_len = int(spatial_len)
+            spatial_len = round(spatial_len)
             print(f"Spatial len: {spatial_len}")
             spatial_dims = self.spatial_dims * [spatial_len]
             x = x.view(x.size(0), x.size(1), *spatial_dims)
