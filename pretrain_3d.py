@@ -189,22 +189,26 @@ def run_model(args, device, train_loader, train_transform):
 
             with ctx:
                 features1 = encoder(img1)
-                recon1 = reconstructor(features1)
                 if len(features1.shape) == 3 and features1.shape[1] != 768 and features1.shape[2] == 768:
                     features1 = torch.movedim(features1, 2, 1)
+                recon1 = reconstructor(features1)
                 features1 = features1.view(img1.size(0), 768, -1).mean(dim=-1)
+
                 features2 = encoder(img2)
-                recon2 = reconstructor(features2)
                 if len(features2.shape) == 3 and features2.shape[1] != 768 and features2.shape[2] == 768:
                     features2 = torch.movedim(features2, 2, 1)
+                recon2 = reconstructor(features2)
                 features2 = features2.view(img2.size(0), 768, -1).mean(dim=-1)
+
                 embeddings1 = projector(features1)
                 embeddings2 = projector(features2)
+
                 print(f"Features shape: {features1.shape}")
                 print(f"Embeddings shape: {embeddings1.shape}")
                 print(f"Recon shape: {recon1.shape}")
                 print(f"Recon target shape: {recon_target1.shape}")
                 ssl_loss = crit(embeddings1, embeddings2)
+                
                 recon_loss = torch.nn.functional.l1_loss(recon1, recon_target1) + torch.nn.functional.l1_loss(recon2, recon_target2)
                 loss = ssl_loss + recon_loss
 
