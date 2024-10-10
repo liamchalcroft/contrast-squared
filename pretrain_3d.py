@@ -26,7 +26,7 @@ def run_model(args, device, train_loader, train_transform):
         encoder = model.CNNEncoder(
             spatial_dims=3, 
             in_channels=1, 
-            features=(32, 64, 128, 256, 512, 768), 
+            features=(64, 128, 256, 512, 768), 
             act="GELU", 
             norm="instance", 
             bias=True, 
@@ -47,6 +47,10 @@ def run_model(args, device, train_loader, train_transform):
 
     projector = model.Projector(
         in_features=768, hidden_size=512, out_features=128
+    ).to(device)
+
+    reconstructor = model.Reconstructor(
+        in_features=768, out_channels=1
     ).to(device)
 
     if args.resume or args.resume_best:
@@ -119,6 +123,7 @@ def run_model(args, device, train_loader, train_transform):
             checkpoint["encoder"], strict=False
         )  # strict False in case of switch between subpixel and transpose
         projector.load_state_dict(checkpoint["projector"], strict=False)
+        reconstructor.load_state_dict(checkpoint["reconstructor"], strict=False)
         opt.load_state_dict(checkpoint["opt"])
         start_epoch = checkpoint["epoch"] + 1
         metric_best = checkpoint["metric"]
@@ -174,6 +179,8 @@ def run_model(args, device, train_loader, train_transform):
                 batch = next(train_iter)
             img1 = batch["image1"].to(device)
             img2 = batch["image2"].to(device)
+            recon_target1 = batch["image1_recon"].to(device)
+            recon_target2 = batch["image2_recon"].to(device)
             opt.zero_grad(set_to_none=True)
 
             if args.debug and step < 5:
@@ -181,11 +188,17 @@ def run_model(args, device, train_loader, train_transform):
                 saver2(torch.Tensor(img2[0].cpu().float()))
 
             with ctx:
-                features1 = encoder(img1).view(img1.size(0), 768, -1).mean(dim=-1)
-                features2 = encoder(img2).view(img2.size(0), 768, -1).mean(dim=-1)
+                features1 = encoder(img1)
+                recon1 = reconstructor(features1)
+                features1 = features1.view(img1.size(0), 768, -1).mean(dim=-1)
+                features2 = encoder(img2)
+                recon2 = reconstructor(features2)
+                features2 = features2.view(img2.size(0), 768, -1).mean(dim=-1)
                 embeddings1 = projector(features1)
                 embeddings2 = projector(features2)
-                loss = crit(embeddings1, embeddings2)
+                ssl_loss = crit(embeddings1, embeddings2)
+                recon_loss = torch.nn.functional.l1_loss(recon1, recon_target1) + torch.nn.functional.l1_loss(recon2, recon_target2)
+                loss = ssl_loss + recon_loss
 
             if type(loss) == float or loss.isnan().sum() != 0:
                 print("NaN found in loss!")
@@ -204,7 +217,7 @@ def run_model(args, device, train_loader, train_transform):
 
                 epoch_loss += loss.item()
 
-                wandb.log({"train/loss": loss.item()})
+                wandb.log({"train/ssl_loss": ssl_loss.item(), "train/recon_loss": recon_loss.item()})
 
             progress_bar.set_postfix(
                 {"loss": epoch_loss / (step + 1 - step_deficit)}
@@ -215,9 +228,13 @@ def run_model(args, device, train_loader, train_transform):
         # Upload some sample pairs to wandb
         img1_list = []
         img2_list = []
+        recon1_list = []
+        recon2_list = []
         for i in range(4):
             img1_list.append(img1[i][..., img1.shape[-1]//2])
             img2_list.append(img2[i][..., img2.shape[-1]//2])
+            recon1_list.append(recon1[i][..., recon1.shape[-1]//2])
+            recon2_list.append(recon2[i][..., recon2.shape[-1]//2])
         grid_image1 = make_grid(
                       img1_list,
                       nrow=int(2),
@@ -232,6 +249,20 @@ def run_model(args, device, train_loader, train_transform):
                       normalize=True,
                       scale_each=True,
                   )
+        grid_recon1 = make_grid(
+                      recon1_list,
+                      nrow=int(2),
+                      padding=5,
+                      normalize=True,
+                      scale_each=True,
+                  )
+        grid_recon2 = make_grid(
+                      recon2_list,
+                      nrow=int(2),
+                      padding=5,
+                      normalize=True,
+                      scale_each=True,
+                  )
         print(grid_image1.shape)
         wandb.log(
               {
@@ -241,6 +272,12 @@ def run_model(args, device, train_loader, train_transform):
                       ),
                       wandb.Image(
                           grid_image2[0].cpu().numpy(), caption="Image view #2"
+                      ),
+                      wandb.Image(
+                          grid_recon1[0].cpu().numpy(), caption="Recon view #1"
+                      ),
+                      wandb.Image(
+                          grid_recon2[0].cpu().numpy(), caption="Recon view #2"
                       ),
                   ]
               }

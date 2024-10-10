@@ -20,6 +20,22 @@ class Projector(nn.Module):
         x = torch.nn.functional.gelu(self.fc1(x))
         x = self.fc2(x)
         return x
+    
+
+class Reconstructor(nn.Module):
+    def __init__(self, in_features: int, out_channels: int):
+        super().__init__()
+        self.conv = nn.Sequential(
+            nn.ConvTranspose3d(in_features, in_features // 2, kernel_size=(2, 2, 2), stride=(2, 2, 2)),
+            nn.ConvTranspose3d(in_features // 2, in_features // 4, kernel_size=(2, 2, 2), stride=(2, 2, 2)),
+            nn.ConvTranspose3d(in_features // 4, in_features // 8, kernel_size=(2, 2, 2), stride=(2, 2, 2)),
+            nn.ConvTranspose3d(in_features // 8, in_features // 16, kernel_size=(2, 2, 2), stride=(2, 2, 2)),
+            nn.ConvTranspose3d(in_features // 16, out_channels, kernel_size=(2, 2, 2), stride=(2, 2, 2)),
+        )
+
+    def forward(self, x: torch.Tensor):
+        return self.conv(x)
+    
 
 class CNNEncoder(nn.Module):
 
