@@ -112,7 +112,7 @@ def run_model(args, device, train_loader, train_transform):
         def state_dict(self):
             return self.metric
 
-    params = list(encoder.parameters()) + list(projector.parameters())
+    params = list(encoder.parameters()) + list(projector.parameters()) + list(reconstructor.parameters())
     try:
         opt = torch.optim.AdamW(params, args.lr, fused=torch.cuda.is_available())
     except:
