@@ -32,6 +32,12 @@ def get_augmentations(keys, ptch):
         mn.transforms.RandAxisFlipd(keys=keys, prob=1),
         mn.transforms.RandAxisFlipd(keys=keys, prob=1),
         mn.transforms.RandAxisFlipd(keys=keys, prob=1),
+        mn.transforms.RandSpatialCropD(
+            keys=keys, roi_size=ptch, random_size=False
+        ),
+        mn.transforms.ResizeWithPadOrCropD(
+            keys=keys, spatial_size=(ptch, ptch, ptch)
+        ),
     ]
 
     recon_store = [
@@ -40,12 +46,6 @@ def get_augmentations(keys, ptch):
     
     intensity_augs = [
         mn.transforms.RandBiasFieldD(keys=keys, prob=1, coeff_range=(0, 0.3)),
-        mn.transforms.RandSpatialCropD(
-            keys=keys, roi_size=ptch, random_size=False
-        ),
-        mn.transforms.ResizeWithPadOrCropD(
-            keys=keys, spatial_size=(ptch, ptch, ptch)
-        ),
         mn.transforms.RandGibbsNoised(keys=keys, prob=1, alpha=(0, 0.8)),
         mn.transforms.RandRicianNoised(keys=keys, prob=1, mean=0.0, std=0.2, relative=False, sample_std=True),
         mn.transforms.RandCoarseDropoutD(keys=keys, prob=1, holes=1, max_holes=20, spatial_size=5, max_spatial_size=ptch//3, fill_value=0)
