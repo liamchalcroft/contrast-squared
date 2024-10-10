@@ -43,14 +43,14 @@ class CNNEncoder(nn.Module):
         self,
         spatial_dims: int = 3,
         in_channels: int = 1,
-        features: Sequence[int] = (32, 32, 64, 128, 256),
+        features: Sequence[int] = (64, 128, 256, 512, 768),
         act: str | tuple = ("LeakyReLU", {"negative_slope": 0.1, "inplace": True}),
         norm: str | tuple = ("instance", {"affine": True}),
         bias: bool = True,
         dropout: float | tuple = 0.0,
     ):
         super().__init__()
-        fea = ensure_tuple_rep(features, 6)
+        fea = ensure_tuple_rep(features, 5)
         print(f"BasicUNet features: {fea}.")
 
         self.conv_0 = TwoConv(spatial_dims, in_channels, features[0], act, norm, bias, dropout)
@@ -76,7 +76,7 @@ class CNNUNet(nn.Module):
         spatial_dims: int = 3,
         in_channels: int = 1,
         out_channels: int = 2,
-        features: Sequence[int] = (32, 32, 64, 128, 256, 32),
+        features: Sequence[int] = (64, 128, 256, 512, 768, 32),
         act: str | tuple = ("LeakyReLU", {"negative_slope": 0.1, "inplace": True}),
         norm: str | tuple = ("instance", {"affine": True}),
         bias: bool = True,
