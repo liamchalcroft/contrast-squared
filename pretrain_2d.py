@@ -7,12 +7,9 @@ import wandb
 import logging
 import argparse
 import monai as mn
-import numpy as np
 from contextlib import nullcontext
 from tqdm import tqdm
 from torchvision.utils import make_grid
-from torch.utils.data import DataLoader
-
 logging.getLogger("monai").setLevel(logging.ERROR)
 import warnings
 
@@ -22,182 +19,35 @@ warnings.filterwarnings(
 )
 warnings.filterwarnings("ignore", category=FutureWarning, module="pandas")
 
-def add_bg(x):
-    return torch.cat([1-x.sum(dim=0, keepdim=True), x], dim=0)
-
-def get_loaders(
-    batch_size=1,
-    device="cpu",
-    lowres=False,
-    ptch=128,
-):
-
-    train_label_list = list(
-        np.loadtxt("/home/lchalcroft/git/lab-vae/atlas_train.txt", dtype=str)
-    )
-    val_label_list = list(
-        np.loadtxt("/home/lchalcroft/git/lab-vae/atlas_val.txt", dtype=str)
-    )
-
-    train_dict = [
-        {
-            "seg": f.replace("1mm_sub", "sub"),
-            "label": f.replace("_label-L_desc-T1lesion_mask", "_T1w").replace(
-                "1mm_sub", "sub"
-            ),
-        }
-        for f in train_label_list
-    ]
-    val_dict = [
-        {
-            "seg": f.replace("1mm_sub", "sub"),
-            "image": f.replace("_label-L_desc-T1lesion_mask", "_T1w").replace(
-                "1mm_sub", "sub"
-            ),
-        }
-        for f in val_label_list
-    ]
-
-    print(f"train_dict: {len(train_dict)}, val_dict: {len(val_dict)}")
-    print(f"train_dict[0]: {train_dict[0]}")
-
-    train_transform = mn.transforms.Compose(
-        transforms=[
-            mn.transforms.LoadImageD(
-                keys=["image", "seg"], image_only=True, allow_missing_keys=True
-            ),
-            mn.transforms.EnsureChannelFirstD(
-                keys=["image", "seg"], allow_missing_keys=True
-            ),
-            mn.transforms.LambdaD(keys="seg", func=add_bg),
-            mn.transforms.OrientationD(
-                keys=["image", "seg"], axcodes="RAS", allow_missing_keys=True
-            ),
-            mn.transforms.SpacingD(
-                keys=["image", "seg"],
-                pixdim=1 if not lowres else 2,
-                allow_missing_keys=True,
-            ),
-            mn.transforms.ResizeWithPadOrCropD(
-                keys=["image", "seg"],
-                spatial_size=(256, 256, 256) if not lowres else (128, 128, 128),
-                allow_missing_keys=True,
-            ),
-            mn.transforms.ToTensorD(
-                dtype=float,
-                keys=["image", "seg"],
-                allow_missing_keys=True,
-            ),
-            mn.transforms.LambdaD(
-                keys=["image", "seg"],
-                func=mn.transforms.SignalFillEmpty(),
-                allow_missing_keys=True,
-            ),
-            mn.transforms.Rand2DElasticD(
-                keys=["image", "seg"],
-                prob=1, spacing=40, magnitude_range=(0, 2),
-                rotate_range=20, shear_range=0.5, translate_range=10, scale_range=0.1,
-                mode=["bilinear", "nearest"], padding_mode="zeros"),
-            mn.transforms.LambdaD(
-                keys=["image", "seg"],
-                func=mn.transforms.SignalFillEmpty(),
-                allow_missing_keys=True,
-            ),
-            mn.transforms.RandBiasFieldD(keys="image", prob=0.8),
-            mn.transforms.RandAxisFlipd(
-                keys=["image", "seg"],
-                prob=0.8,
-                allow_missing_keys=True,
-            ),
-            mn.transforms.RandAxisFlipd(
-                keys=["image", "seg"],
-                prob=0.8,
-                allow_missing_keys=True,
-            ),
-            mn.transforms.NormalizeIntensityD(
-                keys="image", nonzero=False, channel_wise=True
-            ),
-            mn.transforms.RandGaussianNoiseD(keys="image", prob=0.8),
-            mn.transforms.RandSpatialCropD(
-                keys=["image", "seg"],
-                roi_size=(ptch, ptch),
-                random_size=False,
-                allow_missing_keys=True,
-            ),
-            mn.transforms.ResizeD(
-                keys=["image", "seg"],
-                spatial_size=(ptch, ptch),
-                allow_missing_keys=True,
-            ),
-            mn.transforms.ThresholdIntensityD(
-                keys=["seg"],
-                threshold=0.5,
-                above=True,
-                cval=0,
-                allow_missing_keys=True,
-            ),
-            mn.transforms.ToTensorD(keys=["image", "seg"], dtype=torch.float32),
-        ]
-    )
-
-    train_data = mn.data.Dataset(train_dict, transform=train_transform)
-    val_data = mn.data.Dataset(val_dict, transform=train_transform)
-
-    train_loader = DataLoader(
-        train_data,
-        batch_size=batch_size,
-        shuffle=True,
-        sampler=None,
-        batch_sampler=None,
-        num_workers=24,
-    )
-    val_loader = DataLoader(
-        val_data,
-        batch_size=1,
-        shuffle=False,
-        sampler=None,
-        batch_sampler=None,
-        num_workers=24,
-    )
-
-    return train_loader, val_loader
-
-
-def compute_dice(y_pred, y, eps=1e-8):
-    y_pred = torch.flatten(y_pred)
-    y = torch.flatten(y)
-    y = y.float()
-    intersect = (y_pred * y).sum(-1)
-    denominator = (y_pred * y_pred).sum(-1) + (y * y).sum(-1)
-    return 2 * (intersect / denominator.clamp(min=eps))
 
 def run_model(args, device, train_loader, train_transform):
     
     if args.net == "cnn":
-        model = model.CNNUNet(
+        encoder = model.CNNEncoder(
             spatial_dims=2, 
-            in_channels=1,
-            out_channels=2,
-            features=(32, 64, 128, 256, 512, 768),
+            in_channels=1, 
+            features=(32, 64, 128, 256, 512, 768), 
             act="GELU", 
             norm="instance", 
             bias=True, 
-            dropout=0.2,
-            upsample="deconv",
+            dropout=0.2
         ).to(device)
     elif args.net == "vit":
-        model = model.ViTUNet(
+        encoder = model.ViTEncoder(
             spatial_dims=2,
             in_channels=1,
-            out_channels=2,
             img_size=(96 if args.lowres else 192),
             hidden_size=768,
             mlp_dim=3072,
             num_heads=12,
             dropout_rate=0.2,
             qkv_bias=True,
-            save_attn=False,
+            save_attn=False
         ).to(device)
+
+    projector = model.Projector(
+        in_features=768, hidden_size=512, out_features=128
+    ).to(device)
 
     if args.resume or args.resume_best:
         ckpts = glob.glob(
@@ -230,9 +80,12 @@ def run_model(args, device, train_loader, train_transform):
     )
     if not args.resume and not args.resume_best:
         wandb.config.update(args)
-    wandb.watch(model)
+    wandb.watch(encoder, projector)
 
-    crit = mn.losses.CEDic
+    if args.loss == "simclr":
+        crit = mn.losses.ContrastiveLoss()
+    elif args.loss == "barlow":
+        crit = mn.losses.BarlowLoss()
 
     class WandBID:
         def __init__(self, wandb_id):
@@ -255,35 +108,17 @@ def run_model(args, device, train_loader, train_transform):
         def state_dict(self):
             return self.metric
 
-    # Load backbone weights if provided
-    # Any layers loaded from the backbone will be frozen during training
-    cnt_frozen = 0
-    cnt_trainable = 0
-    if args.backbone_weights is not None:
-        checkpoint = torch.load(args.backbone_weights, map_location=device)
-        print(f"\nLoading encoder weights from {args.backbone_weights}")
-        for name, param in model.named_parameters():
-            if name in checkpoint:
-                param.data = checkpoint["encoder"][name]
-                param.requires_grad = False
-                cnt_frozen += 1
-            else:
-                param.requires_grad = True
-                cnt_trainable += 1
-        print(f"Frozen layers: {cnt_frozen}, trainable layers: {cnt_trainable}")
-    else:
-        print("No backbone weights provided, all layers will be trainable.")
-
-    params = list(model.parameters())
+    params = list(encoder.parameters()) + list(projector.parameters())
     try:
         opt = torch.optim.AdamW(params, args.lr, fused=torch.cuda.is_available())
     except:
         opt = torch.optim.AdamW(params, args.lr, fused=False)
     # Try to load most recent weight
     if args.resume or args.resume_best:
-        model.load_state_dict(
-            checkpoint["model"], strict=False
-        )
+        encoder.load_state_dict(
+            checkpoint["encoder"], strict=False
+        )  # strict False in case of switch between subpixel and transpose
+        projector.load_state_dict(checkpoint["projector"], strict=False)
         opt.load_state_dict(checkpoint["opt"])
         start_epoch = checkpoint["epoch"] + 1
         metric_best = checkpoint["metric"]
@@ -308,17 +143,17 @@ def run_model(args, device, train_loader, train_transform):
         if args.debug:
             saver1 = mn.transforms.SaveImage(
                 output_dir=os.path.join(args.logdir, args.name, "debug-train"),
-                output_postfix="img",
+                output_postfix="img1",
                 separate_folder=False,
                 print_log=False,
             )
             saver2 = mn.transforms.SaveImage(
                 output_dir=os.path.join(args.logdir, args.name, "debug-train"),
-                output_postfix="seg",
+                output_postfix="img2",
                 separate_folder=False,
                 print_log=False,
             )
-        model.train()
+        encoder.train()
         epoch_loss = 0
         step_deficit = -1e-7
         if args.amp:
@@ -337,17 +172,20 @@ def run_model(args, device, train_loader, train_transform):
             except:
                 train_iter = iter(train_loader)
                 batch = next(train_iter)
-            img = batch["image"].to(device)
-            seg = batch["seg"].to(device)
+            img1 = batch["image1"].to(device)
+            img2 = batch["image2"].to(device)
             opt.zero_grad(set_to_none=True)
 
             if args.debug and step < 5:
-                saver1(torch.Tensor(img[0].cpu().float()))
-                saver2(torch.Tensor(seg[0].cpu().float()))
+                saver1(torch.Tensor(img1[0].cpu().float()))
+                saver2(torch.Tensor(img2[0].cpu().float()))
 
             with ctx:
-                logits = model(img)
-                loss = crit(logits, seg)
+                features1 = encoder(img1).view(img1.size(0), 768, -1).mean(dim=-1)
+                features2 = encoder(img2).view(img2.size(0), 768, -1).mean(dim=-1)
+                embeddings1 = projector(features1)
+                embeddings2 = projector(features2)
+                loss = crit(embeddings1, embeddings2)
 
             if type(loss) == float or loss.isnan().sum() != 0:
                 print("NaN found in loss!")
@@ -356,12 +194,12 @@ def run_model(args, device, train_loader, train_transform):
                 if args.amp:
                     scaler.scale(loss).backward()
                     scaler.unscale_(opt)
-                    torch.nn.utils.clip_grad_norm_(model.parameters(), 12)
+                    torch.nn.utils.clip_grad_norm_(encoder.parameters(), 12)
                     scaler.step(opt)
                     scaler.update()
                 else:
                     loss.backward()
-                    torch.nn.utils.clip_grad_norm_(model.parameters(), 12)
+                    torch.nn.utils.clip_grad_norm_(encoder.parameters(), 12)
                     opt.step()
 
                 epoch_loss += loss.item()
@@ -375,20 +213,20 @@ def run_model(args, device, train_loader, train_transform):
         lr_scheduler.step()
 
         # Upload some sample pairs to wandb
-        img_list = []
-        seg_list = []
+        img1_list = []
+        img2_list = []
         for i in range(16):
-            img_list.append(img[i])
-            seg_list.append(seg[i])
+            img1_list.append(img1[i])
+            img2_list.append(img2[i])
         grid_image1 = make_grid(
-                      img_list,
+                      img1_list,
                       nrow=int(4),
                       padding=5,
                       normalize=True,
                       scale_each=True,
                   )
         grid_image2 = make_grid(
-                      seg_list,
+                      img2_list,
                       nrow=int(4),
                       padding=5,
                       normalize=True,
@@ -399,10 +237,10 @@ def run_model(args, device, train_loader, train_transform):
               {
                   "examples": [
                       wandb.Image(
-                          grid_image1[0].cpu().numpy(), caption="Images"
+                          grid_image1[0].cpu().numpy(), caption="Image view #1"
                       ),
                       wandb.Image(
-                          grid_image2[0].cpu().numpy(), caption="Segmentations"
+                          grid_image2[0].cpu().numpy(), caption="Image view #2"
                       ),
                   ]
               }
@@ -413,7 +251,8 @@ def run_model(args, device, train_loader, train_transform):
             metric_best = epoch_loss
             torch.save(
                 {
-                    "model": model.state_dict(),
+                    "encoder": encoder.state_dict(),
+                    "projector": projector.state_dict(),
                     "opt": opt.state_dict(),
                     "lr": lr_scheduler.state_dict(),
                     "wandb": WandBID(wandb.run.id).state_dict(),
@@ -424,7 +263,8 @@ def run_model(args, device, train_loader, train_transform):
             )
         torch.save(
             {
-                "model": model.state_dict(),
+                "encoder": encoder.state_dict(),
+                "projector": projector.state_dict(),
                 "opt": opt.state_dict(),
                 "lr": lr_scheduler.state_dict(),
                 "wandb": WandBID(wandb.run.id).state_dict(),
@@ -485,8 +325,15 @@ def set_up():
         print("Memory Usage:")
         print("Allocated:", round(torch.cuda.memory_allocated(0) / 1024**3, 1), "GB")
         print("Cached:   ", round(torch.cuda.memory_reserved(0) / 1024**3, 1), "GB")
-    debug_loader, _ = preprocess_2d.get_mprage_loader(batch_size=1, device=device, lowres=args.lowres)
-    train_loader, train_transform = preprocess_2d.get_mprage_loader(batch_size=args.batch_size, device=device, lowres=args.lowres)
+    if args.data == "mprage":
+        debug_loader, _ = preprocess_2d.get_mprage_loader(batch_size=1, device=device, lowres=args.lowres)
+        train_loader, train_transform = preprocess_2d.get_mprage_loader(batch_size=args.batch_size, device=device, lowres=args.lowres)
+    elif args.data == "bloch":
+        debug_loader, _ = preprocess_2d.get_bloch_loader(batch_size=1, device=device, lowres=args.lowres, same_contrast=True)
+        train_loader, train_transform = preprocess_2d.get_bloch_loader(batch_size=args.batch_size, device=device, lowres=args.lowres, same_contrast=True)
+    elif args.data == "bloch-paired":
+        debug_loader, _ = preprocess_2d.get_bloch_loader(batch_size=1, device=device, lowres=args.lowres, same_contrast=False)
+        train_loader, train_transform = preprocess_2d.get_bloch_loader(batch_size=args.batch_size, device=device, lowres=args.lowres, same_contrast=False)
 
     if args.debug:
         saver1 = mn.transforms.SaveImage(

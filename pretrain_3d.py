@@ -1,7 +1,7 @@
 import glob
 import os
 import model
-import preprocess
+import preprocess_3d
 import torch
 import wandb
 import logging
@@ -24,7 +24,7 @@ def run_model(args, device, train_loader, train_transform):
     
     if args.net == "cnn":
         encoder = model.CNNEncoder(
-            spatial_dims=2, 
+            spatial_dims=3, 
             in_channels=1, 
             features=(32, 64, 128, 256, 512, 768), 
             act="GELU", 
@@ -34,9 +34,9 @@ def run_model(args, device, train_loader, train_transform):
         ).to(device)
     elif args.net == "vit":
         encoder = model.ViTEncoder(
-            spatial_dims=2,
+            spatial_dims=3,
             in_channels=1,
-            img_size=(96 if args.lowres else 192),
+            img_size=(48 if args.lowres else 96),
             hidden_size=768,
             mlp_dim=3072,
             num_heads=12,
@@ -215,19 +215,19 @@ def run_model(args, device, train_loader, train_transform):
         # Upload some sample pairs to wandb
         img1_list = []
         img2_list = []
-        for i in range(16):
-            img1_list.append(img1[i])
-            img2_list.append(img2[i])
+        for i in range(4):
+            img1_list.append(img1[i][..., img1.shape[-1]//2])
+            img2_list.append(img2[i][..., img2.shape[-1]//2])
         grid_image1 = make_grid(
                       img1_list,
-                      nrow=int(4),
+                      nrow=int(2),
                       padding=5,
                       normalize=True,
                       scale_each=True,
                   )
         grid_image2 = make_grid(
                       img2_list,
-                      nrow=int(4),
+                      nrow=int(2),
                       padding=5,
                       normalize=True,
                       scale_each=True,
@@ -326,14 +326,14 @@ def set_up():
         print("Allocated:", round(torch.cuda.memory_allocated(0) / 1024**3, 1), "GB")
         print("Cached:   ", round(torch.cuda.memory_reserved(0) / 1024**3, 1), "GB")
     if args.data == "mprage":
-        debug_loader, _ = preprocess.get_mprage_loader(batch_size=1, device=device, lowres=args.lowres)
-        train_loader, train_transform = preprocess.get_mprage_loader(batch_size=args.batch_size, device=device, lowres=args.lowres)
+        debug_loader, _ = preprocess_3d.get_mprage_loader(batch_size=1, device=device, lowres=args.lowres)
+        train_loader, train_transform = preprocess_3d.get_mprage_loader(batch_size=args.batch_size, device=device, lowres=args.lowres)
     elif args.data == "bloch":
-        debug_loader, _ = preprocess.get_bloch_loader(batch_size=1, device=device, lowres=args.lowres, same_contrast=True)
-        train_loader, train_transform = preprocess.get_bloch_loader(batch_size=args.batch_size, device=device, lowres=args.lowres, same_contrast=True)
+        debug_loader, _ = preprocess_3d.get_bloch_loader(batch_size=1, device=device, lowres=args.lowres, same_contrast=True)
+        train_loader, train_transform = preprocess_3d.get_bloch_loader(batch_size=args.batch_size, device=device, lowres=args.lowres, same_contrast=True)
     elif args.data == "bloch-paired":
-        debug_loader, _ = preprocess.get_bloch_loader(batch_size=1, device=device, lowres=args.lowres, same_contrast=False)
-        train_loader, train_transform = preprocess.get_bloch_loader(batch_size=args.batch_size, device=device, lowres=args.lowres, same_contrast=False)
+        debug_loader, _ = preprocess_3d.get_bloch_loader(batch_size=1, device=device, lowres=args.lowres, same_contrast=False)
+        train_loader, train_transform = preprocess_3d.get_bloch_loader(batch_size=args.batch_size, device=device, lowres=args.lowres, same_contrast=False)
 
     if args.debug:
         saver1 = mn.transforms.SaveImage(
