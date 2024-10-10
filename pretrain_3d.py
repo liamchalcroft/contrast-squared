@@ -26,7 +26,7 @@ def run_model(args, device, train_loader, train_transform):
         encoder = model.CNNEncoder(
             spatial_dims=3, 
             in_channels=1, 
-            features=(64, 128, 256, 512, 768), 
+            features=(32, 64, 128, 256, 512, 768), 
             act="GELU", 
             norm="instance", 
             bias=True, 
