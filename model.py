@@ -58,6 +58,7 @@ class CNNEncoder(nn.Module):
         self.down_2 = Down(spatial_dims, fea[1], fea[2], act, norm, bias, dropout)
         self.down_3 = Down(spatial_dims, fea[2], fea[3], act, norm, bias, dropout)
         self.down_4 = Down(spatial_dims, fea[3], fea[4], act, norm, bias, dropout)
+        self.down_5 = Down(spatial_dims, fea[4], fea[5], act, norm, bias, dropout)
 
     def forward(self, x: torch.Tensor):
         x0 = self.conv_0(x)
@@ -66,7 +67,8 @@ class CNNEncoder(nn.Module):
         x2 = self.down_2(x1)
         x3 = self.down_3(x2)
         x4 = self.down_4(x3)
-        return x4
+        x5 = self.down_5(x4)
+        return x5
 
 
 class CNNUNet(nn.Module):
@@ -95,7 +97,9 @@ class CNNUNet(nn.Module):
         self.down_2 = Down(spatial_dims, fea[1], fea[2], act, norm, bias, dropout)
         self.down_3 = Down(spatial_dims, fea[2], fea[3], act, norm, bias, dropout)
         self.down_4 = Down(spatial_dims, fea[3], fea[4], act, norm, bias, dropout)
+        self.down_5 = Down(spatial_dims, fea[4], fea[5], act, norm, bias, dropout)
 
+        self.upcat_5 = UpCat(spatial_dims, fea[5], fea[4], fea[4], act, norm, bias, dropout, upsample)
         self.upcat_4 = UpCat(spatial_dims, fea[4], fea[3], fea[3], act, norm, bias, dropout, upsample)
         self.upcat_3 = UpCat(spatial_dims, fea[3], fea[2], fea[2], act, norm, bias, dropout, upsample)
         self.upcat_2 = UpCat(spatial_dims, fea[2], fea[1], fea[1], act, norm, bias, dropout, upsample)
@@ -110,11 +114,13 @@ class CNNUNet(nn.Module):
         x2 = self.down_2(x1)
         x3 = self.down_3(x2)
         x4 = self.down_4(x3)
+        x5 = self.down_5(x4)
 
-        u4 = self.upcat_4(x4, x3)
-        u3 = self.upcat_3(u4, x2)
-        u2 = self.upcat_2(u3, x1)
-        u1 = self.upcat_1(u2, x0)
+        u5 = self.upcat_5(x5, x4)
+        u4 = self.upcat_4(u5, x4)
+        u3 = self.upcat_3(u4, x3)
+        u2 = self.upcat_2(u3, x2)
+        u1 = self.upcat_1(u2, x1)
 
         logits = self.final_conv(u1)
         return logits
