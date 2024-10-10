@@ -23,17 +23,40 @@ class Projector(nn.Module):
     
 
 class Reconstructor(nn.Module):
-    def __init__(self, in_features: int, out_channels: int):
+    def __init__(self, in_features: int, out_channels: int, spatial_dims: int = 3):
         super().__init__()
-        self.conv = nn.Sequential(
-            nn.ConvTranspose3d(in_features, in_features // 2, kernel_size=(2, 2, 2), stride=(2, 2, 2)),
-            nn.ConvTranspose3d(in_features // 2, in_features // 4, kernel_size=(2, 2, 2), stride=(2, 2, 2)),
-            nn.ConvTranspose3d(in_features // 4, in_features // 8, kernel_size=(2, 2, 2), stride=(2, 2, 2)),
-            nn.ConvTranspose3d(in_features // 8, in_features // 16, kernel_size=(2, 2, 2), stride=(2, 2, 2)),
-            nn.ConvTranspose3d(in_features // 16, out_channels, kernel_size=(2, 2, 2), stride=(2, 2, 2)),
-        )
+        if spatial_dims == 2:
+            self.conv = nn.Sequential(
+              nn.ConvTranspose2d(in_features, in_features // 2, kernel_size=(2, 2), stride=(2, 2)),
+              nn.ConvTranspose2d(in_features // 2, in_features // 4, kernel_size=(2, 2), stride=(2, 2)),
+              nn.ConvTranspose2d(in_features // 4, in_features // 8, kernel_size=(2, 2), stride=(2, 2)),
+              nn.ConvTranspose2d(in_features // 8, in_features // 16, kernel_size=(2, 2), stride=(2, 2)),
+              nn.ConvTranspose2d(in_features // 16, out_channels, kernel_size=(2, 2), stride=(2, 2)),
+          )
+        elif spatial_dims == 3:
+          self.conv = nn.Sequential(
+              nn.ConvTranspose3d(in_features, in_features // 2, kernel_size=(2, 2, 2), stride=(2, 2, 2)),
+              nn.ConvTranspose3d(in_features // 2, in_features // 4, kernel_size=(2, 2, 2), stride=(2, 2, 2)),
+              nn.ConvTranspose3d(in_features // 4, in_features // 8, kernel_size=(2, 2, 2), stride=(2, 2, 2)),
+              nn.ConvTranspose3d(in_features // 8, in_features // 16, kernel_size=(2, 2, 2), stride=(2, 2, 2)),
+              nn.ConvTranspose3d(in_features // 16, out_channels, kernel_size=(2, 2, 2), stride=(2, 2, 2)),
+          )
+        else:
+          raise ValueError(f"Invalid spatial dimensions: {spatial_dims}. Please specify 2 or 3.")
+        
+        self.spatial_dims = spatial_dims
 
     def forward(self, x: torch.Tensor):
+        target_dims = self.spatial_dims + 2
+
+        # If spatial dims are flattened, unroll them
+        if len(x.shape) == target_dims - 2:
+            spatial_len = x.size(-1)
+            # Assuming we have used isotropic crop / filters, we can take the root
+            spatial_len = int(spatial_len ** (1 / self.spatial_dims))
+            spatial_dims = self.spatial_dims * [spatial_len]
+            x = x.view(x.size(0), x.size(1), *spatial_dims)
+            
         return self.conv(x)
     
 
