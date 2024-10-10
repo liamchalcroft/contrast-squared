@@ -107,7 +107,7 @@ def get_bloch_loader(
             ),  # just clip extreme values, don't rescale
             mn.transforms.LambdaD(keys=["image1"], func=mn.transforms.SignalFillEmpty()),
             # mn.transforms.SpacingD(keys=["image1"], pixdim=2 if lowres else 1),
-            mn.transforms.ToTensorD(dtype=torch.float32, keys=["image1"])]
+            mn.transforms.ToTensorD(dtype=torch.float32, keys=["image1"], device=device)]
     
     if same_contrast:
        generate_bloch = [
@@ -149,7 +149,7 @@ def get_bloch_loader(
         shuffle=True,
         sampler=None,
         batch_sampler=None,
-        num_workers=24,
+        num_workers=0,
     )
 
     return train_loader, train_transform
@@ -182,7 +182,7 @@ def get_mprage_loader(
             ),  # just clip extreme values, don't rescale
             mn.transforms.LambdaD(keys=["image1"], func=mn.transforms.SignalFillEmpty()),
             # mn.transforms.SpacingD(keys=["image1"], pixdim=2 if lowres else 1),
-            mn.transforms.ToTensorD(dtype=torch.float32, keys=["image1"])]
+            mn.transforms.ToTensorD(dtype=torch.float32, keys=["image1"], device=device)]
     
     generate_views = [
       mn.transforms.ScaleIntensityRangePercentilesD(keys=["image1"],
@@ -213,7 +213,7 @@ def get_mprage_loader(
         shuffle=True,
         sampler=None,
         batch_sampler=None,
-        num_workers=24,
+        num_workers=0,
     )
 
     return train_loader, train_transform
