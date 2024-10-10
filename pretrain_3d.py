@@ -159,6 +159,8 @@ def run_model(args, device, train_loader, train_transform):
                 print_log=False,
             )
         encoder.train()
+        projector.train()
+        reconstructor.train()
         epoch_loss = 0
         step_deficit = -1e-7
         if args.amp:
