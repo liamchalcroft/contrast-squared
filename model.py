@@ -53,11 +53,8 @@ class Reconstructor(nn.Module):
         if len(x.shape) == target_dims - 2:
             spatial_len = x.size(-1)
             # Assuming we have used isotropic crop / filters, we can take the root
-            print(f"Spatial len: {spatial_len}")
             spatial_len = spatial_len ** (1 / self.spatial_dims)
-            print(f"Spatial len: {spatial_len}")
             spatial_len = round(spatial_len)
-            print(f"Spatial len: {spatial_len}")
             spatial_dims = self.spatial_dims * [spatial_len]
             x = x.view(x.size(0), x.size(1), *spatial_dims)
 
