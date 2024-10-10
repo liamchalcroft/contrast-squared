@@ -203,12 +203,8 @@ def run_model(args, device, train_loader, train_transform):
                 embeddings1 = projector(features1)
                 embeddings2 = projector(features2)
 
-                print(f"Features shape: {features1.shape}")
-                print(f"Embeddings shape: {embeddings1.shape}")
-                print(f"Recon shape: {recon1.shape}")
-                print(f"Recon target shape: {recon_target1.shape}")
                 ssl_loss = crit(embeddings1, embeddings2)
-                
+
                 recon_loss = torch.nn.functional.l1_loss(recon1, recon_target1) + torch.nn.functional.l1_loss(recon2, recon_target2)
                 loss = ssl_loss + recon_loss
 
@@ -274,7 +270,6 @@ def run_model(args, device, train_loader, train_transform):
                             normalize=True,
                             scale_each=True,
                         )
-                print(grid_image1.shape)
                 wandb.log(
                     {
                         "examples": [
