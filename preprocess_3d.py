@@ -25,24 +25,34 @@ def get_second_channel(x):
     return x[[1]]
 
 def get_augmentations(keys, ptch):
-    augment_image = [
-        mn.transforms.RandBiasFieldD(keys=keys, prob=1, coeff_range=(0, 0.3)),
+    spatial_augs = [
         mn.transforms.Rand3DElasticD(keys=keys, sigma_range=(5,7), magnitude_range=(50,150),
                                         rotate_range=15, shear_range=0.012, scale_range=0.15,
                                         padding_mode='zeros', prob=0.8),
+        mn.transforms.RandAxisFlipd(keys=keys, prob=1),
+        mn.transforms.RandAxisFlipd(keys=keys, prob=1),
+        mn.transforms.RandAxisFlipd(keys=keys, prob=1),
+    ]
+
+    recon_store = [
+        mn.transforms.CopyItemsD(keys=keys, names=[key+"_recon" for key in keys])
+    ]
+    
+    intensity_augs = [
+        mn.transforms.RandBiasFieldD(keys=keys, prob=1, coeff_range=(0, 0.3)),
         mn.transforms.RandSpatialCropD(
             keys=keys, roi_size=ptch, random_size=False
         ),
         mn.transforms.ResizeWithPadOrCropD(
             keys=keys, spatial_size=(ptch, ptch, ptch)
         ),
-        mn.transforms.RandAxisFlipd(keys=keys, prob=1),
-        mn.transforms.RandAxisFlipd(keys=keys, prob=1),
         mn.transforms.RandGibbsNoised(keys=keys, prob=1, alpha=(0, 0.8)),
         mn.transforms.RandRicianNoised(keys=keys, prob=1, mean=0.0, std=0.2, relative=False, sample_std=True),
         mn.transforms.RandCoarseDropoutD(keys=keys, prob=1, holes=0, max_holes=20, spatial_size=5, max_spatial_size=30, fill_value=0)
           ]
     
+    augment_image = [*spatial_augs, *recon_store, *intensity_augs]
+
     return augment_image
 
 def get_prepare_data(keys, ptch):
@@ -119,8 +129,7 @@ def get_bloch_loader(
     augment_image1 = get_augmentations(["image1"], ptch)
     augment_image2 = get_augmentations(["image2"], ptch)
 
-    prepare_image1 = get_prepare_data(["image1"], ptch)
-    prepare_image2 = get_prepare_data(["image2"], ptch)
+    prepare_images = get_prepare_data(["image1", "image2", "image1_recon", "image2_recon"], ptch)
 
     train_transform = mn.transforms.Compose(
         transforms=[
@@ -128,8 +137,7 @@ def get_bloch_loader(
             *generate_bloch,
             *augment_image1,
             *augment_image2,
-            *prepare_image1,
-            *prepare_image2,
+            *prepare_images,
         ]
     )
 
@@ -185,8 +193,7 @@ def get_mprage_loader(
     augment_image1 = get_augmentations(["image1"], ptch)
     augment_image2 = get_augmentations(["image2"], ptch)
 
-    prepare_image1 = get_prepare_data(["image1"], ptch)
-    prepare_image2 = get_prepare_data(["image2"], ptch)
+    prepare_images = get_prepare_data(["image1", "image2", "image1_recon", "image2_recon"], ptch)
 
     train_transform = mn.transforms.Compose(
         transforms=[
@@ -194,8 +201,7 @@ def get_mprage_loader(
             *generate_views,
             *augment_image1,
             *augment_image2,
-            *prepare_image1,
-            *prepare_image2,
+            *prepare_images,
         ]
     )
 
