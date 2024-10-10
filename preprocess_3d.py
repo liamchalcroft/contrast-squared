@@ -77,15 +77,15 @@ def get_bloch_loader(
     same_contrast=False,
 ):
     train_files = glob.glob(
-        os.path.join("/home/lchalcroft/MPM_DATA/slices/*_pd.nii.gz"),
+        os.path.join("/home/lchalcroft/MPM_DATA/*/*/masked_pd.nii.gz"),
     )
     train_dict = [
         {
             "image1": [
                 f,
-                f.replace("_pd.nii", "_r1.nii"),
-                f.replace("_pd.nii", "_r2s.nii"),
-                f.replace("_pd.nii", "_mt.nii"),
+                f.replace("masked_pd.nii.gz", "masked_r1.nii.gz"),
+                f.replace("masked_pd.nii.gz", "masked_r2s.nii.gz"),
+                f.replace("masked_pd.nii.gz", "masked_mt.nii.gz"),
             ],
         }
         for f in train_files
