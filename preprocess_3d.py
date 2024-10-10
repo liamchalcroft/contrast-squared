@@ -160,7 +160,7 @@ def get_mprage_loader(
     lowres=False,
 ):
     train_files = glob.glob(
-        os.path.join("/home/lchalcroft/MPM_DATA/slices/*_mprage.nii.gz"),
+        os.path.join("/home/lchalcroft/MPM_DATA/*/*/sim_mprage.nii.gz"),
     )
     train_dict = [
         {"image1": f,}
