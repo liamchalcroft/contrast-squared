@@ -89,7 +89,7 @@ def run_model(args, device, train_loader, train_transform):
     if args.loss == "simclr":
         crit = mn.losses.ContrastiveLoss()
     elif args.loss == "barlow":
-        crit = mn.losses.BarlowLoss()
+        crit = mn.losses.BarlowTwinsLoss()
 
     class WandBID:
         def __init__(self, wandb_id):
