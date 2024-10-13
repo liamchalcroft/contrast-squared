@@ -117,8 +117,8 @@ class BlochTransform(cc.Transform):
             "ti": log10uniform(1e-3, 3000e-3),
         },
         fse_params={
-            "te": log10uniform(1e-3, 3000e-3),
-            "tr": log10uniform(1e-3, 3000e-3),
+            "te": log10uniform(20e-3, 150e-3),
+            "tr": log10uniform(2000e-3, 8000e-3),
         },
         mp2rage_params={
             "tr": 2300e-3,
