@@ -89,6 +89,7 @@ def forward_model(mpm, params, num_ch=1):
             out_dict["fa2"] = out_dict["fa2"] * 180
             # print(f"out_dict: {out_dict}")
             if out_dict["mprage"] == 1:
+                print(f"Input params: \nTR: {out_dict['tr']}\nTI: {out_dict['ti1']}\nTE: {out_dict['te']}\nFA: {out_dict['fa1']}\nReceive: {out_dict['field']}")
                 out = qmri.generators.mprage(
                     pd=mpm[0, 0],
                     r1=mpm[0, 1],
