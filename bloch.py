@@ -357,6 +357,7 @@ class BlochTransform(cc.Transform):
 
     def forward(self, pd, r1, r2s, mt):
         theta_list = [self.get_parameters() for i in range(self.num_ch)]
+        print(f"Theta list: {theta_list}")
         img_list = [self.apply_transform(pd, r1, r2s, mt, theta_list[i]) for i in range(self.num_ch)]
         return torch.cat(img_list, dim=0)
 
