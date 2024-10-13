@@ -300,7 +300,6 @@ class BlochTransform(cc.Transform):
         self.params = {
             "mprage": mprage_params,
             "mp2rage": mp2rage_params,
-            "mprage-t1": mprage_t1_params,
             "gre": gre_params,
             "fse": fse_params,
             "flair": flair_params,
@@ -309,7 +308,6 @@ class BlochTransform(cc.Transform):
         self.funcs = {
             "mprage": qmri.generators.mprage,
             "mp2rage": qmri.generators.mp2rage,
-            "mprage-t1": qmri.generators.mprage,
             "gre": qmri.gre,
             "fse": qmri.generators.fse,
             "flair": qmri.generators.flair,
