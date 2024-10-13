@@ -207,102 +207,102 @@ class BlochTransform(cc.Transform):
     def __init__(
         self,
         num_ch=1,
-        # flair_params={
-        #     "te": log10norm(20e-3, 0.1),
-        #     "tr": log10uniform(1e-3, 5000e-3),
-        #     "ti": log10uniform(1e-3, 3000e-3),
-        # },
-        # fse_params={
-        #     "te": log10uniform(1e-3, 3000e-3),
-        #     "tr": log10uniform(1e-3, 3000e-3),
-        # },
-        # mp2rage_params={
-        #     "tr": 2300e-3,
-        #     "ti1": uniform(600e-3, 900e-3),
-        #     "ti2": 2200e-3,
-        #     "tx": log10norm(5.8e-3, 0.5),
-        #     "te": log10norm(2.9e-3, 0.5),
-        #     "fa": (uniform(3, 6), uniform(3, 6)),
-        #     "n": 160,
-        #     "eff": 0.96,
-        # },
-        # mprage_params={
-        #     "tr": 2300e-3,
-        #     "ti": uniform(600e-3, 900e-3),
-        #     "tx": uniform(4e-3, 8e-3),
-        #     "te": uniform(2e-3, 4e-3),
-        #     "fa": uniform(5, 12),
-        #     "n": 160,
-        #     "eff": 0.96,
-        # },
-        # mprage_t1_params={
-        #     "tr": uniform(1900e-3, 2500e-3),
-        #     "ti": uniform(600e-3, 1200e-3),
-        #     "te": uniform(2e-3, 4e-3),
-        #     "fa": uniform(5, 12),
-        #     "n": uniform(100, 200),
-        #     "eff": uniform(0.8, 1.0),
-        # },
-        # spgr_params={
-        #     "te": log10uniform(2e-3, 80e-3),
-        #     "tr": log10uniform(5e-3, 800e-3),
-        #     "fa": uniform(5, 50),
-        # },
-        # gre_params={
-        #     "te": log10uniform(2e-3, 80e-3),
-        #     "tr": log10uniform(5e-3, 5000e-3),
-        #     "fa": uniform(5, 50),
-        # },
-        # sequence=["mprage", "mp2rage", "gre", "fse", "flair", "spgr"],
-        # field_strength=(0.3, 7),
         flair_params={
-            "te": log10norm(100e-3, 0.1),  # Increased TE
-            "tr": log10uniform(5000e-3, 11000e-3),  # Increased TR range
-            "ti": log10uniform(1500e-3, 2800e-3),  # Adjusted TI range
+            "te": log10norm(20e-3, 0.1),
+            "tr": log10uniform(1e-3, 5000e-3),
+            "ti": log10uniform(1e-3, 3000e-3),
         },
         fse_params={
-            "te": log10uniform(80e-3, 120e-3),  # Adjusted TE range
-            "tr": log10uniform(2000e-3, 6000e-3),  # Adjusted TR range
+            "te": log10uniform(1e-3, 3000e-3),
+            "tr": log10uniform(1e-3, 3000e-3),
         },
         mp2rage_params={
-            "tr": uniform(5000e-3, 8000e-3),  # Increased TR range
-            "ti1": uniform(700e-3, 1000e-3),  # Slightly adjusted TI1 range
-            "ti2": uniform(2200e-3, 2800e-3),  # Made TI2 variable
-            "tx": log10norm(5.8e-3, 0.2),  # Reduced variation
-            "te": log10norm(2.9e-3, 0.2),  # Reduced variation
-            "fa": (uniform(4, 8), uniform(4, 8)),  # Slightly adjusted FA ranges
+            "tr": 2300e-3,
+            "ti1": uniform(600e-3, 900e-3),
+            "ti2": 2200e-3,
+            "tx": log10norm(5.8e-3, 0.5),
+            "te": log10norm(2.9e-3, 0.5),
+            "fa": (uniform(3, 6), uniform(3, 6)),
             "n": 160,
             "eff": 0.96,
         },
         mprage_params={
-            "tr": uniform(2000e-3, 2500e-3),  # Narrowed TR range
-            "ti": uniform(900e-3, 1100e-3),  # Adjusted TI range
-            "tx": uniform(6e-3, 8e-3),  # Narrowed TX range
+            "tr": 2300e-3,
+            "ti": uniform(600e-3, 900e-3),
+            "tx": uniform(4e-3, 8e-3),
             "te": uniform(2e-3, 4e-3),
-            "fa": uniform(8, 12),  # Slightly increased FA range
+            "fa": uniform(5, 12),
             "n": 160,
             "eff": 0.96,
         },
         mprage_t1_params={
-            "tr": uniform(2000e-3, 2500e-3),  # Narrowed TR range
-            "ti": uniform(900e-3, 1100e-3),  # Adjusted TI range
+            "tr": uniform(1900e-3, 2500e-3),
+            "ti": uniform(600e-3, 1200e-3),
             "te": uniform(2e-3, 4e-3),
-            "fa": uniform(8, 12),  # Slightly increased FA range
-            "n": uniform(160, 200),  # Increased minimum N
-            "eff": uniform(0.9, 1.0),  # Increased minimum efficiency
+            "fa": uniform(5, 12),
+            "n": uniform(100, 200),
+            "eff": uniform(0.8, 1.0),
         },
         spgr_params={
-            "te": log10uniform(2e-3, 20e-3),  # Reduced maximum TE
-            "tr": log10uniform(20e-3, 100e-3),  # Adjusted TR range
-            "fa": uniform(10, 30),  # Adjusted FA range
+            "te": log10uniform(2e-3, 80e-3),
+            "tr": log10uniform(5e-3, 800e-3),
+            "fa": uniform(5, 50),
         },
         gre_params={
-            "te": log10uniform(5e-3, 40e-3),  # Adjusted TE range
-            "tr": log10uniform(50e-3, 1000e-3),  # Adjusted TR range
-            "fa": uniform(10, 30),  # Adjusted FA range
+            "te": log10uniform(2e-3, 80e-3),
+            "tr": log10uniform(5e-3, 5000e-3),
+            "fa": uniform(5, 50),
         },
         sequence=["mprage", "mp2rage", "gre", "fse", "flair", "spgr"],
-        field_strength=(1.5, 3.0),  # Narrowed to common clinical field strengths
+        field_strength=(0.3, 7),
+        # flair_params={
+        #     "te": log10norm(100e-3, 0.1),  # Increased TE
+        #     "tr": log10uniform(5000e-3, 11000e-3),  # Increased TR range
+        #     "ti": log10uniform(1500e-3, 2800e-3),  # Adjusted TI range
+        # },
+        # fse_params={
+        #     "te": log10uniform(80e-3, 120e-3),  # Adjusted TE range
+        #     "tr": log10uniform(2000e-3, 6000e-3),  # Adjusted TR range
+        # },
+        # mp2rage_params={
+        #     "tr": uniform(5000e-3, 8000e-3),  # Increased TR range
+        #     "ti1": uniform(700e-3, 1000e-3),  # Slightly adjusted TI1 range
+        #     "ti2": uniform(2200e-3, 2800e-3),  # Made TI2 variable
+        #     "tx": log10norm(5.8e-3, 0.2),  # Reduced variation
+        #     "te": log10norm(2.9e-3, 0.2),  # Reduced variation
+        #     "fa": (uniform(4, 8), uniform(4, 8)),  # Slightly adjusted FA ranges
+        #     "n": 160,
+        #     "eff": 0.96,
+        # },
+        # mprage_params={
+        #     "tr": uniform(2000e-3, 2500e-3),  # Narrowed TR range
+        #     "ti": uniform(900e-3, 1100e-3),  # Adjusted TI range
+        #     "tx": uniform(6e-3, 8e-3),  # Narrowed TX range
+        #     "te": uniform(2e-3, 4e-3),
+        #     "fa": uniform(8, 12),  # Slightly increased FA range
+        #     "n": 160,
+        #     "eff": 0.96,
+        # },
+        # mprage_t1_params={
+        #     "tr": uniform(2000e-3, 2500e-3),  # Narrowed TR range
+        #     "ti": uniform(900e-3, 1100e-3),  # Adjusted TI range
+        #     "te": uniform(2e-3, 4e-3),
+        #     "fa": uniform(8, 12),  # Slightly increased FA range
+        #     "n": uniform(160, 200),  # Increased minimum N
+        #     "eff": uniform(0.9, 1.0),  # Increased minimum efficiency
+        # },
+        # spgr_params={
+        #     "te": log10uniform(2e-3, 20e-3),  # Reduced maximum TE
+        #     "tr": log10uniform(20e-3, 100e-3),  # Adjusted TR range
+        #     "fa": uniform(10, 30),  # Adjusted FA range
+        # },
+        # gre_params={
+        #     "te": log10uniform(5e-3, 40e-3),  # Adjusted TE range
+        #     "tr": log10uniform(50e-3, 1000e-3),  # Adjusted TR range
+        #     "fa": uniform(10, 30),  # Adjusted FA range
+        # },
+        # sequence=["mprage", "mp2rage", "gre", "fse", "flair", "spgr"],
+        # field_strength=(1.5, 3.0),  # Narrowed to common clinical field strengths
     ):
         super().__init__(shared=True)
         self.params = {
