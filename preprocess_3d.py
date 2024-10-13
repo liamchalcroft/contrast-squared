@@ -14,8 +14,8 @@ def rescale_mpm(mpm):
     r1 = mpm[1]
     r2s = mpm[2]
     mt = mpm[3]
-    # r1 = r1 * 10
-    # r2s = r2s * 10
+    r1 = r1 * 10
+    r2s = r2s * 10
     return torch.stack([pd, r1, r2s, mt], dim=0)
 
 def get_first_channel(x):
