@@ -149,7 +149,7 @@ class BlochTransform(cc.Transform):
             "fa": uniform(5, 50),
         },
         # sequence=["mprage", "mp2rage", "gre", "fse", "flair", "spgr"],
-        sequence=["mp2rage"],
+        sequence=["gre"],
         field_strength=(0.3, 7),
         # flair_params={
         #     "te": log10norm(100e-3, 0.1),  # Increased TE
