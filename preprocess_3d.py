@@ -14,8 +14,8 @@ def rescale_mpm(mpm):
     r1 = mpm[1]
     r2s = mpm[2]
     mt = mpm[3]
-    r1 = r1 * 10
-    r2s = r2s * 10
+    # r1 = r1 * 10
+    # r2s = r2s * 10
     return torch.stack([pd, r1, r2s, mt], dim=0)
 
 def get_first_channel(x):
@@ -116,14 +116,14 @@ def get_bloch_loader(
        generate_bloch = [
           MONAIBlochTransformD(keys=["image1"], num_ch=1),
           mn.transforms.ScaleIntensityRangePercentilesD(keys=["image1"],
-            lower=5,upper=95,b_min=0,b_max=1,clip=True,channel_wise=True),
+            lower=0.5,upper=99.5,b_min=0,b_max=1,clip=True,channel_wise=True),
           mn.transforms.CopyItemsD(keys=["image1"], names=["image2"])
                         ]
     else:
       generate_bloch = [
           MONAIBlochTransformD(keys=["image1"], num_ch=2),
           mn.transforms.ScaleIntensityRangePercentilesD(keys=["image1"],
-            lower=5,upper=95,b_min=0,b_max=1,clip=True,channel_wise=True),
+            lower=0.5,upper=99.5,b_min=0,b_max=1,clip=True,channel_wise=True),
           mn.transforms.CopyItemsD(keys=["image1"], names=["image2"]),
           mn.transforms.LambdaD(keys=["image1"], func=get_first_channel),
           mn.transforms.LambdaD(keys=["image2"], func=get_second_channel)
