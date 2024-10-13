@@ -260,7 +260,6 @@ class BlochTransform(cc.Transform):
 
     def forward(self, pd, r1, r2s, mt):
         theta_list = [self.get_parameters() for i in range(self.num_ch)]
-        print(f"Theta list: {theta_list}")
         img_list = [self.apply_transform(pd, r1, r2s, mt, theta_list[i]) for i in range(self.num_ch)]
         return torch.cat(img_list, dim=0)
 
@@ -271,8 +270,6 @@ class BlochTransform(cc.Transform):
             else [pd, r1, r2s, mt]
         )
         out_ = torch.nan_to_num(parameters["func"](*in_, **parameters["params"]), nan=0, posinf=0, neginf=0)
-        print(f"Out shape: {out_.shape}")
-        print(f"Out min: {out_.min()}, max: {out_.max()}")
         return out_.volume[0] if parameters["sequence"] == "gre" else out_
 
 
