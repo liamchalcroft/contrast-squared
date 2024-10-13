@@ -207,6 +207,54 @@ class BlochTransform(cc.Transform):
     def __init__(
         self,
         num_ch=1,
+        # flair_params={
+        #     "te": log10norm(20e-3, 0.1),
+        #     "tr": log10uniform(1e-3, 5000e-3),
+        #     "ti": log10uniform(1e-3, 3000e-3),
+        # },
+        # fse_params={
+        #     "te": log10uniform(1e-3, 3000e-3),
+        #     "tr": log10uniform(1e-3, 3000e-3),
+        # },
+        # mp2rage_params={
+        #     "tr": 2300e-3,
+        #     "ti1": uniform(600e-3, 900e-3),
+        #     "ti2": 2200e-3,
+        #     "tx": log10norm(5.8e-3, 0.5),
+        #     "te": log10norm(2.9e-3, 0.5),
+        #     "fa": (uniform(3, 6), uniform(3, 6)),
+        #     "n": 160,
+        #     "eff": 0.96,
+        # },
+        # mprage_params={
+        #     "tr": 2300e-3,
+        #     "ti": uniform(600e-3, 900e-3),
+        #     "tx": uniform(4e-3, 8e-3),
+        #     "te": uniform(2e-3, 4e-3),
+        #     "fa": uniform(5, 12),
+        #     "n": 160,
+        #     "eff": 0.96,
+        # },
+        # mprage_t1_params={
+        #     "tr": uniform(1900e-3, 2500e-3),
+        #     "ti": uniform(600e-3, 1200e-3),
+        #     "te": uniform(2e-3, 4e-3),
+        #     "fa": uniform(5, 12),
+        #     "n": uniform(100, 200),
+        #     "eff": uniform(0.8, 1.0),
+        # },
+        # spgr_params={
+        #     "te": log10uniform(2e-3, 80e-3),
+        #     "tr": log10uniform(5e-3, 800e-3),
+        #     "fa": uniform(5, 50),
+        # },
+        # gre_params={
+        #     "te": log10uniform(2e-3, 80e-3),
+        #     "tr": log10uniform(5e-3, 5000e-3),
+        #     "fa": uniform(5, 50),
+        # },
+        # sequence=["mprage", "mp2rage", "gre", "fse", "flair", "spgr"],
+        # field_strength=(0.3, 7),
         flair_params={
             "te": log10norm(100e-3, 0.1),  # Increased TE
             "tr": log10uniform(5000e-3, 11000e-3),  # Increased TR range
