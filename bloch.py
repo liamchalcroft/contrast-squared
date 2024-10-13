@@ -270,7 +270,7 @@ class BlochTransform(cc.Transform):
             if parameters["sequence"] in ["fse", "flair", "mprage", "mp2rage"]
             else [pd, r1, r2s, mt]
         )
-        out_ = parameters["func"](*in_, **parameters["params"])
+        out_ = torch.nan_to_num(parameters["func"](*in_, **parameters["params"]), nan=0, posinf=0, neginf=0)
         print(f"Out shape: {out_.shape}")
         print(f"Out min: {out_.min()}, max: {out_.max()}")
         return out_.volume[0] if parameters["sequence"] == "gre" else out_
