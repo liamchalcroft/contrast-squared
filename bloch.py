@@ -72,9 +72,11 @@ dict_keys = [
 
 
 def forward_model(mpm, params, num_ch=1):
+    print(f"Params shape: {params.shape}")
     params = torch.chunk(
         params[0].detach().cpu(), num_ch, dim=-1
     )  # assume batch size 1
+    print(f"Params: {params}")
     outputs = []
     for p in params:
         if p.sum() > 0:
