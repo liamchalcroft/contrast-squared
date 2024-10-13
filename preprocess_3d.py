@@ -117,7 +117,8 @@ def get_bloch_loader(
           MONAIBlochTransformD(keys=["image1"], num_ch=1),
           mn.transforms.ScaleIntensityRangePercentilesD(keys=["image1"],
             lower=0.5,upper=95,b_min=0,b_max=1,clip=True,channel_wise=True),
-          mn.transforms.CopyItemsD(keys=["image1"], names=["image2"])
+          mn.transforms.CopyItemsD(keys=["image1"], names=["image2"]),
+          mn.transforms.HistogramNormalizeD(keys=["image1", "image2"], min=0, max=1),
                         ]
     else:
       generate_bloch = [
@@ -127,6 +128,7 @@ def get_bloch_loader(
           mn.transforms.CopyItemsD(keys=["image1"], names=["image2"]),
           mn.transforms.LambdaD(keys=["image1"], func=get_first_channel),
           mn.transforms.LambdaD(keys=["image2"], func=get_second_channel)
+          mn.transforms.HistogramNormalizeD(keys=["image1", "image2"], min=0, max=1),
                         ]
 
     augment_image1 = get_augmentations(["image1"], ptch)
@@ -194,6 +196,7 @@ def get_mprage_loader(
       mn.transforms.ScaleIntensityRangePercentilesD(keys=["image1"],
             lower=0.5,upper=99.5,b_min=0,b_max=1,clip=True,channel_wise=True),
       mn.transforms.CopyItemsD(keys=["image1"], names=["image2"]),
+      mn.transforms.HistogramNormalizeD(keys=["image1", "image2"], min=0, max=1),
     ]
 
     augment_image1 = get_augmentations(["image1"], ptch)
