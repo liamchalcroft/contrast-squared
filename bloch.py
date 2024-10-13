@@ -70,105 +70,6 @@ dict_keys = [
     "fa2",
 ]
 
-
-def forward_model(mpm, params, num_ch=1):
-    print(f"Params shape: {params.shape}")
-    params = torch.chunk(
-        params[0].detach().cpu(), num_ch, dim=-1
-    )  # assume batch size 1
-    print(f"Params: {params}")
-    outputs = []
-    for p in params:
-        if p.sum() > 0:
-            out_dict = {k: v for k, v in zip(dict_keys, p.tolist())}
-            # print(f"out_dict: {out_dict}")
-            out_dict["field"] = out_dict["field"] * 10
-            out_dict["te"] = out_dict["te"] * 1000
-            out_dict["tr"] = out_dict["tr"] * 1000
-            out_dict["ti1"] = out_dict["ti1"] * 1000
-            out_dict["ti2"] = out_dict["ti2"] * 1000
-            out_dict["fa1"] = out_dict["fa1"] * 180
-            out_dict["fa2"] = out_dict["fa2"] * 180
-            # print(f"out_dict: {out_dict}")
-            if out_dict["mprage"] == 1:
-                print(f"Input params: \nTR: {out_dict['tr']}\nTI: {out_dict['ti1']}\nTE: {out_dict['te']}\nFA: {out_dict['fa1']}\nReceive: {out_dict['field']}")
-                out = qmri.generators.mprage(
-                    pd=mpm[0, 0],
-                    r1=mpm[0, 1],
-                    r2s=mpm[0, 2],
-                    receive=torch.Tensor([out_dict["field"]])[None][None],
-                    tr=out_dict["tr"],
-                    ti=out_dict["ti1"],
-                    te=out_dict["te"],
-                    fa=out_dict["fa1"],
-                    device=mpm.device,
-                )
-            elif out_dict["mp2rage"] == 1:
-                out = qmri.generators.mp2rage(
-                    pd=mpm[0, 0],
-                    r1=mpm[0, 1],
-                    r2s=mpm[0, 2],
-                    receive=torch.Tensor([out_dict["field"]])[None][None],
-                    tr=out_dict["tr"],
-                    ti1=out_dict["ti1"],
-                    ti2=out_dict["ti2"],
-                    te=out_dict["te"],
-                    fa=(out_dict["fa1"], out_dict["fa2"]),
-                    device=mpm.device,
-                )
-            elif out_dict["gre"] == 1:
-                out = qmri.gre(
-                    pd=mpm[0, 0],
-                    r1=mpm[0, 1],
-                    r2s=mpm[0, 2],
-                    mt=mpm[0, 3],
-                    receive=torch.Tensor([out_dict["field"]])[None][None],
-                    tr=out_dict["tr"],
-                    te=out_dict["te"],
-                    fa=out_dict["fa1"],
-                    device=mpm.device,
-                ).volume
-            elif out_dict["fse"] == 1:
-                out = qmri.generators.fse(
-                    pd=mpm[0, 0],
-                    r1=mpm[0, 1],
-                    r2=mpm[0, 2],
-                    receive=torch.Tensor([out_dict["field"]])[None][None],
-                    tr=out_dict["tr"],
-                    te=out_dict["te"],
-                    device=mpm.device,
-                )
-            elif out_dict["flair"] == 1:
-                out = qmri.generators.flair(
-                    pd=mpm[0, 0],
-                    r1=mpm[0, 1],
-                    r2=mpm[0, 2],
-                    receive=torch.Tensor([out_dict["field"]])[None][None],
-                    tr=out_dict["tr"],
-                    ti=out_dict["ti1"],
-                    te=out_dict["te"],
-                    device=mpm.device,
-                )
-            elif out_dict["spgr"] == 1:
-                out = qmri.generators.spgr(
-                    pd=mpm[0, 0],
-                    r1=mpm[0, 1],
-                    r2s=mpm[0, 2],
-                    mt=mpm[0, 3],
-                    receive=torch.Tensor([out_dict["field"]])[None][None],
-                    tr=out_dict["tr"],
-                    te=out_dict["te"],
-                    fa=out_dict["fa1"],
-                    device=mpm.device,
-                )
-            if len(out.shape) == len(mpm.shape) + 1:
-                out = out[0]
-            outputs.append(out)
-        else:
-            outputs.append(torch.zeros_like(mpm[0, 0]))
-    return torch.stack(outputs, dim=0)[None]
-
-
 def ensure_list(x):
     if type(x) != list:
         if type(x) == tuple:
@@ -370,6 +271,8 @@ class BlochTransform(cc.Transform):
             else [pd, r1, r2s, mt]
         )
         out_ = parameters["func"](*in_, **parameters["params"])
+        print(f"Out shape: {out_.shape}")
+        print(f"Out min: {out_.min()}, max: {out_.max()}")
         return out_.volume[0] if parameters["sequence"] == "gre" else out_
 
 
