@@ -206,6 +206,8 @@ def run_model(args, device, train_loader, train_transform):
                 embeddings2 = projector(features2)
 
                 ssl_loss = crit(embeddings1, embeddings2)
+                if args.loss == "barlow":
+                    ssl_loss = ssl_loss / 128
 
                 recon_loss = torch.nn.functional.l1_loss(recon1, recon_target1) + torch.nn.functional.l1_loss(recon2, recon_target2)
                 loss = ssl_loss + recon_loss
