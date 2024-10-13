@@ -227,15 +227,6 @@ class BlochTransform(cc.Transform):
             "eff": 0.96,
         },
         mprage_params={
-            "tr": 2300e-3,
-            "ti": uniform(600e-3, 900e-3),
-            "tx": uniform(4e-3, 8e-3),
-            "te": uniform(2e-3, 4e-3),
-            "fa": uniform(5, 12),
-            "n": 160,
-            "eff": 0.96,
-        },
-        mprage_t1_params={
             "tr": uniform(1900e-3, 2500e-3),
             "ti": uniform(600e-3, 1200e-3),
             "te": uniform(2e-3, 4e-3),
