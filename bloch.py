@@ -268,9 +268,9 @@ class BlochTransform(cc.Transform):
             if parameters["sequence"] in ["fse", "flair", "mprage", "mp2rage"]
             else [pd, r1, r2s, mt]
         )
-        out_ = torch.nan_to_num(parameters["func"](*in_, **parameters["params"]), nan=0, posinf=0, neginf=0)
-        return out_.volume[0] if parameters["sequence"] == "gre" else out_
-
+        out_ = parameters["func"](*in_, **parameters["params"])
+        out_vol = out_.volume[0] if parameters["sequence"] == "gre" else out_
+        return torch.nan_to_num(out_vol, nan=0, posinf=0, neginf=0)
 
 class MONAIBlochTransform(Transform):
     def __init__(self, num_ch=1, **kwargs):
