@@ -25,9 +25,17 @@ def plot_scores(model_names, base_dir):
 
     combined_df = pd.concat(all_data, ignore_index=True)
 
+    # Fix site names to look nicer
+    combined_df['Site'] = combined_df['Site'].replace({'guys': 'Guys', 'hh': 'HH', 'iop': 'IOP'})
+    # Fix modality names to look nicer
+    combined_df['Modality'] = combined_df['Modality'].replace({'t1': 'T1w', 't2': 'T2w', 'pd': 'PDw'})
+
+    # Create a new column combining Site and Modality
+    combined_df['Site_Modality'] = combined_df['Site'] + ' - ' + combined_df['Modality']
+
     # 1. Scatter plot of Predicted Age vs True Age
     plt.figure(figsize=(12, 10))
-    sns.scatterplot(data=combined_df, x='True Age', y='Predicted Age', hue='Model', style='Site')
+    sns.scatterplot(data=combined_df, x='True Age', y='Predicted Age', hue='Model', style='Site_Modality')
     plt.title('Predicted Age vs True Age')
     plt.plot([combined_df['True Age'].min(), combined_df['True Age'].max()], 
              [combined_df['True Age'].min(), combined_df['True Age'].max()], 
@@ -35,29 +43,29 @@ def plot_scores(model_names, base_dir):
     plt.savefig(os.path.join(plot_dir, 'predicted_vs_true_age_comparison.png'))
     plt.close()
 
-    # 2. Box plot of Absolute Error by Model and Site
+    # 2. Box plot of Absolute Error by Site_Modality and Model
     plt.figure(figsize=(14, 8))
     combined_df['Absolute Error'] = abs(combined_df['Predicted Age'] - combined_df['True Age'])
-    sns.boxplot(data=combined_df, x='Model', y='Absolute Error', hue='Site')
-    plt.title('Absolute Error by Model and Site')
+    sns.boxplot(data=combined_df, x='Site_Modality', y='Absolute Error', hue='Model')
+    plt.title('Absolute Error by Site-Modality and Model')
     plt.xticks(rotation=45)
     plt.tight_layout()
     plt.savefig(os.path.join(plot_dir, 'absolute_error_boxplot_comparison.png'))
     plt.close()
 
-    # 3. Bar plot of MSE by Model and Site
+    # 3. Bar plot of MSE by Site_Modality and Model
     plt.figure(figsize=(14, 8))
-    sns.barplot(data=combined_df, x='Model', y='MSE', hue='Site')
-    plt.title('Mean Squared Error by Model and Site')
+    sns.barplot(data=combined_df, x='Site_Modality', y='MSE', hue='Model')
+    plt.title('Mean Squared Error by Site-Modality and Model')
     plt.xticks(rotation=45)
     plt.tight_layout()
     plt.savefig(os.path.join(plot_dir, 'mse_barplot_comparison.png'))
     plt.close()
 
-    # 4. Bar plot of MAE by Model and Site
+    # 4. Bar plot of MAE by Site_Modality and Model
     plt.figure(figsize=(14, 8))
-    sns.barplot(data=combined_df, x='Model', y='MAE', hue='Site')
-    plt.title('Mean Absolute Error by Model and Site')
+    sns.barplot(data=combined_df, x='Site_Modality', y='MAE', hue='Model')
+    plt.title('Mean Absolute Error by Site-Modality and Model')
     plt.xticks(rotation=45)
     plt.tight_layout()
     plt.savefig(os.path.join(plot_dir, 'mae_barplot_comparison.png'))
