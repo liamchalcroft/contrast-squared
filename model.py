@@ -117,8 +117,10 @@ class CNNUNet(nn.Module):
         self.down_2 = Down(spatial_dims, fea[1], fea[2], act, norm, bias, dropout)
         self.down_3 = Down(spatial_dims, fea[2], fea[3], act, norm, bias, dropout)
         self.down_4 = Down(spatial_dims, fea[3], fea[4], act, norm, bias, dropout)
+        print(self.down_4)
 
         self.upcat_4 = UpCat(spatial_dims, fea[4], fea[3], fea[3], act, norm, bias, dropout, upsample)
+        print(self.upcat_4)
         self.upcat_3 = UpCat(spatial_dims, fea[3], fea[2], fea[2], act, norm, bias, dropout, upsample)
         self.upcat_2 = UpCat(spatial_dims, fea[2], fea[1], fea[1], act, norm, bias, dropout, upsample)
         self.upcat_1 = UpCat(spatial_dims, fea[1], fea[0], fea[5], act, norm, bias, dropout, upsample, halves=False)
