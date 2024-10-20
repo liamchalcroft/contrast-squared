@@ -130,13 +130,13 @@ def get_loaders(
             mn.transforms.RandGaussianNoiseD(keys="image", prob=0.8),
             mn.transforms.RandSpatialCropD(
                 keys=["image", "seg"],
-                roi_size=(ptch, ptch),
+                roi_size=(ptch, ptch, ptch),
                 random_size=False,
                 allow_missing_keys=True,
             ),
             mn.transforms.ResizeD(
                 keys=["image", "seg"],
-                spatial_size=(ptch, ptch),
+                spatial_size=(ptch, ptch, ptch),
                 allow_missing_keys=True,
             ),
             mn.transforms.ThresholdIntensityD(
