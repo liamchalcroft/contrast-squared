@@ -30,6 +30,7 @@ def get_loaders(
     device="cpu",
     lowres=False,
     ptch=128,
+    pc_data=100,
 ):
 
     train_label_list = list(
@@ -38,6 +39,9 @@ def get_loaders(
     val_label_list = list(
         np.loadtxt("/home/lchalcroft/git/lab-vae/atlas_val.txt", dtype=str)
     )
+
+    if pc_data < 100:
+        train_label_list = train_label_list[:int(len(train_label_list) * pc_data / 100)]
 
     train_dict = [
         {
@@ -59,7 +63,6 @@ def get_loaders(
     ]
 
     print(f"train_dict: {len(train_dict)}, val_dict: {len(val_dict)}")
-    print(f"train_dict[0]: {train_dict[0]}")
 
     train_transform = mn.transforms.Compose(
         transforms=[
@@ -93,14 +96,10 @@ def get_loaders(
                 func=mn.transforms.SignalFillEmpty(),
                 allow_missing_keys=True,
             ),
-            mn.transforms.Rand2DElasticD(
+            mn.transforms.RandAffineD(
                 keys=["image", "seg"],
-                prob=1, spacing=40, magnitude_range=(0, 2),
-                rotate_range=20, shear_range=0.5, translate_range=10, scale_range=0.1,
-                mode=["bilinear", "nearest"], padding_mode="zeros"),
-            mn.transforms.LambdaD(
-                keys=["image", "seg"],
-                func=mn.transforms.SignalFillEmpty(),
+                rotate_range=15, shear_range=0.012, scale_range=0.15,
+                prob=0.8, cache_grid=True,
                 allow_missing_keys=True,
             ),
             mn.transforms.RandBiasFieldD(keys="image", prob=0.8),
@@ -114,6 +113,17 @@ def get_loaders(
                 prob=0.8,
                 allow_missing_keys=True,
             ),
+            mn.transforms.RandAxisFlipd(
+                keys=["image", "seg"],
+                prob=0.8,
+                allow_missing_keys=True,
+            ),
+            mn.transforms.ScaleIntensityRangePercentilesD(
+                keys=["image"],
+                lower=0.5, upper=95, b_min=0, b_max=1,
+                clip=True, channel_wise=True,
+            ),
+            mn.transforms.HistogramNormalizeD(keys="image", min=0, max=1, clip=True, allow_missing_keys=True),
             mn.transforms.NormalizeIntensityD(
                 keys="image", nonzero=False, channel_wise=True
             ),
@@ -149,7 +159,7 @@ def get_loaders(
         shuffle=True,
         sampler=None,
         batch_sampler=None,
-        num_workers=24,
+        num_workers=8,
     )
     val_loader = DataLoader(
         val_data,
@@ -157,7 +167,7 @@ def get_loaders(
         shuffle=False,
         sampler=None,
         batch_sampler=None,
-        num_workers=24,
+        num_workers=8,
     )
 
     return train_loader, val_loader
@@ -232,7 +242,21 @@ def run_model(args, device, train_loader, train_transform):
         wandb.config.update(args)
     wandb.watch(model)
 
-    crit = mn.losses.CEDic
+    crit = mn.losses.DiceCELoss(
+        include_background=False,
+        to_onehot_y=False,
+        sigmoid=False,
+        softmax=True,
+        other_act=None,
+        squared_pred=False,
+        jaccard=False,
+        reduction="mean",
+        smooth_nr=1e-05,
+        smooth_dr=1e-05,
+        batch=True,
+        lambda_dice=1.0,
+        lambda_ce=1.0,
+    )
 
     class WandBID:
         def __init__(self, wandb_id):
@@ -279,6 +303,7 @@ def run_model(args, device, train_loader, train_transform):
         opt = torch.optim.AdamW(params, args.lr, fused=torch.cuda.is_available())
     except:
         opt = torch.optim.AdamW(params, args.lr, fused=False)
+        
     # Try to load most recent weight
     if args.resume or args.resume_best:
         model.load_state_dict(
@@ -394,7 +419,6 @@ def run_model(args, device, train_loader, train_transform):
                       normalize=True,
                       scale_each=True,
                   )
-        print(grid_image1.shape)
         wandb.log(
               {
                   "examples": [
@@ -444,18 +468,6 @@ def set_up():
     parser.add_argument("--val_interval", type=int, default=2, help="Validation interval.")
     parser.add_argument("--batch_size", type=int, default=512, help="Number of subjects to use per batch.")
     parser.add_argument(
-        "--loss",
-        type=str,
-        help="Loss function to use. Options: [simclr]",
-        choices=["simclr", "barlow"],
-    )
-    parser.add_argument(
-        "--data",
-        type=str,
-        help="Data setup to use. Options: [mprage, bloch, bloch-paired]",
-        choices=["mprage", "bloch", "bloch-paired"],
-    )
-    parser.add_argument(
         "--net", 
         type=str, 
         help="Encoder network to use. Options: [cnn, vit]. Defaults to cnn.", 
@@ -469,6 +481,8 @@ def set_up():
     parser.add_argument("--device", type=str, default=None, help="Device to use. If not specified then will check for CUDA.")
     parser.add_argument("--lowres", default=False, action="store_true", help="Train with 2mm resolution images.")
     parser.add_argument("--debug", default=False, action="store_true", help="Save sample images before training.")
+    parser.add_argument("--backbone_weights", type=str, default=None, help="Path to encoder weights to load.")
+    parser.add_argument("--pc_data", default=100, type=float, help="Percentage of data to use for training.")
     args = parser.parse_args()
 
     os.makedirs(os.path.join(args.logdir, args.name), exist_ok=True)
@@ -485,8 +499,7 @@ def set_up():
         print("Memory Usage:")
         print("Allocated:", round(torch.cuda.memory_allocated(0) / 1024**3, 1), "GB")
         print("Cached:   ", round(torch.cuda.memory_reserved(0) / 1024**3, 1), "GB")
-    debug_loader, _ = preprocess_2d.get_mprage_loader(batch_size=1, device=device, lowres=args.lowres)
-    train_loader, train_transform = preprocess_2d.get_mprage_loader(batch_size=args.batch_size, device=device, lowres=args.lowres)
+    train_loader, train_transform = get_loaders(batch_size=args.batch_size, device=device, lowres=args.lowres, ptch=48 if args.lowres else 96)
 
     if args.debug:
         saver1 = mn.transforms.SaveImage(
