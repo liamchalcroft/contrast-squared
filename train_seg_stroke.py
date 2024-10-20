@@ -193,7 +193,7 @@ def run_model(args, device, train_loader, val_loader):
             norm="instance", 
             bias=True, 
             dropout=0.2,
-            upsample="deconv",
+            upsample="interp",
         ).to(device)
     elif args.net == "vit":
         net = model.ViTUNet(
