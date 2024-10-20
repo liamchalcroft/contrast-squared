@@ -97,7 +97,13 @@ def run_model(args, device):
     iop_pd_dict = [{"image": f} for f in iop_pd]
 
     odir = os.path.join(args.logdir, args.name, "ixi-features")
-    os.makedirs(odir, exist_ok=True)
+    os.makedirs(os.path.join(odir, "guys", "t1"), exist_ok=True)
+    os.makedirs(os.path.join(odir, "guys", "t2"), exist_ok=True)
+    os.makedirs(os.path.join(odir, "guys", "pd"), exist_ok=True)
+    os.makedirs(os.path.join(odir, "hh", "t1"), exist_ok=True)
+    os.makedirs(os.path.join(odir, "hh", "t2"), exist_ok=True)
+    os.makedirs(os.path.join(odir, "hh", "pd"), exist_ok=True)
+    os.makedirs(os.path.join(odir, "iop", "t1"), exist_ok=True)
 
     # Loop over all sites
     for pt_dict in tqdm(guys_t1_dict, desc="Guys T1", total=len(guys_t1_dict)):
@@ -107,7 +113,7 @@ def run_model(args, device):
             print(features.shape)
             features = features.reshape(features.shape[1], -1).mean(-1).cpu().numpy()
             print(features.shape)
-            np.save(os.path.join(odir, "guys", "t1", os.path.basename(pt_dict["image"])), features)
+            np.save(os.path.join(odir, "guys", "t1", os.path.basename(pt_dict["image"].split("-")[0])), features)
     for pt_dict in tqdm(guys_t2_dict, desc="Guys T2", total=len(guys_t2_dict)):
         data_dict = data_transforms(pt_dict)
         with torch.no_grad():
@@ -115,7 +121,7 @@ def run_model(args, device):
             print(features.shape)
             features = features.reshape(features.shape[1], -1).mean(-1).cpu().numpy()
             print(features.shape)
-            np.save(os.path.join(odir, "guys", "t2", os.path.basename(pt_dict["image"])), features)
+            np.save(os.path.join(odir, "guys", "t2", os.path.basename(pt_dict["image"].split("-")[0])), features)
     for pt_dict in tqdm(guys_pd_dict, desc="Guys PD", total=len(guys_pd_dict)):
         data_dict = data_transforms(pt_dict)
         with torch.no_grad():
@@ -123,7 +129,7 @@ def run_model(args, device):
             print(features.shape)
             features = features.reshape(features.shape[1], -1).mean(-1).cpu().numpy()
             print(features.shape)
-            np.save(os.path.join(odir, "guys", "pd", os.path.basename(pt_dict["image"])), features)
+            np.save(os.path.join(odir, "guys", "pd", os.path.basename(pt_dict["image"].split("-")[0])), features)
     for pt_dict in tqdm(hh_t1_dict, desc="HH T1", total=len(hh_t1_dict)):
         data_dict = data_transforms(pt_dict)
         with torch.no_grad():
@@ -131,7 +137,7 @@ def run_model(args, device):
             print(features.shape)
             features = features.reshape(features.shape[1], -1).mean(-1).cpu().numpy()
             print(features.shape)
-            np.save(os.path.join(odir, "hh", "t1", os.path.basename(pt_dict["image"])), features)
+            np.save(os.path.join(odir, "hh", "t1", os.path.basename(pt_dict["image"].split("-")[0])), features)
     for pt_dict in tqdm(hh_t2_dict, desc="HH T2", total=len(hh_t2_dict)):
         data_dict = data_transforms(pt_dict)
         with torch.no_grad():
@@ -139,7 +145,7 @@ def run_model(args, device):
             print(features.shape)
             features = features.reshape(features.shape[1], -1).mean(-1).cpu().numpy()
             print(features.shape)
-            np.save(os.path.join(odir, "hh", "t2", os.path.basename(pt_dict["image"])), features)
+            np.save(os.path.join(odir, "hh", "t2", os.path.basename(pt_dict["image"].split("-")[0])), features)
     for pt_dict in tqdm(hh_pd_dict, desc="HH PD", total=len(hh_pd_dict)):
         data_dict = data_transforms(pt_dict)
         with torch.no_grad():
@@ -147,7 +153,7 @@ def run_model(args, device):
             print(features.shape)
             features = features.reshape(features.shape[1], -1).mean(-1).cpu().numpy()
             print(features.shape)
-            np.save(os.path.join(odir, "hh", "pd", os.path.basename(pt_dict["image"])), features)
+            np.save(os.path.join(odir, "hh", "pd", os.path.basename(pt_dict["image"].split("-")[0])), features)
     for pt_dict in tqdm(iop_t1_dict, desc="IOP T1", total=len(iop_t1_dict)):
         data_dict = data_transforms(pt_dict)
         with torch.no_grad():
@@ -155,7 +161,7 @@ def run_model(args, device):
             print(features.shape)
             features = features.reshape(features.shape[1], -1).mean(-1).cpu().numpy()
             print(features.shape)
-            np.save(os.path.join(odir, "iop", "t1", os.path.basename(pt_dict["image"])), features)
+            np.save(os.path.join(odir, "iop", "t1", os.path.basename(pt_dict["image"].split("-")[0])), features)
     for pt_dict in tqdm(iop_t2_dict, desc="IOP T2", total=len(iop_t2_dict)):
         data_dict = data_transforms(pt_dict)
         with torch.no_grad():
@@ -163,7 +169,7 @@ def run_model(args, device):
             print(features.shape)
             features = features.reshape(features.shape[1], -1).mean(-1).cpu().numpy()
             print(features.shape)
-            np.save(os.path.join(odir, "iop", "t2", os.path.basename(pt_dict["image"])), features)
+            np.save(os.path.join(odir, "iop", "t2", os.path.basename(pt_dict["image"].split("-")[0])), features)
     for pt_dict in tqdm(iop_pd_dict, desc="IOP PD", total=len(iop_pd_dict)):
         data_dict = data_transforms(pt_dict)
         with torch.no_grad():
@@ -171,7 +177,7 @@ def run_model(args, device):
             print(features.shape)
             features = features.reshape(features.shape[1], -1).mean(-1).cpu().numpy()
             print(features.shape)
-            np.save(os.path.join(odir, "iop", "pd", os.path.basename(pt_dict["image"])), features)
+            np.save(os.path.join(odir, "iop", "pd", os.path.basename(pt_dict["image"].split("-")[0])), features)
 
 def set_up():
     parser = argparse.ArgumentParser(argparse.ArgumentDefaultsHelpFormatter)
