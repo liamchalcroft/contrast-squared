@@ -13,6 +13,7 @@ np.random.seed(42)
 
 # Load IXI spreadsheet
 ixi_data = pd.read_excel('/home/lchalcroft/Data/IXI/IXI.xls')
+print(ixi_data.head())
 
 # Prepare data
 class IXIDataset(Dataset):
