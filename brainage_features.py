@@ -209,7 +209,7 @@ def run_model(args, device):
             allow_missing_keys=True,
         ),
         mn.transforms.ToTensorD(
-            dtype=torch.float32, keys="image", device=device
+            dtype=torch.float32, keys="image"
         ),
     ])
     dataset = mn.data.Dataset(guys_t1_dict, transform=data_transforms)
