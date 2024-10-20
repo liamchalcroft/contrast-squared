@@ -417,34 +417,33 @@ def run_model(args, device, train_loader, val_loader):
                     if i < 16:
                         img_list.append(img[0,...,img.shape[-1]//2])
                         seg_list.append(seg[0,...,seg.shape[-1]//2])
-                        
-
-            grid_image1 = make_grid(
-                        img_list,
-                        nrow=int(4),
-                        padding=5,
-                        normalize=True,
-                        scale_each=True,
-                    )
-            grid_image2 = make_grid(
-                        seg_list,
-                        nrow=int(4),
-                        padding=5,
-                        normalize=True,
-                        scale_each=True,
-                    )
-            wandb.log(
-                {
-                    "examples": [
-                        wandb.Image(
-                            grid_image1[0].cpu().numpy(), caption="Images"
-                        ),
-                        wandb.Image(
-                            grid_image2[0].cpu().numpy(), caption="Segmentations"
-                        ),
-                    ]
-                }
-            )
+                    elif i == 16:
+                        grid_image1 = make_grid(
+                                    img_list,
+                                    nrow=int(4),
+                                    padding=5,
+                                    normalize=True,
+                                    scale_each=True,
+                                )
+                        grid_image2 = make_grid(
+                                    seg_list,
+                                    nrow=int(4),
+                                    padding=5,
+                                    normalize=True,
+                                    scale_each=True,
+                                )
+                        wandb.log(
+                            {
+                                "examples": [
+                                    wandb.Image(
+                                        grid_image1[0].cpu().numpy(), caption="Images"
+                                    ),
+                                    wandb.Image(
+                                        grid_image2[1].cpu().numpy(), caption="Segmentations"
+                                    ),
+                                ]
+                            }
+                        )
             
             val_loss /= len(val_loader)
             val_dice /= len(val_loader)
