@@ -81,24 +81,24 @@ def plot_scores(model_names, base_dir):
     plt.savefig(os.path.join(plot_dir, 'age_distribution.png'))
     plt.close()
 
-    # 6. Radar plot of MAE by Site_Modality and Model
+    # 6. Radar plot of MAE by Site and Model
     plt.figure(figsize=(12, 10))
     
     # Prepare data for radar plot
-    site_modalities = combined_df['Site_Modality'].unique()
-    angles = np.linspace(0, 2*np.pi, len(site_modalities), endpoint=False)
+    sites = combined_df['Site'].unique()
+    angles = np.linspace(0, 2*np.pi, len(sites), endpoint=False)
     angles = np.concatenate((angles, [angles[0]]))  # complete the circle
     
     for model in model_names:
-        model_data = combined_df[combined_df['Model'] == model].groupby('Site_Modality')['MAE'].mean()
-        values = [model_data[sm] for sm in site_modalities]
+        model_data = combined_df[combined_df['Model'] == model].groupby('Site')['MAE'].mean()
+        values = [model_data[sm] for sm in sites]
         values = np.concatenate((values, [values[0]]))  # complete the circle
         
         plt.polar(angles, values, '-', linewidth=2, label=model)
         plt.fill(angles, values, alpha=0.25)
     
-    plt.xticks(angles[:-1], site_modalities, size=8)
-    plt.title('Mean Absolute Error by Site-Modality and Model')
+    plt.xticks(angles[:-1], sites, size=8)
+    plt.title('Mean Absolute Error by Site and Model')
     plt.legend(loc='upper right', bbox_to_anchor=(1.3, 1.0))
     plt.tight_layout()
     plt.savefig(os.path.join(plot_dir, 'mae_radar_comparison.png'))
