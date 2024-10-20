@@ -154,7 +154,7 @@ def run_model(args):
     plt.close()
 
     # Test the model
-    model.load_state_dict(torch.load(os.path.join(model_dir, 'best_model.pt')))
+    # model.load_state_dict(torch.load(os.path.join(model_dir, 'best_model.pt')))
     model.eval()
 
     # Test on multiple modalities and sites
