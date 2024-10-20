@@ -100,7 +100,7 @@ def run_model(args):
             print(ages)
             optimizer.zero_grad()
             outputs = model(features)
-            loss = criterion(outputs, ages)
+            loss = criterion(outputs, ages/100)
             loss.backward()
             optimizer.step()
             train_loss += loss.item()
