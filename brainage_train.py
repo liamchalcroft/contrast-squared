@@ -180,9 +180,9 @@ def run_model(args):
     train_loader, val_loader = get_loaders(args, train_ids, val_ids)
 
     # Initialize model, loss function, and optimizer
-    model = BrainAgeRegressor(769) # 768 features + 1 sex
+    net = BrainAgeRegressor(769) # 768 features + 1 sex
     criterion = nn.MSELoss(reduction='mean')
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+    optimizer = torch.optim.Adam(net.parameters(), lr=0.001)
 
     # Training loop
     num_epochs = 100
@@ -203,7 +203,7 @@ def run_model(args):
         return age, sex
 
     for epoch in range(num_epochs):
-        model.train()
+        net.train()
         train_loss = 0.0
         for batch in tqdm(train_loader, desc=f"Epoch {epoch+1}/{num_epochs}"):
             age, sex = zip(*[get_metadata(ixi_id, ixi_data) for ixi_id in batch["IXI_ID"]])
@@ -213,14 +213,14 @@ def run_model(args):
             features = encoder(image).view(features.shape[0], features.shape[1], -1).mean(-1)
             features = torch.cat((features, sex), dim=1)
             optimizer.zero_grad()
-            outputs = model(features)
+            outputs = net(features)
             loss = criterion(outputs, age/100)
             loss.backward()
             optimizer.step()
             train_loss += loss.item()
         
         # Validation
-        model.eval()
+        net.eval()
         val_loss = 0.0
         with torch.no_grad():
             for batch in tqdm(val_loader, desc="Validation"):
@@ -230,7 +230,7 @@ def run_model(args):
                 image = batch["image"].to(args.device)
                 features = encoder(image).view(features.shape[0], features.shape[1], -1).mean(-1)
                 features = torch.cat((features, sex), dim=1)
-                outputs = model(features)
+                outputs = net(features)
                 loss = criterion(outputs, age/100)
                 val_loss += loss.item()
         
@@ -245,11 +245,11 @@ def run_model(args):
         print(f"Epoch {epoch+1}/{num_epochs}, Train Loss: {avg_train_loss:.4f}, Val Loss: {avg_val_loss:.4f}")
         
         # Save latest model
-        torch.save(model.state_dict(), os.path.join(model_dir, 'latest_model.pt'))
+        torch.save(net.state_dict(), os.path.join(model_dir, 'latest_model.pt'))
         # Save best model
         if avg_val_loss < best_val_loss:
             best_val_loss = avg_val_loss
-            torch.save(model.state_dict(), os.path.join(model_dir, 'best_model.pt'))
+            torch.save(net.state_dict(), os.path.join(model_dir, 'best_model.pt'))
 
         # Plot training curve
         plt.figure(figsize=(10, 6))
@@ -265,8 +265,8 @@ def run_model(args):
         plt.close()
 
         # Test the model
-        model.load_state_dict(torch.load(os.path.join(model_dir, 'latest_model.pt')))
-        model.eval()
+        net.load_state_dict(torch.load(os.path.join(model_dir, 'latest_model.pt')))
+        net.eval()
 
 def set_up():
     parser = argparse.ArgumentParser(description='Train a brain age regression model')
