@@ -415,8 +415,8 @@ def run_model(args, device, train_loader, val_loader):
                     val_dice += compute_dice(logits.softmax(dim=1), seg).item()
 
                     if i < 16:
-                        img_list.append(img[0])
-                        seg_list.append(seg[0])
+                        img_list.append(img[0,...,img.shape[-1]//2])
+                        seg_list.append(seg[0,...,seg.shape[-1]//2])
                         
 
             grid_image1 = make_grid(
