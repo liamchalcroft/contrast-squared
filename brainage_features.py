@@ -206,8 +206,8 @@ def set_up():
 
 
 def main():
-    args, device, train_loader, train_transform = set_up()
-    run_model(args, device, train_loader, train_transform)
+    args, device = set_up()
+    run_model(args, device)
 
 
 if __name__ == "__main__":
