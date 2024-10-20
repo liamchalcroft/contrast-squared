@@ -32,7 +32,7 @@ class IXIDataset(Dataset):
         
         subject_data = self.ixi_data[self.ixi_data['IXI_ID'] == ixi_id].iloc[0]
         age = subject_data['AGE']
-        sex = subject_data['SEX']
+        sex = subject_data['SEX_ID (1=m, 2=f)']
         
         # Append sex to features
         features = np.append(features, sex)
