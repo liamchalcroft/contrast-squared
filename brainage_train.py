@@ -9,6 +9,7 @@ import argparse
 import matplotlib.pyplot as plt
 import csv
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
+import glob
 
 # Set random seed for reproducibility
 torch.manual_seed(42)
@@ -26,8 +27,10 @@ class IXIDataset(Dataset):
 
     def __getitem__(self, idx):
         ixi_id = self.ids[idx]
-        file_name = f"IXI{ixi_id:03d}.npy"
-        features = np.load(os.path.join(self.features_dir, file_name))
+        file_name = f"IXI{ixi_id:03d}_*.npy"
+        features_path = glob.glob(os.path.join(self.features_dir, file_name))
+        # Randomly select one of the features
+        features = np.load(np.random.choice(features_path))
         
         subject_data = self.ixi_data[self.ixi_data['IXI_ID'] == ixi_id].iloc[0]
         age = subject_data['AGE']
@@ -78,14 +81,12 @@ def run_model(args):
     print(f"Train size: {train_size}, Val size: {val_size}, Test size: {len(test_ids)}")
 
     # Create datasets
-    train_dataset = IXIDataset(features_dir, ixi_data, train_ids)
-    val_dataset = IXIDataset(features_dir, ixi_data, val_ids)
-    test_dataset = IXIDataset(features_dir, ixi_data, test_ids)
+    train_dataset = IXIDataset(os.path.join(args.logdir, args.name, "ixi-features/train/guys/t1"), ixi_data, train_ids)
+    val_dataset = IXIDataset(os.path.join(args.logdir, args.name, "ixi-features/train/guys/t1"), ixi_data, val_ids)
 
     # Create dataloaders
     train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=args.batch_size)
-    test_loader = DataLoader(test_dataset, batch_size=args.batch_size)
 
     # Initialize model, loss function, and optimizer
     input_size = train_dataset[0][0].shape[0]  # Features + sex
@@ -142,22 +143,22 @@ def run_model(args):
             best_val_loss = avg_val_loss
             torch.save(model.state_dict(), os.path.join(model_dir, 'best_model.pt'))
 
-    # Plot training curve
-    plt.figure(figsize=(10, 6))
-    plt.plot(range(1, num_epochs + 1), train_losses, label='Train Loss')
-    plt.plot(range(1, num_epochs + 1), val_losses, label='Validation Loss')
-    plt.yscale('log')
-    plt.xlabel('Epochs')
-    plt.ylabel('Loss')
-    plt.title('Training and Validation Loss')
-    plt.legend()
-    plt.grid(True)
-    plt.savefig(os.path.join(model_dir, 'training_curve.png'))
-    plt.close()
+        # Plot training curve
+        plt.figure(figsize=(10, 6))
+        plt.plot(range(1, num_epochs + 1), train_losses, label='Train Loss')
+        plt.plot(range(1, num_epochs + 1), val_losses, label='Validation Loss')
+        plt.yscale('log')
+        plt.xlabel('Epochs')
+        plt.ylabel('Loss')
+        plt.title('Training and Validation Loss')
+        plt.legend()
+        plt.grid(True)
+        plt.savefig(os.path.join(model_dir, 'training_curve.png'))
+        plt.close()
 
-    # Test the model
-    model.load_state_dict(torch.load(os.path.join(model_dir, 'latest_model.pt')))
-    model.eval()
+        # Test the model
+        model.load_state_dict(torch.load(os.path.join(model_dir, 'latest_model.pt')))
+        model.eval()
 
     # Test on multiple modalities and sites
     def test_modality(features_dir, ixi_data, model, criterion, exclude_ids):
