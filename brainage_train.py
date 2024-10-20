@@ -97,12 +97,12 @@ def get_loaders(args, train_ids, val_ids):
     )
 
     id = train_ids[0]
-    print(f"/home/lchalcroft/Data/IXI/guys/t1/{id:03d}*T1.nii.gz")
+    print(f"/home/lchalcroft/Data/IXI/guys/t1/IXI{id:03d}*T1.nii.gz")
     train_data = [
-        {"image": glob.glob(f"/home/lchalcroft/Data/IXI/guys/t1/{id:03d}*T1.nii.gz")[0], "IXI_ID": id} for id in train_ids
+        {"image": glob.glob(f"/home/lchalcroft/Data/IXI/guys/t1/IXI{id:03d}*T1.nii.gz")[0], "IXI_ID": id} for id in train_ids
     ]
     val_data = [
-        {"image": glob.glob(f"/home/lchalcroft/Data/IXI/guys/t1/{id:03d}*T1.nii.gz")[0], "IXI_ID": id} for id in val_ids
+        {"image": glob.glob(f"/home/lchalcroft/Data/IXI/guys/t1/IXI{id:03d}*T1.nii.gz")[0], "IXI_ID": id} for id in val_ids
     ]
 
     train_dataset = mn.data.Dataset(data=train_data, transform=train_transform)
