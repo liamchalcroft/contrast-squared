@@ -96,6 +96,8 @@ def get_loaders(args, train_ids, val_ids):
         ]
     )
 
+    id = train_ids[0]
+    print(f"/home/lchalcroft/Data/IXI/guys/t1/{id:03d}*T1.nii.gz")
     train_data = [
         {"image": glob.glob(f"/home/lchalcroft/Data/IXI/guys/t1/{id:03d}*T1.nii.gz")[0], "IXI_ID": id} for id in train_ids
     ]
