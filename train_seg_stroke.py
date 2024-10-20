@@ -288,10 +288,12 @@ def run_model(args, device, train_loader, val_loader):
         print(f"\nLoading encoder weights from {args.backbone_weights}")
         for name, param in net.named_parameters():
             if name in checkpoint:
+                print(f"Layer {name} found in checkpoint")
                 param.data = checkpoint["encoder"][name]
                 param.requires_grad = False
                 cnt_frozen += 1
             else:
+                print(f"Layer {name} not found in checkpoint")
                 param.requires_grad = True
                 cnt_trainable += 1
         print(f"Frozen layers: {cnt_frozen}, trainable layers: {cnt_trainable}")
