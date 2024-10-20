@@ -188,7 +188,7 @@ def run_model(args, device, train_loader, val_loader):
             spatial_dims=3, 
             in_channels=1,
             out_channels=2,
-            features=(32, 64, 128, 256, 512, 768),
+            features=(64, 128, 256, 512, 768, 32),
             act="GELU", 
             norm="instance", 
             bias=True, 
