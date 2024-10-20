@@ -412,11 +412,12 @@ def run_model(args, device, train_loader, val_loader):
                     logits = net(img)
                     loss = crit(logits, seg)
                     val_loss += loss.item()
-                    val_dice += compute_dice(logits.softmax(dim=1), seg).item()
+                    probs = logits.softmax(dim=1)
+                    val_dice += compute_dice(probs, seg).item()
 
                     if i < 16:
                         img_list.append(img[0,...,img.shape[-1]//2])
-                        seg_list.append(seg[0,...,seg.shape[-1]//2])
+                        seg_list.append(probs[0,...,seg.shape[-1]//2])
                     elif i == 16:
                         grid_image1 = make_grid(
                                     img_list,
