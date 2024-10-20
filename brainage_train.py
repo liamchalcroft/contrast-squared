@@ -28,6 +28,7 @@ class IXIDataset(Dataset):
     def __getitem__(self, idx):
         ixi_id = self.ids[idx]
         file_name = f"IXI{ixi_id:03d}_*.npy"
+        print(os.path.join(self.features_dir, file_name))
         features_path = glob.glob(os.path.join(self.features_dir, file_name))
         # Randomly select one of the features
         features = np.load(np.random.choice(features_path))
