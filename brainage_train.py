@@ -57,11 +57,14 @@ def run_model(args):
 
     # Ensure all IDs in all_ids are present in ixi_data
     valid_ids = [id for id in all_ids if id in ixi_data['IXI_ID'].values]
+    # Remove duplicate IDs, keeping only the first occurrence
+    ixi_data = ixi_data.drop_duplicates(subset=['IXI_ID'], keep='first')
     for id in valid_ids:
         print(id)
         print(ixi_data[ixi_data['IXI_ID'] == id]['AGE'])
         print(ixi_data[ixi_data['IXI_ID'] == id]['AGE'].item())
-    valid_ids = [id for id in valid_ids if not pd.isna(ixi_data[ixi_data['IXI_ID'] == id]['AGE'].item())]
+    # Filter valid IDs
+    valid_ids = [id for id in valid_ids if not pd.isna(ixi_data[ixi_data['IXI_ID'] == id]['AGE'].iloc[0])]
 
     # Sort and split data
     valid_ids.sort()
