@@ -145,8 +145,8 @@ def run_model(args):
 
         # Plot training curve
         plt.figure(figsize=(10, 6))
-        plt.plot(range(1, num_epochs + 1), train_losses, label='Train Loss')
-        plt.plot(range(1, num_epochs + 1), val_losses, label='Validation Loss')
+        plt.plot(range(1, len(train_losses)), train_losses, label='Train Loss')
+        plt.plot(range(1, len(val_losses)), val_losses, label='Validation Loss')
         plt.yscale('log')
         plt.xlabel('Epochs')
         plt.ylabel('Loss')
