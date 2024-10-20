@@ -185,7 +185,7 @@ def run_model(args, device, train_loader, val_loader):
     
     if args.net == "cnn":
         net = model.CNNUNet(
-            spatial_dims=2, 
+            spatial_dims=3, 
             in_channels=1,
             out_channels=2,
             features=(32, 64, 128, 256, 512, 768),
@@ -197,7 +197,7 @@ def run_model(args, device, train_loader, val_loader):
         ).to(device)
     elif args.net == "vit":
         net = model.ViTUNet(
-            spatial_dims=2,
+            spatial_dims=3,
             in_channels=1,
             out_channels=2,
             img_size=(96 if args.lowres else 192),
