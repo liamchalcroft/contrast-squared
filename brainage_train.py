@@ -96,8 +96,6 @@ def run_model(args):
         model.train()
         train_loss = 0.0
         for features, ages in tqdm(train_loader, desc=f"Epoch {epoch+1}/{num_epochs}"):
-            print(features)
-            print(ages)
             optimizer.zero_grad()
             outputs = model(features)
             loss = criterion(outputs, ages/100)
