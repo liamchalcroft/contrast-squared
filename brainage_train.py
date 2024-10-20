@@ -11,10 +11,6 @@ import argparse
 torch.manual_seed(42)
 np.random.seed(42)
 
-# Load IXI spreadsheet
-ixi_data = pd.read_excel('/home/lchalcroft/Data/IXI/IXI.xls')
-print(ixi_data.head())
-
 # Prepare data
 class IXIDataset(Dataset):
     def __init__(self, features_dir, ixi_data, ids):
@@ -50,6 +46,10 @@ class BrainAgeRegressor(nn.Module):
         return self.linear(x)
 
 def run_model(args):
+    # Load IXI spreadsheet
+    ixi_data = pd.read_excel('/home/lchalcroft/Data/IXI/IXI.xls')
+    print(ixi_data.head())
+
     # Load and prepare data
     features_dir = os.path.join(args.logdir, args.name, "ixi-features/guys/t1")
     all_files = [f for f in os.listdir(features_dir) if f.endswith('.npy')]
