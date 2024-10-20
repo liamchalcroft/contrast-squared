@@ -181,7 +181,7 @@ def compute_dice(y_pred, y, eps=1e-8):
     denominator = (y_pred * y_pred).sum(-1) + (y * y).sum(-1)
     return 2 * (intersect / denominator.clamp(min=eps))
 
-def run_model(args, device, train_loader, train_transform):
+def run_model(args, device, train_loader, val_loader):
     
     if args.net == "cnn":
         model = model.CNNUNet(
@@ -399,53 +399,72 @@ def run_model(args, device, train_loader, train_transform):
         wandb.log({"train/lr": opt.param_groups[0]["lr"]})
         lr_scheduler.step()
 
-        # Upload some sample pairs to wandb
-        img_list = []
-        seg_list = []
-        for i in range(16):
-            img_list.append(img[i])
-            seg_list.append(seg[i])
-        grid_image1 = make_grid(
-                      img_list,
-                      nrow=int(4),
-                      padding=5,
-                      normalize=True,
-                      scale_each=True,
-                  )
-        grid_image2 = make_grid(
-                      seg_list,
-                      nrow=int(4),
-                      padding=5,
-                      normalize=True,
-                      scale_each=True,
-                  )
-        wandb.log(
-              {
-                  "examples": [
-                      wandb.Image(
-                          grid_image1[0].cpu().numpy(), caption="Images"
-                      ),
-                      wandb.Image(
-                          grid_image2[0].cpu().numpy(), caption="Segmentations"
-                      ),
-                  ]
-              }
-          )
+        if (epoch + 1) % args.val_interval == 0:
+            img_list = []
+            seg_list = []
+            model.eval()
+            with torch.no_grad():
+                val_loss = 0
+                val_dice = 0
+                for i, batch in enumerate(val_loader):
+                    img = batch["image"].to(device)
+                    seg = batch["seg"].to(device)
+                    logits = model(img)
+                    loss = crit(logits, seg)
+                    val_loss += loss.item()
+                    val_dice += compute_dice(logits.softmax(dim=1), seg).item()
 
+                    if i < 16:
+                        img_list.append(img[0])
+                        seg_list.append(seg[0])
+                        
 
-        if epoch_loss < metric_best:
-            metric_best = epoch_loss
-            torch.save(
+            grid_image1 = make_grid(
+                        img_list,
+                        nrow=int(4),
+                        padding=5,
+                        normalize=True,
+                        scale_each=True,
+                    )
+            grid_image2 = make_grid(
+                        seg_list,
+                        nrow=int(4),
+                        padding=5,
+                        normalize=True,
+                        scale_each=True,
+                    )
+            wandb.log(
                 {
-                    "model": model.state_dict(),
-                    "opt": opt.state_dict(),
-                    "lr": lr_scheduler.state_dict(),
-                    "wandb": WandBID(wandb.run.id).state_dict(),
-                    "epoch": Epoch(epoch).state_dict(),
-                    "metric": Metric(metric_best).state_dict(),
-                },
-                os.path.join(args.logdir, args.name, "checkpoint_best.pt"),
+                    "examples": [
+                        wandb.Image(
+                            grid_image1[0].cpu().numpy(), caption="Images"
+                        ),
+                        wandb.Image(
+                            grid_image2[0].cpu().numpy(), caption="Segmentations"
+                        ),
+                    ]
+                }
             )
+            
+            val_loss /= len(val_loader)
+            val_dice /= len(val_loader)
+
+            wandb.log({"val/loss": val_loss, "val/dice": val_dice})
+
+
+            if val_dice > metric_best:
+                metric_best = val_dice
+                torch.save(
+                    {
+                        "model": model.state_dict(),
+                        "opt": opt.state_dict(),
+                        "lr": lr_scheduler.state_dict(),
+                        "wandb": WandBID(wandb.run.id).state_dict(),
+                        "epoch": Epoch(epoch).state_dict(),
+                        "metric": Metric(metric_best).state_dict(),
+                    },
+                    os.path.join(args.logdir, args.name, "checkpoint_best.pt"),
+                )
         torch.save(
             {
                 "model": model.state_dict(),
@@ -499,7 +518,7 @@ def set_up():
         print("Memory Usage:")
         print("Allocated:", round(torch.cuda.memory_allocated(0) / 1024**3, 1), "GB")
         print("Cached:   ", round(torch.cuda.memory_reserved(0) / 1024**3, 1), "GB")
-    train_loader, train_transform = get_loaders(batch_size=args.batch_size, device=device, lowres=args.lowres, ptch=48 if args.lowres else 96)
+    train_loader, val_loader = get_loaders(batch_size=args.batch_size, device=device, lowres=args.lowres, ptch=48 if args.lowres else 96)
 
     if args.debug:
         saver1 = mn.transforms.SaveImage(
@@ -514,7 +533,7 @@ def set_up():
             separate_folder=False,
             print_log=False,
         )
-        for i, batch in enumerate(debug_loader):
+        for i, batch in enumerate(train_loader):
             if i > 5:
                 break
             else:
@@ -537,12 +556,12 @@ def set_up():
                     torch.Tensor(batch["image2"][0].cpu().float())
                 )
 
-    return args, device, train_loader, train_transform
+    return args, device, train_loader, val_loader
 
 
 def main():
-    args, device, train_loader, train_transform = set_up()
-    run_model(args, device, train_loader, train_transform)
+    args, device, train_loader, val_loader = set_up()
+    run_model(args, device, train_loader, val_loader)
 
 
 if __name__ == "__main__":
