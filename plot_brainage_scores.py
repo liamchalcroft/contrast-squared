@@ -99,9 +99,23 @@ def plot_scores(model_names, base_dir):
         ax.plot(angles, values, '-', linewidth=2, label=model)
         ax.fill(angles, values, alpha=0.25)
     
+    # Set the labels and their positions
     ax.set_xticks(angles[:-1])
-    ax.set_xticklabels(sites, size=8)
-    ax.set_title('Mean Absolute Error by Site and Model')
+    ax.set_xticklabels(sites)
+    
+    # Move the labels outward
+    ax.xaxis.set_tick_params(pad=10)
+    
+    # Remove the radial labels (y-axis labels)
+    ax.set_yticklabels([])
+    
+    # Add subtle gridlines
+    ax.grid(True, linestyle='--', alpha=0.7)
+    
+    # Make the plot square
+    ax.set_aspect('equal', 'box')
+    
+    ax.set_title('Mean Absolute Error by Site and Model', y=1.08)
     
     # Adjust the subplot to make room for the legend
     plt.subplots_adjust(bottom=0.2)
