@@ -88,6 +88,9 @@ def run_model(args):
     num_epochs = 100
     best_val_loss = float('inf')
 
+    # Create dir for model
+    os.makedirs(os.path.join(args.logdir, args.name, 'ixi-classifier'), exist_ok=True)
+
     for epoch in range(num_epochs):
         model.train()
         train_loss = 0.0
