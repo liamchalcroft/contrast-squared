@@ -50,7 +50,7 @@ def plot_scores(model_names, base_dir):
     plt.figure(figsize=(14, 8))
     combined_df['Absolute Error'] = abs(combined_df['Predicted Age'] - combined_df['True Age'])
     sns.boxplot(data=combined_df, x='Site', y='Absolute Error', hue='Model')
-    plt.title('Absolute Error by Site-Modality and Model')
+    plt.title('Absolute Error by Site and Model')
     plt.xticks(rotation=45)
     plt.tight_layout()
     plt.savefig(os.path.join(plot_dir, 'absolute_error_boxplot_comparison.png'))
@@ -59,7 +59,7 @@ def plot_scores(model_names, base_dir):
     # 3. Bar plot of MSE by Site and Model
     plt.figure(figsize=(14, 8))
     sns.barplot(data=combined_df, x='Site', y='MSE', hue='Model')
-    plt.title('Mean Squared Error by Site-Modality and Model')
+    plt.title('Mean Squared Error by Site and Model')
     plt.xticks(rotation=45)
     plt.tight_layout()
     plt.savefig(os.path.join(plot_dir, 'mse_barplot_comparison.png'))
@@ -68,7 +68,7 @@ def plot_scores(model_names, base_dir):
     # 4. Bar plot of MAE by Site and Model
     plt.figure(figsize=(14, 8))
     sns.barplot(data=combined_df, x='Site', y='MAE', hue='Model')
-    plt.title('Mean Absolute Error by Site-Modality and Model')
+    plt.title('Mean Absolute Error by Site and Model')
     plt.xticks(rotation=45)
     plt.tight_layout()
     plt.savefig(os.path.join(plot_dir, 'mae_barplot_comparison.png'))
@@ -89,19 +89,28 @@ def plot_scores(model_names, base_dir):
     angles = np.linspace(0, 2*np.pi, len(sites), endpoint=False)
     angles = np.concatenate((angles, [angles[0]]))  # complete the circle
     
+    ax = plt.subplot(111, polar=True)
+    
     for model in model_names:
         model_data = combined_df[combined_df['Model'] == model].groupby('Site')['MAE'].mean()
-        values = [model_data[sm] for sm in sites]
+        values = [model_data[site] for site in sites]
         values = np.concatenate((values, [values[0]]))  # complete the circle
         
-        plt.polar(angles, values, '-', linewidth=2, label=model)
-        plt.fill(angles, values, alpha=0.25)
+        ax.plot(angles, values, '-', linewidth=2, label=model)
+        ax.fill(angles, values, alpha=0.25)
     
-    plt.xticks(angles[:-1], sites, size=8)
-    plt.title('Mean Absolute Error by Site and Model')
-    plt.legend(loc='upper right', bbox_to_anchor=(1.3, 1.0))
+    ax.set_xticks(angles[:-1])
+    ax.set_xticklabels(sites, size=8)
+    ax.set_title('Mean Absolute Error by Site and Model')
+    
+    # Adjust the subplot to make room for the legend
+    plt.subplots_adjust(bottom=0.2)
+    
+    # Place the legend below the plot
+    plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.1), ncol=2)
+    
     plt.tight_layout()
-    plt.savefig(os.path.join(plot_dir, 'mae_radar_comparison.png'))
+    plt.savefig(os.path.join(plot_dir, 'mae_radar_comparison.png'), bbox_inches='tight')
     plt.close()
 
     print(f"Comparison plots saved in {plot_dir}")
