@@ -46,7 +46,7 @@ def get_loaders(
     train_dict = [
         {
             "seg": f.replace("1mm_sub", "sub"),
-            "label": f.replace("_label-L_desc-T1lesion_mask", "_T1w").replace(
+            "image": f.replace("_label-L_desc-T1lesion_mask", "_T1w").replace(
                 "1mm_sub", "sub"
             ),
         }
