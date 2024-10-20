@@ -106,48 +106,48 @@ def run_model(args, device):
     os.makedirs(os.path.join(odir, "iop", "t1"), exist_ok=True)
 
     # Loop over all sites
-    for pt_dict in tqdm(guys_t1_dict, desc="Guys T1", total=len(guys_t1_dict)):
-        data_dict = data_transforms(pt_dict)
-        with torch.no_grad():
-            features = sliding_window_inference(data_dict["image"].unsqueeze(0).to(device), (96, 96, 96), 1, encoder)
-            features = features.reshape(features.shape[1], -1).mean(-1).cpu().numpy()
-            np.save(os.path.join(odir, "guys", "t1", os.path.basename(pt_dict["image"].split("-")[0])), features)
-    for pt_dict in tqdm(guys_t2_dict, desc="Guys T2", total=len(guys_t2_dict)):
-        data_dict = data_transforms(pt_dict)
-        with torch.no_grad():
-            features = sliding_window_inference(data_dict["image"].unsqueeze(0).to(device), (96, 96, 96), 1, encoder)
-            features = features.reshape(features.shape[1], -1).mean(-1).cpu().numpy()
-            np.save(os.path.join(odir, "guys", "t2", os.path.basename(pt_dict["image"].split("-")[0])), features)
-    for pt_dict in tqdm(guys_pd_dict, desc="Guys PD", total=len(guys_pd_dict)):
-        data_dict = data_transforms(pt_dict)
-        with torch.no_grad():
-            features = sliding_window_inference(data_dict["image"].unsqueeze(0).to(device), (96, 96, 96), 1, encoder)
-            features = features.reshape(features.shape[1], -1).mean(-1).cpu().numpy()
-            np.save(os.path.join(odir, "guys", "pd", os.path.basename(pt_dict["image"].split("-")[0])), features)
-    for pt_dict in tqdm(hh_t1_dict, desc="HH T1", total=len(hh_t1_dict)):
-        data_dict = data_transforms(pt_dict)
-        with torch.no_grad():
-            features = sliding_window_inference(data_dict["image"].unsqueeze(0).to(device), (96, 96, 96), 1, encoder)
-            features = features.reshape(features.shape[1], -1).mean(-1).cpu().numpy()
-            np.save(os.path.join(odir, "hh", "t1", os.path.basename(pt_dict["image"].split("-")[0])), features)
-    for pt_dict in tqdm(hh_t2_dict, desc="HH T2", total=len(hh_t2_dict)):
-        data_dict = data_transforms(pt_dict)
-        with torch.no_grad():
-            features = sliding_window_inference(data_dict["image"].unsqueeze(0).to(device), (96, 96, 96), 1, encoder)
-            features = features.reshape(features.shape[1], -1).mean(-1).cpu().numpy()
-            np.save(os.path.join(odir, "hh", "t2", os.path.basename(pt_dict["image"].split("-")[0])), features)
-    for pt_dict in tqdm(hh_pd_dict, desc="HH PD", total=len(hh_pd_dict)):
-        data_dict = data_transforms(pt_dict)
-        with torch.no_grad():
-            features = sliding_window_inference(data_dict["image"].unsqueeze(0).to(device), (96, 96, 96), 1, encoder)
-            features = features.reshape(features.shape[1], -1).mean(-1).cpu().numpy()
-            np.save(os.path.join(odir, "hh", "pd", os.path.basename(pt_dict["image"].split("-")[0])), features)
-    for pt_dict in tqdm(iop_t1_dict, desc="IOP T1", total=len(iop_t1_dict)):
-        data_dict = data_transforms(pt_dict)
-        with torch.no_grad():
-            features = sliding_window_inference(data_dict["image"].unsqueeze(0).to(device), (96, 96, 96), 1, encoder)
-            features = features.reshape(features.shape[1], -1).mean(-1).cpu().numpy()
-            np.save(os.path.join(odir, "iop", "t1", os.path.basename(pt_dict["image"].split("-")[0])), features)
+    # for pt_dict in tqdm(guys_t1_dict, desc="Guys T1", total=len(guys_t1_dict)):
+    #     data_dict = data_transforms(pt_dict)
+    #     with torch.no_grad():
+    #         features = sliding_window_inference(data_dict["image"].unsqueeze(0).to(device), (96, 96, 96), 1, encoder)
+    #         features = features.reshape(features.shape[1], -1).mean(-1).cpu().numpy()
+    #         np.save(os.path.join(odir, "guys", "t1", os.path.basename(pt_dict["image"].split("-")[0])), features)
+    # for pt_dict in tqdm(guys_t2_dict, desc="Guys T2", total=len(guys_t2_dict)):
+    #     data_dict = data_transforms(pt_dict)
+    #     with torch.no_grad():
+    #         features = sliding_window_inference(data_dict["image"].unsqueeze(0).to(device), (96, 96, 96), 1, encoder)
+    #         features = features.reshape(features.shape[1], -1).mean(-1).cpu().numpy()
+    #         np.save(os.path.join(odir, "guys", "t2", os.path.basename(pt_dict["image"].split("-")[0])), features)
+    # for pt_dict in tqdm(guys_pd_dict, desc="Guys PD", total=len(guys_pd_dict)):
+    #     data_dict = data_transforms(pt_dict)
+    #     with torch.no_grad():
+    #         features = sliding_window_inference(data_dict["image"].unsqueeze(0).to(device), (96, 96, 96), 1, encoder)
+    #         features = features.reshape(features.shape[1], -1).mean(-1).cpu().numpy()
+    #         np.save(os.path.join(odir, "guys", "pd", os.path.basename(pt_dict["image"].split("-")[0])), features)
+    # for pt_dict in tqdm(hh_t1_dict, desc="HH T1", total=len(hh_t1_dict)):
+    #     data_dict = data_transforms(pt_dict)
+    #     with torch.no_grad():
+    #         features = sliding_window_inference(data_dict["image"].unsqueeze(0).to(device), (96, 96, 96), 1, encoder)
+    #         features = features.reshape(features.shape[1], -1).mean(-1).cpu().numpy()
+    #         np.save(os.path.join(odir, "hh", "t1", os.path.basename(pt_dict["image"].split("-")[0])), features)
+    # for pt_dict in tqdm(hh_t2_dict, desc="HH T2", total=len(hh_t2_dict)):
+    #     data_dict = data_transforms(pt_dict)
+    #     with torch.no_grad():
+    #         features = sliding_window_inference(data_dict["image"].unsqueeze(0).to(device), (96, 96, 96), 1, encoder)
+    #         features = features.reshape(features.shape[1], -1).mean(-1).cpu().numpy()
+    #         np.save(os.path.join(odir, "hh", "t2", os.path.basename(pt_dict["image"].split("-")[0])), features)
+    # for pt_dict in tqdm(hh_pd_dict, desc="HH PD", total=len(hh_pd_dict)):
+    #     data_dict = data_transforms(pt_dict)
+    #     with torch.no_grad():
+    #         features = sliding_window_inference(data_dict["image"].unsqueeze(0).to(device), (96, 96, 96), 1, encoder)
+    #         features = features.reshape(features.shape[1], -1).mean(-1).cpu().numpy()
+    #         np.save(os.path.join(odir, "hh", "pd", os.path.basename(pt_dict["image"].split("-")[0])), features)
+    # for pt_dict in tqdm(iop_t1_dict, desc="IOP T1", total=len(iop_t1_dict)):
+    #     data_dict = data_transforms(pt_dict)
+    #     with torch.no_grad():
+    #         features = sliding_window_inference(data_dict["image"].unsqueeze(0).to(device), (96, 96, 96), 1, encoder)
+    #         features = features.reshape(features.shape[1], -1).mean(-1).cpu().numpy()
+    #         np.save(os.path.join(odir, "iop", "t1", os.path.basename(pt_dict["image"].split("-")[0])), features)
     for pt_dict in tqdm(iop_t2_dict, desc="IOP T2", total=len(iop_t2_dict)):
         data_dict = data_transforms(pt_dict)
         with torch.no_grad():
