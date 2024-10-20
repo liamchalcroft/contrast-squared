@@ -485,7 +485,7 @@ def set_up():
     parser.add_argument("--epoch_length", type=int, default=200, help="Number of iterations per epoch.")
     parser.add_argument("--lr", type=float, default=5e-5, help="Learning rate.")
     parser.add_argument("--val_interval", type=int, default=2, help="Validation interval.")
-    parser.add_argument("--batch_size", type=int, default=512, help="Number of subjects to use per batch.")
+    parser.add_argument("--batch_size", type=int, default=2, help="Number of subjects to use per batch.")
     parser.add_argument(
         "--net", 
         type=str, 
