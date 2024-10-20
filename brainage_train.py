@@ -195,12 +195,11 @@ def run_model(args):
         writer.writerow(['ID', 'Site', 'Modality', 'Predicted Age', 'True Age', 'MSE', 'MAE'])
 
         # Test on all sites and modalities
-        for site, modalities in [("Guy's Hospital", ['t1', 't2', 'pd', 'mra']),
-                                 ("Hammersmith Hospital", ['t1', 't2', 'pd']),
-                                 ("Institute of Psychiatry", ['t1', 't2', 'pd'])]:
-            site_short = site.split()[0].lower()
+        for site, modalities in [("guys", ['t1', 't2', 'pd', 'mra']),
+                                 ("hh", ['t1', 't2', 'pd']),
+                                 ("iop", ['t1', 't2', 'pd'])]:
             for modality in modalities:
-                features_dir = os.path.join(args.logdir, args.name, f"ixi-features/{site_short}/{modality}")
+                features_dir = os.path.join(args.logdir, args.name, f"ixi-features/{site}/{modality}")
                 result = test_modality(features_dir, ixi_data, model, criterion, exclude_ids)
                 
                 if result is not None:
