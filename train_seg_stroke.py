@@ -123,7 +123,7 @@ def get_loaders(
                 lower=0.5, upper=95, b_min=0, b_max=1,
                 clip=True, channel_wise=True,
             ),
-            mn.transforms.HistogramNormalizeD(keys="image", min=0, max=1, clip=True, allow_missing_keys=True),
+            mn.transforms.HistogramNormalizeD(keys="image", min=0, max=1, allow_missing_keys=True),
             mn.transforms.NormalizeIntensityD(
                 keys="image", nonzero=False, channel_wise=True
             ),
