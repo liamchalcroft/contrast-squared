@@ -57,8 +57,8 @@ def run_model(args):
 
     # Ensure all IDs in all_ids are present in ixi_data
     valid_ids = [id for id in all_ids if id in ixi_data['IXI_ID'].values]
-    print(ixi_data[ixi_data['IXI_ID'] == 2]['AGE'])
-    valid_ids = [id for id in valid_ids if not pd.isna(ixi_data[ixi_data['IXI_ID'] == id]['AGE'])]
+    print(ixi_data[ixi_data['IXI_ID'] == 2]['AGE'].item())
+    valid_ids = [id for id in valid_ids if not pd.isna(ixi_data[ixi_data['IXI_ID'] == id]['AGE'].item())]
 
     # Sort and split data
     valid_ids.sort()
