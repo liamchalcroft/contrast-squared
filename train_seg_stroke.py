@@ -184,7 +184,7 @@ def compute_dice(y_pred, y, eps=1e-8):
 def run_model(args, device, train_loader, val_loader):
     
     if args.net == "cnn":
-        model = model.CNNUNet(
+        net = model.CNNUNet(
             spatial_dims=2, 
             in_channels=1,
             out_channels=2,
@@ -196,7 +196,7 @@ def run_model(args, device, train_loader, val_loader):
             upsample="deconv",
         ).to(device)
     elif args.net == "vit":
-        model = model.ViTUNet(
+        net = model.ViTUNet(
             spatial_dims=2,
             in_channels=1,
             out_channels=2,
@@ -240,7 +240,7 @@ def run_model(args, device, train_loader, val_loader):
     )
     if not args.resume and not args.resume_best:
         wandb.config.update(args)
-    wandb.watch(model)
+    wandb.watch(net)
 
     crit = mn.losses.DiceCELoss(
         include_background=False,
@@ -286,7 +286,7 @@ def run_model(args, device, train_loader, val_loader):
     if args.backbone_weights is not None:
         checkpoint = torch.load(args.backbone_weights, map_location=device)
         print(f"\nLoading encoder weights from {args.backbone_weights}")
-        for name, param in model.named_parameters():
+        for name, param in net.named_parameters():
             if name in checkpoint:
                 param.data = checkpoint["encoder"][name]
                 param.requires_grad = False
@@ -298,7 +298,7 @@ def run_model(args, device, train_loader, val_loader):
     else:
         print("No backbone weights provided, all layers will be trainable.")
 
-    params = list(model.parameters())
+    params = list(net.parameters())
     try:
         opt = torch.optim.AdamW(params, args.lr, fused=torch.cuda.is_available())
     except:
@@ -306,7 +306,7 @@ def run_model(args, device, train_loader, val_loader):
         
     # Try to load most recent weight
     if args.resume or args.resume_best:
-        model.load_state_dict(
+        net.load_state_dict(
             checkpoint["model"], strict=False
         )
         opt.load_state_dict(checkpoint["opt"])
@@ -343,7 +343,7 @@ def run_model(args, device, train_loader, val_loader):
                 separate_folder=False,
                 print_log=False,
             )
-        model.train()
+        net.train()
         epoch_loss = 0
         step_deficit = -1e-7
         if args.amp:
@@ -371,7 +371,7 @@ def run_model(args, device, train_loader, val_loader):
                 saver2(torch.Tensor(seg[0].cpu().float()))
 
             with ctx:
-                logits = model(img)
+                logits = net(img)
                 loss = crit(logits, seg)
 
             if type(loss) == float or loss.isnan().sum() != 0:
@@ -381,12 +381,12 @@ def run_model(args, device, train_loader, val_loader):
                 if args.amp:
                     scaler.scale(loss).backward()
                     scaler.unscale_(opt)
-                    torch.nn.utils.clip_grad_norm_(model.parameters(), 12)
+                    torch.nn.utils.clip_grad_norm_(net.parameters(), 12)
                     scaler.step(opt)
                     scaler.update()
                 else:
                     loss.backward()
-                    torch.nn.utils.clip_grad_norm_(model.parameters(), 12)
+                    torch.nn.utils.clip_grad_norm_(net.parameters(), 12)
                     opt.step()
 
                 epoch_loss += loss.item()
@@ -402,14 +402,14 @@ def run_model(args, device, train_loader, val_loader):
         if (epoch + 1) % args.val_interval == 0:
             img_list = []
             seg_list = []
-            model.eval()
+            net.eval()
             with torch.no_grad():
                 val_loss = 0
                 val_dice = 0
                 for i, batch in enumerate(val_loader):
                     img = batch["image"].to(device)
                     seg = batch["seg"].to(device)
-                    logits = model(img)
+                    logits = net(img)
                     loss = crit(logits, seg)
                     val_loss += loss.item()
                     val_dice += compute_dice(logits.softmax(dim=1), seg).item()
@@ -456,7 +456,7 @@ def run_model(args, device, train_loader, val_loader):
                 metric_best = val_dice
                 torch.save(
                     {
-                        "model": model.state_dict(),
+                        "model": net.state_dict(),
                         "opt": opt.state_dict(),
                         "lr": lr_scheduler.state_dict(),
                         "wandb": WandBID(wandb.run.id).state_dict(),
@@ -467,7 +467,7 @@ def run_model(args, device, train_loader, val_loader):
                 )
         torch.save(
             {
-                "model": model.state_dict(),
+                "model": net.state_dict(),
                 "opt": opt.state_dict(),
                 "lr": lr_scheduler.state_dict(),
                 "wandb": WandBID(wandb.run.id).state_dict(),
@@ -481,7 +481,7 @@ def run_model(args, device, train_loader, val_loader):
 def set_up():
     parser = argparse.ArgumentParser(argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--name", type=str, help="Name of WandB run.")
-    parser.add_argument("--epochs", type=int, default=1000, help="Number of epochs for training.")
+    parser.add_argument("--epochs", type=int, default=100, help="Number of epochs for training.")
     parser.add_argument("--epoch_length", type=int, default=200, help="Number of iterations per epoch.")
     parser.add_argument("--lr", type=float, default=5e-5, help="Learning rate.")
     parser.add_argument("--val_interval", type=int, default=2, help="Validation interval.")
