@@ -133,9 +133,13 @@ class CNNUNet(nn.Module):
         x3 = self.down_3(x2)
         x4 = self.down_4(x3)
 
+        print(x4.shape, x3.shape)
         u4 = self.upcat_4(x4, x3)
+        print(u4.shape, x3.shape)
         u3 = self.upcat_3(u4, x3)
+        print(u3.shape, x2.shape)
         u2 = self.upcat_2(u3, x2)
+        print(u2.shape, x1.shape)
         u1 = self.upcat_1(u2, x1)
 
         logits = self.final_conv(u1)
