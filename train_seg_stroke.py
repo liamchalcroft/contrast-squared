@@ -210,6 +210,25 @@ def run_model(args, device, train_loader, val_loader):
             save_attn=False,
         ).to(device)
 
+    # Load backbone weights if provided
+    # Any layers loaded from the backbone will be frozen during training
+    cnt_frozen = 0
+    cnt_trainable = 0
+    if args.backbone_weights is not None:
+        checkpoint = torch.load(args.backbone_weights, map_location=device)
+        print(f"\nLoading encoder weights from {args.backbone_weights}")
+        for name, param in net.named_parameters():
+            if name in checkpoint["encoder"]:
+                param.data = checkpoint["encoder"][name]
+                param.requires_grad = False
+                cnt_frozen += 1
+            else:
+                param.requires_grad = True
+                cnt_trainable += 1
+        print(f"Frozen layers: {cnt_frozen}, trainable layers: {cnt_trainable}")
+    else:
+        print("No backbone weights provided, all layers will be trainable.")
+
     if args.resume or args.resume_best:
         ckpts = glob.glob(
             os.path.join(
@@ -279,25 +298,6 @@ def run_model(args, device, train_loader, val_loader):
 
         def state_dict(self):
             return self.metric
-
-    # Load backbone weights if provided
-    # Any layers loaded from the backbone will be frozen during training
-    cnt_frozen = 0
-    cnt_trainable = 0
-    if args.backbone_weights is not None:
-        checkpoint = torch.load(args.backbone_weights, map_location=device)
-        print(f"\nLoading encoder weights from {args.backbone_weights}")
-        for name, param in net.named_parameters():
-            if name in checkpoint["encoder"]:
-                param.data = checkpoint["encoder"][name]
-                param.requires_grad = False
-                cnt_frozen += 1
-            else:
-                param.requires_grad = True
-                cnt_trainable += 1
-        print(f"Frozen layers: {cnt_frozen}, trainable layers: {cnt_trainable}")
-    else:
-        print("No backbone weights provided, all layers will be trainable.")
 
     params = list(net.parameters())
     try:
