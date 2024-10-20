@@ -104,6 +104,8 @@ def run_model(args, device):
     os.makedirs(os.path.join(odir, "hh", "t2"), exist_ok=True)
     os.makedirs(os.path.join(odir, "hh", "pd"), exist_ok=True)
     os.makedirs(os.path.join(odir, "iop", "t1"), exist_ok=True)
+    os.makedirs(os.path.join(odir, "iop", "t2"), exist_ok=True)
+    os.makedirs(os.path.join(odir, "iop", "pd"), exist_ok=True)
 
     # Loop over all sites
     # for pt_dict in tqdm(guys_t1_dict, desc="Guys T1", total=len(guys_t1_dict)):
