@@ -6,6 +6,7 @@ from torch import nn
 from torch.utils.data import Dataset, DataLoader
 from tqdm import tqdm
 import argparse
+import matplotlib.pyplot as plt
 
 # Set random seed for reproducibility
 torch.manual_seed(42)
@@ -59,10 +60,6 @@ def run_model(args):
     valid_ids = [id for id in all_ids if id in ixi_data['IXI_ID'].values]
     # Remove duplicate IDs, keeping only the first occurrence
     ixi_data = ixi_data.drop_duplicates(subset=['IXI_ID'], keep='first')
-    for id in valid_ids:
-        print(id)
-        print(ixi_data[ixi_data['IXI_ID'] == id]['AGE'])
-        print(ixi_data[ixi_data['IXI_ID'] == id]['AGE'].item())
     # Filter valid IDs
     valid_ids = [id for id in valid_ids if not pd.isna(ixi_data[ixi_data['IXI_ID'] == id]['AGE'].iloc[0])]
 
@@ -99,7 +96,12 @@ def run_model(args):
     best_val_loss = float('inf')
 
     # Create dir for model
-    os.makedirs(os.path.join(args.logdir, args.name, 'ixi-classifier'), exist_ok=True)
+    model_dir = os.path.join(args.logdir, args.name, 'ixi-classifier')
+    os.makedirs(model_dir, exist_ok=True)
+
+    # Lists to store loss values for plotting
+    train_losses = []
+    val_losses = []
 
     for epoch in range(num_epochs):
         model.train()
@@ -121,15 +123,35 @@ def run_model(args):
                 loss = criterion(outputs, ages)
                 val_loss += loss.item()
         
-        print(f"Epoch {epoch+1}/{num_epochs}, Train Loss: {train_loss/len(train_loader):.4f}, Val Loss: {val_loss/len(val_loader):.4f}")
+        # Calculate average losses
+        avg_train_loss = train_loss / len(train_loader)
+        avg_val_loss = val_loss / len(val_loader)
+        
+        # Append losses to lists
+        train_losses.append(avg_train_loss)
+        val_losses.append(avg_val_loss)
+        
+        print(f"Epoch {epoch+1}/{num_epochs}, Train Loss: {avg_train_loss:.4f}, Val Loss: {avg_val_loss:.4f}")
         
         # Save best model
-        if val_loss < best_val_loss:
-            best_val_loss = val_loss
-            torch.save(model.state_dict(), os.path.join(args.logdir, args.name, 'ixi-classifier', 'best_model.pt'))
+        if avg_val_loss < best_val_loss:
+            best_val_loss = avg_val_loss
+            torch.save(model.state_dict(), os.path.join(model_dir, 'best_model.pt'))
+
+    # Plot training curve
+    plt.figure(figsize=(10, 6))
+    plt.plot(range(1, num_epochs + 1), train_losses, label='Train Loss')
+    plt.plot(range(1, num_epochs + 1), val_losses, label='Validation Loss')
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')
+    plt.title('Training and Validation Loss')
+    plt.legend()
+    plt.grid(True)
+    plt.savefig(os.path.join(model_dir, 'training_curve.png'))
+    plt.close()
 
     # Test the model
-    model.load_state_dict(torch.load(os.path.join(args.logdir, args.name, 'ixi-classifier', 'best_model.pt')))
+    model.load_state_dict(torch.load(os.path.join(model_dir, 'best_model.pt')))
     model.eval()
     test_loss = 0.0
     with torch.no_grad():
@@ -138,7 +160,14 @@ def run_model(args):
             loss = criterion(outputs, ages)
             test_loss += loss.item()
 
-    print(f"Test Loss: {test_loss/len(test_loader):.4f}")
+    avg_test_loss = test_loss / len(test_loader)
+    print(f"Test Loss: {avg_test_loss:.4f}")
+
+    # Save final losses to a text file
+    with open(os.path.join(model_dir, 'final_losses.txt'), 'w') as f:
+        f.write(f"Final Train Loss: {train_losses[-1]:.4f}\n")
+        f.write(f"Final Validation Loss: {val_losses[-1]:.4f}\n")
+        f.write(f"Test Loss: {avg_test_loss:.4f}\n")
 
 def set_up():
     parser = argparse.ArgumentParser(description='Train a brain age regression model')
