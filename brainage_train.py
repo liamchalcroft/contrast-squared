@@ -8,7 +8,7 @@ from tqdm import tqdm
 import argparse
 import matplotlib.pyplot as plt
 import csv
-from sklearn.metrics import mean_squared_error, mean_absolute_error
+from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 
 # Set random seed for reproducibility
 torch.manual_seed(42)
@@ -184,8 +184,8 @@ def run_model(args):
         
         mse = mean_squared_error(all_ages, all_outputs)
         mae = mean_absolute_error(all_ages, all_outputs)
-        
-        return all_ids, all_outputs, all_ages, mse, mae
+        r2 = r2_score(all_ages, all_outputs)
+        return all_ids, all_outputs, all_ages, mse, mae, r2
 
     # Combine train and validation IDs to exclude from testing
     exclude_ids = set(train_ids + val_ids)
@@ -194,7 +194,7 @@ def run_model(args):
     csv_file = os.path.join(model_dir, 'test_results.csv')
     with open(csv_file, 'w', newline='') as f:
         writer = csv.writer(f)
-        writer.writerow(['ID', 'Site', 'Modality', 'Predicted Age', 'True Age', 'MSE', 'MAE'])
+        writer.writerow(['ID', 'Site', 'Modality', 'Predicted Age', 'True Age', 'MSE', 'MAE', 'R2'])
 
         # Test on all sites and modalities
         for site, modalities in [("guys", ['t1', 't2', 'pd']),
@@ -205,11 +205,11 @@ def run_model(args):
                 result = test_modality(features_dir, ixi_data, model, criterion, exclude_ids)
                 
                 if result is not None:
-                    ids, predicted_ages, true_ages, mse, mae = result
+                    ids, predicted_ages, true_ages, mse, mae, r2 = result
                     for id, pred_age, true_age in zip(ids, predicted_ages, true_ages):
-                        writer.writerow([id, site, modality, pred_age[0], true_age[0], mse, mae])
+                        writer.writerow([id, site, modality, pred_age[0], true_age[0], mse, mae, r2])
                     
-                    print(f"{site} - {modality}: MSE = {mse:.4f}, MAE = {mae:.4f}")
+                    print(f"{site} - {modality}: MSE = {mse:.4f}, MAE = {mae:.4f}, R^2 = {r2:.4f}")
 
     print(f"Results saved to {csv_file}")
 
