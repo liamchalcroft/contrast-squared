@@ -135,6 +135,8 @@ def run_model(args):
         
         print(f"Epoch {epoch+1}/{num_epochs}, Train Loss: {avg_train_loss:.4f}, Val Loss: {avg_val_loss:.4f}")
         
+        # Save latest model
+        torch.save(model.state_dict(), os.path.join(model_dir, 'latest_model.pt'))
         # Save best model
         if avg_val_loss < best_val_loss:
             best_val_loss = avg_val_loss
@@ -154,7 +156,7 @@ def run_model(args):
     plt.close()
 
     # Test the model
-    # model.load_state_dict(torch.load(os.path.join(model_dir, 'best_model.pt')))
+    model.load_state_dict(torch.load(os.path.join(model_dir, 'latest_model.pt')))
     model.eval()
 
     # Test on multiple modalities and sites
