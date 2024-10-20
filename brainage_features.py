@@ -15,6 +15,7 @@ from tqdm import tqdm
 from torchvision.utils import make_grid
 logging.getLogger("monai").setLevel(logging.ERROR)
 import warnings
+import pandas as pd
 
 warnings.filterwarnings(
     "ignore",
@@ -165,6 +166,35 @@ def run_model(args, device):
 
 
     ## Generate training data for the guys t1 modality
+    # Load IXI spreadsheet
+    ixi_data = pd.read_excel('/home/lchalcroft/Data/IXI/IXI.xls')
+    print(ixi_data.head())
+
+    # Load and prepare data
+    features_dir = os.path.join(args.logdir, args.name, "ixi-features/guys/t1")
+    all_files = [f for f in os.listdir(features_dir) if f.endswith('.npy')]
+    all_ids = sorted([int(f.split('.')[0][3:]) for f in all_files])
+
+    # Ensure all IDs in all_ids are present in ixi_data
+    valid_ids = [id for id in all_ids if id in ixi_data['IXI_ID'].values]
+    # Remove duplicate IDs, keeping only the first occurrence
+    ixi_data = ixi_data.drop_duplicates(subset=['IXI_ID'], keep='first')
+    # Filter valid IDs
+    valid_ids = [id for id in valid_ids if not pd.isna(ixi_data[ixi_data['IXI_ID'] == id]['AGE'].iloc[0])]
+
+    # Sort and split data
+    valid_ids.sort()
+    total_samples = len(valid_ids)
+    train_size = int(0.7 * total_samples)
+    val_size = int(0.1 * total_samples)
+
+    train_ids = valid_ids[:train_size]
+    val_ids = valid_ids[train_size:train_size+val_size]
+
+    train_dict = [{"image": glob.glob(os.path.join("/home/lchalcroft/Data/IXI/guys/t1/", f"IXI{id:03d}*-T1.nii.gz"))[0], "filename": id} for id in train_ids]
+    val_dict = [{"image": glob.glob(os.path.join("/home/lchalcroft/Data/IXI/guys/t1/", f"IXI{id:03d}*-T1.nii.gz"))[0], "filename": id} for id in val_ids]
+    train_dict = train_dict + val_dict
+
     n_samples = 50
     data_transforms = mn.transforms.Compose([
         mn.transforms.LoadImaged(keys="image"),
@@ -212,7 +242,7 @@ def run_model(args, device):
             dtype=torch.float32, keys="image"
         ),
     ])
-    dataset = mn.data.Dataset(guys_t1_dict, transform=data_transforms)
+    dataset = mn.data.Dataset(train_dict, transform=data_transforms)
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=False, num_workers=24)
     os.makedirs(os.path.join(odir, "train", "guys", "t1"), exist_ok=True)
     for i in tqdm(range(n_samples), desc="Generating training data for guys t1", total=n_samples):
