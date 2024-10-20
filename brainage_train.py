@@ -197,7 +197,7 @@ def run_model(args):
         writer.writerow(['ID', 'Site', 'Modality', 'Predicted Age', 'True Age', 'MSE', 'MAE'])
 
         # Test on all sites and modalities
-        for site, modalities in [("guys", ['t1', 't2', 'pd', 'mra']),
+        for site, modalities in [("guys", ['t1', 't2', 'pd']),
                                  ("hh", ['t1', 't2', 'pd']),
                                  ("iop", ['t1', 't2', 'pd'])]:
             for modality in modalities:
