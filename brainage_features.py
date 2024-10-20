@@ -215,7 +215,7 @@ def run_model(args, device):
     dataset = mn.data.Dataset(guys_t1_dict, transform=data_transforms)
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=False, num_workers=24)
     os.makedirs(os.path.join(odir, "train", "guys", "t1"), exist_ok=True)
-    for i in tqdm(range(n_samples), desc="Generating training data for guys t1"):
+    for i in tqdm(range(n_samples), desc="Generating training data for guys t1", total=n_samples):
         for data_dict in dataloader:
             with torch.no_grad():
                 features = encoder(data_dict["image"].to(device))
