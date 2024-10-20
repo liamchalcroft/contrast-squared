@@ -142,6 +142,7 @@ def run_model(args):
     plt.figure(figsize=(10, 6))
     plt.plot(range(1, num_epochs + 1), train_losses, label='Train Loss')
     plt.plot(range(1, num_epochs + 1), val_losses, label='Validation Loss')
+    plt.yscale('log')
     plt.xlabel('Epochs')
     plt.ylabel('Loss')
     plt.title('Training and Validation Loss')
@@ -157,7 +158,7 @@ def run_model(args):
     with torch.no_grad():
         for features, ages in test_loader:
             outputs = model(features)
-            loss = criterion(outputs, ages)
+            loss = criterion(outputs*100, ages)
             test_loss += loss.item()
 
     avg_test_loss = test_loss / len(test_loader)
