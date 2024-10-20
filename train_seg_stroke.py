@@ -520,7 +520,7 @@ def set_up():
         print("Memory Usage:")
         print("Allocated:", round(torch.cuda.memory_allocated(0) / 1024**3, 1), "GB")
         print("Cached:   ", round(torch.cuda.memory_reserved(0) / 1024**3, 1), "GB")
-    train_loader, val_loader = get_loaders(batch_size=args.batch_size, device=device, lowres=args.lowres, ptch=48 if args.lowres else 96)
+    train_loader, val_loader = get_loaders(batch_size=args.batch_size, device=device, lowres=args.lowres, ptch=48 if args.lowres else 96, pc_data=args.pc_data)
 
     if args.debug:
         saver1 = mn.transforms.SaveImage(
