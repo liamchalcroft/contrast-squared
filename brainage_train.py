@@ -218,7 +218,7 @@ def run_model(args):
 def set_up():
     parser = argparse.ArgumentParser(description='Train a brain age regression model')
     parser.add_argument('--logdir', type=str, default='./', help='Directory to save the model')
-    parser.add_argument('--batch_size', type=int, default=64, help='Batch size for training')
+    parser.add_argument('--batch_size', type=int, default=32, help='Batch size for training')
     parser.add_argument('--name', type=str, default='linear', help='Name of the model')
     
     args = parser.parse_args()
