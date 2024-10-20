@@ -287,7 +287,7 @@ def run_model(args, device, train_loader, val_loader):
         checkpoint = torch.load(args.backbone_weights, map_location=device)
         print(f"\nLoading encoder weights from {args.backbone_weights}")
         for name, param in net.named_parameters():
-            if name in checkpoint:
+            if name in checkpoint["encoder"]:
                 print(f"Layer {name} found in checkpoint")
                 param.data = checkpoint["encoder"][name]
                 param.requires_grad = False
