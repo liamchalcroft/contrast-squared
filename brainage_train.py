@@ -7,6 +7,8 @@ from torch.utils.data import Dataset, DataLoader
 from tqdm import tqdm
 import argparse
 import matplotlib.pyplot as plt
+import csv
+from sklearn.metrics import mean_squared_error, mean_absolute_error
 
 # Set random seed for reproducibility
 torch.manual_seed(42)
@@ -154,21 +156,61 @@ def run_model(args):
     # Test the model
     model.load_state_dict(torch.load(os.path.join(model_dir, 'best_model.pt')))
     model.eval()
-    test_loss = 0.0
-    with torch.no_grad():
-        for features, ages in test_loader:
-            outputs = model(features)
-            loss = criterion(outputs*100, ages)
-            test_loss += loss.item()
 
-    avg_test_loss = test_loss / len(test_loader)
-    print(f"Test Loss: {avg_test_loss:.4f}")
+    # Test on multiple modalities and sites
+    def test_modality(features_dir, ixi_data, model, criterion, exclude_ids):
+        all_files = [f for f in os.listdir(features_dir) if f.endswith('.npy')]
+        all_ids = sorted([int(f.split('.')[0][3:]) for f in all_files])
+        valid_ids = [id for id in all_ids if id in ixi_data['IXI_ID'].values and id not in exclude_ids]
+        
+        if not valid_ids:
+            return None  # Return None if no valid IDs are found
+        
+        test_dataset = IXIDataset(features_dir, ixi_data, valid_ids)
+        test_loader = DataLoader(test_dataset, batch_size=args.batch_size)
+        
+        all_outputs = []
+        all_ages = []
+        all_ids = []
+        
+        with torch.no_grad():
+            for features, ages in test_loader:
+                outputs = model(features)
+                all_outputs.extend(outputs.cpu().numpy() * 100)  # Scale back to original age
+                all_ages.extend(ages.cpu().numpy())
+                all_ids.extend([test_dataset.ids[i] for i in range(len(ages))])
+        
+        mse = mean_squared_error(all_ages, all_outputs)
+        mae = mean_absolute_error(all_ages, all_outputs)
+        
+        return all_ids, all_outputs, all_ages, mse, mae
 
-    # Save final losses to a text file
-    with open(os.path.join(model_dir, 'final_losses.txt'), 'w') as f:
-        f.write(f"Final Train Loss: {train_losses[-1]:.4f}\n")
-        f.write(f"Final Validation Loss: {val_losses[-1]:.4f}\n")
-        f.write(f"Test Loss: {avg_test_loss:.4f}\n")
+    # Combine train and validation IDs to exclude from testing
+    exclude_ids = set(train_ids + val_ids)
+
+    # Prepare CSV file
+    csv_file = os.path.join(model_dir, 'test_results.csv')
+    with open(csv_file, 'w', newline='') as f:
+        writer = csv.writer(f)
+        writer.writerow(['ID', 'Site', 'Modality', 'Predicted Age', 'True Age', 'MSE', 'MAE'])
+
+        # Test on all sites and modalities
+        for site, modalities in [("Guy's Hospital", ['t1', 't2', 'pd', 'mra']),
+                                 ("Hammersmith Hospital", ['t1', 't2', 'pd']),
+                                 ("Institute of Psychiatry", ['t1', 't2', 'pd'])]:
+            site_short = site.split()[0].lower()
+            for modality in modalities:
+                features_dir = os.path.join(args.logdir, args.name, f"ixi-features/{site_short}/{modality}")
+                result = test_modality(features_dir, ixi_data, model, criterion, exclude_ids)
+                
+                if result is not None:
+                    ids, predicted_ages, true_ages, mse, mae = result
+                    for id, pred_age, true_age in zip(ids, predicted_ages, true_ages):
+                        writer.writerow([id, site, modality, pred_age[0], true_age[0], mse, mae])
+                    
+                    print(f"{site} - {modality}: MSE = {mse:.4f}, MAE = {mae:.4f}")
+
+    print(f"Results saved to {csv_file}")
 
 def set_up():
     parser = argparse.ArgumentParser(description='Train a brain age regression model')
