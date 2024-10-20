@@ -99,7 +99,8 @@ def get_loaders(
             mn.transforms.RandAffineD(
                 keys=["image", "seg"],
                 rotate_range=15, shear_range=0.012, scale_range=0.15,
-                prob=0.8, cache_grid=True, spatial_size=(256, 256, 256) if not lowres else (128, 128, 128),
+                prob=0.8, 
+                # cache_grid=True, spatial_size=(256, 256, 256) if not lowres else (128, 128, 128),
                 allow_missing_keys=True,
             ),
             mn.transforms.RandBiasFieldD(keys="image", prob=0.8),
