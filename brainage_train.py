@@ -32,6 +32,7 @@ class IXIDataset(Dataset):
         
         subject_data = self.ixi_data[self.ixi_data['IXI_ID'] == ixi_id].iloc[0]
         age = subject_data['AGE']
+        assert not pd.isna(age), f"Age is NaN for IXI_ID {ixi_id}"
         sex = subject_data['SEX_ID (1=m, 2=f)']
         
         # Append sex to features
