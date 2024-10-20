@@ -162,6 +162,8 @@ def run_model(args):
         all_files = [f for f in os.listdir(features_dir) if f.endswith('.npy')]
         all_ids = sorted([int(f.split('.')[0][3:]) for f in all_files])
         valid_ids = [id for id in all_ids if id in ixi_data['IXI_ID'].values and id not in exclude_ids]
+        # Filter valid IDs
+        valid_ids = [id for id in valid_ids if not pd.isna(ixi_data[ixi_data['IXI_ID'] == id]['AGE'].iloc[0])]
         
         if not valid_ids:
             return None  # Return None if no valid IDs are found
