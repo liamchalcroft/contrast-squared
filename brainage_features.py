@@ -80,21 +80,21 @@ def run_model(args, device):
     guys_t1 = sorted(glob.glob(os.path.join("/home/lchalcroft/Data/IXI/guys/t1/*-T1.nii.gz")))
     guys_t2 = sorted(glob.glob(os.path.join("/home/lchalcroft/Data/IXI/guys/t2/*-T2.nii.gz")))
     guys_pd = sorted(glob.glob(os.path.join("/home/lchalcroft/Data/IXI/guys/pd/*-PD.nii.gz")))
-    guys_t1_dict = [{"image": f} for f in guys_t1]
-    guys_t2_dict = [{"image": f} for f in guys_t2]
-    guys_pd_dict = [{"image": f} for f in guys_pd]
+    guys_t1_dict = [{"image": f, "filename": os.path.basename(f).split("-")[0]} for f in guys_t1]
+    guys_t2_dict = [{"image": f, "filename": os.path.basename(f).split("-")[0]} for f in guys_t2]
+    guys_pd_dict = [{"image": f, "filename": os.path.basename(f).split("-")[0]} for f in guys_pd]
     hh_t1 = sorted(glob.glob(os.path.join("/home/lchalcroft/Data/IXI/hh/t1/*-T1.nii.gz")))
     hh_t2 = sorted(glob.glob(os.path.join("/home/lchalcroft/Data/IXI/hh/t2/*-T2.nii.gz")))
     hh_pd = sorted(glob.glob(os.path.join("/home/lchalcroft/Data/IXI/hh/pd/*-PD.nii.gz")))
-    hh_t1_dict = [{"image": f} for f in hh_t1]
-    hh_t2_dict = [{"image": f} for f in hh_t2]
-    hh_pd_dict = [{"image": f} for f in hh_pd]
+    hh_t1_dict = [{"image": f, "filename": os.path.basename(f).split("-")[0]} for f in hh_t1]
+    hh_t2_dict = [{"image": f, "filename": os.path.basename(f).split("-")[0]} for f in hh_t2]
+    hh_pd_dict = [{"image": f, "filename": os.path.basename(f).split("-")[0]} for f in hh_pd]
     iop_t1 = sorted(glob.glob(os.path.join("/home/lchalcroft/Data/IXI/iop/t1/*-T1.nii.gz")))
     iop_t2 = sorted(glob.glob(os.path.join("/home/lchalcroft/Data/IXI/iop/t2/*-T2.nii.gz")))
     iop_pd = sorted(glob.glob(os.path.join("/home/lchalcroft/Data/IXI/iop/pd/*-PD.nii.gz")))
-    iop_t1_dict = [{"image": f} for f in iop_t1]
-    iop_t2_dict = [{"image": f} for f in iop_t2]
-    iop_pd_dict = [{"image": f} for f in iop_pd]
+    iop_t1_dict = [{"image": f, "filename": os.path.basename(f).split("-")[0]} for f in iop_t1]
+    iop_t2_dict = [{"image": f, "filename": os.path.basename(f).split("-")[0]} for f in iop_t2]
+    iop_pd_dict = [{"image": f, "filename": os.path.basename(f).split("-")[0]} for f in iop_pd]
 
     odir = os.path.join(args.logdir, args.name, "ixi-features")
     os.makedirs(os.path.join(odir, "guys", "t1"), exist_ok=True)
@@ -212,14 +212,15 @@ def run_model(args, device):
             dtype=torch.float32, keys="image", device=device
         ),
     ])
+    dataset = mn.data.Dataset(guys_t1_dict, transform=data_transforms)
+    dataloader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=False, num_workers=24)
     os.makedirs(os.path.join(odir, "train", "guys", "t1"), exist_ok=True)
-    for pt_dict in tqdm(guys_t1_dict, desc="Guys T1 Training", total=len(guys_t1_dict)):
-        for i in range(n_samples):
-            data_dict = data_transforms(pt_dict)
+    for i in range(n_samples):
+        for data_dict in dataloader:
             with torch.no_grad():
-                features = encoder(data_dict["image"].unsqueeze(0).to(device))
+                features = encoder(data_dict["image"].to(device))
                 features = features.reshape(features.shape[1], -1).mean(-1).cpu().numpy()
-                np.save(os.path.join(odir, "train", "guys", "t1", f"{os.path.basename(pt_dict['image'].split('-')[0])}_{i}.npy"), features)
+                np.save(os.path.join(odir, "train", "guys", "t1", f"{data_dict['filename']}_{i}.npy"), features)
 
 
 def set_up():
