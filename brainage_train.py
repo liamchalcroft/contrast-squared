@@ -17,20 +17,24 @@ np.random.seed(42)
 
 # Prepare data
 class IXIDataset(Dataset):
-    def __init__(self, features_dir, ixi_data, ids):
+    def __init__(self, features_dir, ixi_data, ids, train=False):
         self.features_dir = features_dir
         self.ixi_data = ixi_data
         self.ids = ids
+        self.train = train
 
     def __len__(self):
         return len(self.ids)
 
     def __getitem__(self, idx):
         ixi_id = self.ids[idx]
-        file_name = f"{ixi_id}_*.npy"
-        features_path = glob.glob(os.path.join(self.features_dir, file_name))
-        # Randomly select one of the features
-        features = np.load(np.random.choice(features_path))
+        if self.train:
+            file_name = f"{ixi_id}_*.npy"
+            features_path = glob.glob(os.path.join(self.features_dir, file_name))
+            # Randomly select one of the features
+            features = np.load(np.random.choice(features_path))
+        else:
+            features = np.load(os.path.join(self.features_dir, f"IXI{ixi_id:03d}.npy"))
         
         subject_data = self.ixi_data[self.ixi_data['IXI_ID'] == ixi_id].iloc[0]
         age = subject_data['AGE']
