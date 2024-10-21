@@ -524,13 +524,13 @@ def set_up():
     if args.debug:
         saver1 = mn.transforms.SaveImage(
             output_dir=os.path.join(args.logdir, args.name, "debug"),
-            output_postfix="img1",
+            output_postfix="img",
             separate_folder=False,
             print_log=False,
         )
         saver2 = mn.transforms.SaveImage(
             output_dir=os.path.join(args.logdir, args.name, "debug"),
-            output_postfix="img2",
+            output_postfix="seg",
             separate_folder=False,
             print_log=False,
         )
@@ -539,22 +539,22 @@ def set_up():
                 break
             else:
                 print(
-                    "Image #1: ",
-                    batch["image1"].shape,
-                    "min={}".format(batch["image1"].min()),
-                    "max={}".format(batch["image1"].max()),
+                    "Image: ",
+                    batch["image"].shape,
+                    "min={}".format(batch["image"].min()),
+                    "max={}".format(batch["image"].max()),
                 )
                 saver1(
-                    torch.Tensor(batch["image1"][0].cpu().float()),
+                    torch.Tensor(batch["image"][0].cpu().float()),
                 )
                 print(
-                    "Image #2: ",
-                    batch["image2"].shape,
-                    "min={}".format(batch["image2"].min()),
-                    "max={}".format(batch["image2"].max()),
+                    "Segmentation: ",
+                    batch["seg"].shape,
+                    "min={}".format(batch["seg"].min()),
+                    "max={}".format(batch["seg"].max()),
                 )
                 saver2(
-                    torch.Tensor(batch["image2"][0].cpu().float())
+                    torch.Tensor(batch["seg"][0].cpu().float())
                 )
 
     return args, device, train_loader, val_loader
