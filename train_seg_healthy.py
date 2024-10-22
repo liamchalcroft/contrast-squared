@@ -392,6 +392,7 @@ def run_model(args, device, train_loader, val_loader):
         if (epoch + 1) % args.val_interval == 0:
             img_list = []
             seg_list = []
+            probs_list = []
             net.eval()
             with torch.no_grad():
                 val_loss = 0
@@ -408,6 +409,7 @@ def run_model(args, device, train_loader, val_loader):
                     if i < 16:
                         img_list.append(img[0,...,img.shape[-1]//2])
                         seg_list.append(probs.argmax(dim=1, keepdim=True).float()[0,...,seg.shape[-1]//2])
+                        probs_list.append(probs.argmax(dim=1, keepdim=True).float()[0,...,seg.shape[-1]//2])
                     elif i == 16:
                         grid_image1 = make_grid(
                                     img_list,
@@ -423,6 +425,13 @@ def run_model(args, device, train_loader, val_loader):
                                     normalize=True,
                                     scale_each=True,
                                 )
+                        grid_image3 = make_grid(
+                                    probs_list,
+                                    nrow=int(4),
+                                    padding=5,
+                                    normalize=True,
+                                    scale_each=True,
+                                )
                         wandb.log(
                             {
                                 "examples": [
@@ -430,7 +439,10 @@ def run_model(args, device, train_loader, val_loader):
                                         grid_image1[0].cpu().numpy(), caption="Images"
                                     ),
                                     wandb.Image(
-                                        grid_image2[1].cpu().numpy(), caption="Segmentations"
+                                        grid_image2[0].cpu().numpy(), caption="Segmentations", cmap="jet"
+                                    ),
+                                    wandb.Image(
+                                        grid_image3[0].cpu().numpy(), caption="Predictions", cmap="jet"
                                     ),
                                 ]
                             }
