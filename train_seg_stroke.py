@@ -129,9 +129,12 @@ def get_loaders(
                 keys="image", nonzero=False, channel_wise=True
             ),
             mn.transforms.RandGaussianNoiseD(keys="image", prob=0.8),
-            mn.transforms.RandSpatialCropD(
+            mn.transforms.RandCropByLabelClassesD(
                 keys=["image", "seg"],
-                roi_size=(ptch, ptch, ptch),
+                roi_size=(96, 96, 96) if not lowres else (48, 48, 48),
+                label_key="seg",
+                num_samples=1,
+                ratios=[1, 6],
                 random_size=False,
                 allow_missing_keys=True,
             ),
