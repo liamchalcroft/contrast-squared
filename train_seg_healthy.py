@@ -41,17 +41,17 @@ def get_loaders(
 
   # Load and prepare data
   all_ids = ixi_data['IXI_ID'].values
+  valid_ids = [id for id in all_ids if not pd.isna(ixi_data[ixi_data['IXI_ID'] == id]['AGE'].iloc[0])]
 
   # Sort and split data
-  all_ids.sort()
-  total_samples = len(all_ids)
+  valid_ids.sort()
+  total_samples = len(valid_ids)
   train_size = int(0.7 * total_samples)
   val_size = int(0.1 * total_samples)
 
-  train_ids = all_ids[:train_size]
-  val_ids = all_ids[train_size:train_size+val_size]
+  train_ids = valid_ids[:train_size]
+  val_ids = valid_ids[train_size:train_size+val_size]
 
-  print(os.path.join("/home/lchalcroft/Data/IXI/guys/t1/preprocessed", f"p_IXI{train_ids[0]:03d}*-T1.nii.gz"))
   train_dict = [{"image": glob.glob(os.path.join("/home/lchalcroft/Data/IXI/guys/t1/preprocessed", f"p_IXI{id:03d}*-T1.nii.gz"))[0], "filename": id} for id in train_ids]
   val_dict = [{"image": glob.glob(os.path.join("/home/lchalcroft/Data/IXI/guys/t1/preprocessed", f"p_IXI{id:03d}*-T1.nii.gz"))[0], "filename": id} for id in val_ids]
 
