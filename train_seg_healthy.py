@@ -322,8 +322,8 @@ def run_model(args, device, train_loader, val_loader):
             except:
                 train_iter = iter(train_loader)
                 batch = next(train_iter)
-            img = batch["image"][0].to(device)
-            seg = batch["label"][0].to(device)
+            img = batch[0]["image"].to(device)
+            seg = batch[0]["label"].to(device)
             opt.zero_grad(set_to_none=True)
 
             if args.debug and step < 5:
@@ -367,8 +367,8 @@ def run_model(args, device, train_loader, val_loader):
                 val_loss = 0
                 val_dice = 0
                 for i, batch in enumerate(val_loader):
-                    img = batch["image"][0].to(device)
-                    seg = batch["label"][0].to(device)
+                    img = batch[0]["image"].to(device)
+                    seg = batch[0]["label"].to(device)
                     logits = net(img)
                     loss = crit(logits, seg)
                     val_loss += loss.item()
@@ -499,21 +499,21 @@ def set_up():
             else:
                 print(
                     "Image: ",
-                    batch["image"][0].shape,
-                    "min={}".format(batch["image"][0].min()),
-                    "max={}".format(batch["image"][0].max()),
+                    batch[0]["image"].shape,
+                    "min={}".format(batch[0]["image"].min()),
+                    "max={}".format(batch[0]["image"].max()),
                 )
                 saver1(
-                    torch.Tensor(batch["image"][0][0].cpu().float()),
+                    torch.Tensor(batch[0]["image"][0].cpu().float()),
                 )
                 print(
                     "Segmentation: ",
-                    batch["label"][0].shape,
-                    "min={}".format(batch["label"][0].min()),
-                    "max={}".format(batch["label"][0].max()),
+                    batch[0]["label"].shape,
+                    "min={}".format(batch[0]["label"].min()),
+                    "max={}".format(batch[0]["label"].max()),
                 )
                 saver2(
-                    torch.Tensor(batch["label"][0][0].argmax(dim=0, keepdim=True).cpu().float())
+                    torch.Tensor(batch[0]["label"][0].argmax(dim=0, keepdim=True).cpu().float())
                 )
 
     return args, device, train_loader, val_loader
