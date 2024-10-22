@@ -85,8 +85,8 @@ def run_model(args):
     print(f"Train size: {train_size}, Val size: {val_size}, Test size: {len(test_ids)}")
 
     # Create datasets
-    train_dataset = IXIDataset(os.path.join(args.logdir, args.name, "ixi-features/train/guys/t1"), ixi_data, train_ids, train=True)
-    val_dataset = IXIDataset(os.path.join(args.logdir, args.name, "ixi-features/train/guys/t1"), ixi_data, val_ids, train=True)
+    train_dataset = IXIDataset(os.path.join(args.logdir, args.name, "ixi-features/train/guys/t1"), ixi_data, train_ids, train=False)
+    val_dataset = IXIDataset(os.path.join(args.logdir, args.name, "ixi-features/train/guys/t1"), ixi_data, val_ids, train=False)
 
     # Create dataloaders
     train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
