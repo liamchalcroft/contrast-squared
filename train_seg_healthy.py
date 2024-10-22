@@ -61,6 +61,9 @@ def get_loaders(
   data_transforms = mn.transforms.Compose([
       mn.transforms.LoadImaged(keys=["image","label"]),
       mn.transforms.EnsureChannelFirstD(keys=["image","label"]),
+      mn.transforms.LambdaD(
+          keys=["label"], func=add_bg
+      ),
       mn.transforms.OrientationD(keys=["image", "label"], axcodes="RAS"),
       mn.transforms.SpacingD(keys=["image", "label"], pixdim=(1.0, 1.0, 1.0) if not lowres else (2.0, 2.0, 2.0)),
       mn.transforms.LambdaD(
@@ -101,9 +104,6 @@ def get_loaders(
           num_samples=1,
           ratios=[1, 5, 5, 5],
           allow_missing_keys=True,
-      ),
-      mn.transforms.LambdaD(
-          keys=["label"], func=add_bg
       ),
       mn.transforms.ToTensorD(
           dtype=torch.float32, keys=["image", "label"]
