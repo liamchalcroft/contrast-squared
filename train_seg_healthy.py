@@ -100,7 +100,6 @@ def get_loaders(
           label_key="label",
           num_samples=1,
           ratios=[1, 5, 5, 5],
-          random_size=False,
           allow_missing_keys=True,
       ),
       mn.transforms.LambdaD(
