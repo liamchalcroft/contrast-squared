@@ -121,7 +121,7 @@ def get_loaders(
             ),
             mn.transforms.ScaleIntensityRangePercentilesD(
                 keys=["image"],
-                lower=0.5, upper=95, b_min=0, b_max=1,
+                lower=0.5, upper=99.5, b_min=0, b_max=1,
                 clip=True, channel_wise=True,
             ),
             mn.transforms.HistogramNormalizeD(keys="image", min=0, max=1, allow_missing_keys=True),
