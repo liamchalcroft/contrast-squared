@@ -96,7 +96,7 @@ def get_loaders(
       ),
       mn.transforms.RandCropByLabelClassesD(
           keys=["image", "label"],
-          roi_size=(96, 96, 96) if not lowres else (48, 48, 48),
+          spatial_size=(96, 96, 96) if not lowres else (48, 48, 48),
           label_key="label",
           num_samples=1,
           ratios=[1, 5, 5, 5],
