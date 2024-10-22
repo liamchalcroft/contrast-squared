@@ -95,7 +95,8 @@ def run_model(args):
     # Initialize model, loss function, and optimizer
     input_size = train_dataset[0][0].shape[0]  # Features + sex
     model = BrainAgeRegressor(input_size)
-    criterion = nn.MSELoss(reduction='mean')
+    # criterion = nn.MSELoss(reduction='mean')
+    criterion = nn.HuberLoss(delta=1.0)
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
     # Training loop
