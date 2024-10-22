@@ -40,25 +40,16 @@ def get_loaders(
   print(ixi_data.head())
 
   # Load and prepare data
-  features_dir = os.path.join(args.logdir, args.name, "ixi-features/guys/t1")
-  all_files = [f for f in os.listdir(features_dir) if f.endswith('.npy')]
-  all_ids = sorted([int(f.split('.')[0][3:]) for f in all_files])
-
-  # Ensure all IDs in all_ids are present in ixi_data
-  valid_ids = [id for id in all_ids if id in ixi_data['IXI_ID'].values]
-  # Remove duplicate IDs, keeping only the first occurrence
-  ixi_data = ixi_data.drop_duplicates(subset=['IXI_ID'], keep='first')
-  # Filter valid IDs
-  valid_ids = [id for id in valid_ids if not pd.isna(ixi_data[ixi_data['IXI_ID'] == id]['AGE'].iloc[0])]
+  all_ids = ixi_data['IXI_ID'].values
 
   # Sort and split data
-  valid_ids.sort()
-  total_samples = len(valid_ids)
+  all_ids.sort()
+  total_samples = len(all_ids)
   train_size = int(0.7 * total_samples)
   val_size = int(0.1 * total_samples)
 
-  train_ids = valid_ids[:train_size]
-  val_ids = valid_ids[train_size:train_size+val_size]
+  train_ids = all_ids[:train_size]
+  val_ids = all_ids[train_size:train_size+val_size]
 
   train_dict = [{"image": glob.glob(os.path.join("/home/lchalcroft/Data/IXI/guys/t1/preprocessed", f"p_IXI{id:03d}*-T1.nii.gz"))[0], "filename": id} for id in train_ids]
   val_dict = [{"image": glob.glob(os.path.join("/home/lchalcroft/Data/IXI/guys/t1/preprocessed", f"p_IXI{id:03d}*-T1.nii.gz"))[0], "filename": id} for id in val_ids]
