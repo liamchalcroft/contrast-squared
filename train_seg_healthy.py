@@ -321,7 +321,7 @@ def run_model(args, device, train_loader, val_loader):
                 train_iter = iter(train_loader)
                 batch = next(train_iter)
             img = batch["image"].to(device)
-            seg = batch["seg"].to(device)
+            seg = batch["label"].to(device)
             opt.zero_grad(set_to_none=True)
 
             if args.debug and step < 5:
@@ -366,7 +366,7 @@ def run_model(args, device, train_loader, val_loader):
                 val_dice = 0
                 for i, batch in enumerate(val_loader):
                     img = batch["image"].to(device)
-                    seg = batch["seg"].to(device)
+                    seg = batch["label"].to(device)
                     logits = net(img)
                     loss = crit(logits, seg)
                     val_loss += loss.item()
@@ -506,12 +506,12 @@ def set_up():
                 )
                 print(
                     "Segmentation: ",
-                    batch["seg"].shape,
-                    "min={}".format(batch["seg"].min()),
-                    "max={}".format(batch["seg"].max()),
+                    batch["label"].shape,
+                    "min={}".format(batch["label"].min()),
+                    "max={}".format(batch["label"].max()),
                 )
                 saver2(
-                    torch.Tensor(batch["seg"][0].cpu().float())
+                    torch.Tensor(batch["label"][0].cpu().float())
                 )
 
     return args, device, train_loader, val_loader
