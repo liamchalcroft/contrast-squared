@@ -59,29 +59,44 @@ def get_loaders(
       train_dict = train_dict[:int(len(train_dict) * pc_data / 100)]
 
   data_transforms = mn.transforms.Compose([
-      mn.transforms.LoadImaged(keys=["image","label"]),
-      mn.transforms.EnsureChannelFirstD(keys=["image","label"]),
-      mn.transforms.LambdaD(
-          keys=["label"], func=add_bg
+      mn.transforms.LoadImageD(
+          keys=["image", "label"], image_only=True, allow_missing_keys=True
       ),
-      mn.transforms.OrientationD(keys=["image", "label"], axcodes="RAS"),
-      mn.transforms.SpacingD(keys=["image", "label"], pixdim=(1.0, 1.0, 1.0) if not lowres else (2.0, 2.0, 2.0)),
-      mn.transforms.LambdaD(
-              keys=["image", "label"], func=mn.transforms.SignalFillEmpty()
+      mn.transforms.EnsureChannelFirstD(
+          keys=["image", "label"], allow_missing_keys=True
       ),
-      mn.transforms.ScaleIntensityRangePercentilesD(keys=["image"],
-          lower=0.5,upper=95,b_min=0,b_max=1,clip=True,channel_wise=True),
-      mn.transforms.HistogramNormalizeD(keys=["image"], min=0, max=1),
-      mn.transforms.NormalizeIntensityD(keys="image", channel_wise=True),
+      mn.transforms.LambdaD(keys="label", func=add_bg),
+      mn.transforms.OrientationD(
+          keys=["image", "label"], axcodes="RAS", allow_missing_keys=True
+      ),
+      mn.transforms.SpacingD(
+          keys=["image", "label"],
+          pixdim=1 if not lowres else 2,
+          allow_missing_keys=True,
+      ),
+      # mn.transforms.ResizeWithPadOrCropD(
+      #     keys=["image", "seg"],
+      #     spatial_size=(256, 256, 256) if not lowres else (128, 128, 128),
+      #     allow_missing_keys=True,
+      # ),
+      mn.transforms.ToTensorD(
+          dtype=float,
+          keys=["image", "label"],
+          allow_missing_keys=True,
+      ),
       mn.transforms.LambdaD(
-              keys=["image", "label"], func=mn.transforms.SignalFillEmpty()
+          keys=["image", "label"],
+          func=mn.transforms.SignalFillEmpty(),
+          allow_missing_keys=True,
       ),
       mn.transforms.RandAffineD(
           keys=["image", "label"],
           rotate_range=15, shear_range=0.012, scale_range=0.15,
-          prob=0.8,
+          prob=0.8, 
+          # cache_grid=True, spatial_size=(256, 256, 256) if not lowres else (128, 128, 128),
           allow_missing_keys=True,
       ),
+      mn.transforms.RandBiasFieldD(keys="image", prob=0.8),
       mn.transforms.RandAxisFlipd(
           keys=["image", "label"],
           prob=0.8,
@@ -97,12 +112,27 @@ def get_loaders(
           prob=0.8,
           allow_missing_keys=True,
       ),
+      mn.transforms.ScaleIntensityRangePercentilesD(
+          keys=["image"],
+          lower=0.5, upper=95, b_min=0, b_max=1,
+          clip=True, channel_wise=True,
+      ),
+      mn.transforms.HistogramNormalizeD(keys="image", min=0, max=1, allow_missing_keys=True),
+      mn.transforms.NormalizeIntensityD(
+          keys="image", nonzero=False, channel_wise=True
+      ),
+      mn.transforms.RandGaussianNoiseD(keys="image", prob=0.8),
       mn.transforms.RandCropByLabelClassesD(
           keys=["image", "label"],
           spatial_size=(96, 96, 96) if not lowres else (48, 48, 48),
           label_key="label",
           num_samples=1,
           ratios=[1, 5, 5, 5],
+          allow_missing_keys=True,
+      ),
+      mn.transforms.ResizeD(
+          keys=["image", "seg"],
+          spatial_size=(ptch, ptch, ptch),
           allow_missing_keys=True,
       ),
       mn.transforms.ToTensorD(
