@@ -407,7 +407,7 @@ def run_model(args, device, train_loader, val_loader):
 
                     if i < 16:
                         img_list.append(img[0,...,img.shape[-1]//2])
-                        seg_list.append(probs.argmax(dim=1, keepdim=True)[0,...,seg.shape[-1]//2])
+                        seg_list.append(probs.argmax(dim=1, keepdim=True).float()[0,...,seg.shape[-1]//2])
                     elif i == 16:
                         grid_image1 = make_grid(
                                     img_list,
