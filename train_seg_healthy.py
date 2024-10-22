@@ -37,26 +37,23 @@ def get_loaders(
   ## Generate training data for the guys t1 modality
   # Load IXI spreadsheet
   ixi_data = pd.read_excel('/home/lchalcroft/Data/IXI/IXI.xls')
-  print(ixi_data.head())
 
   # Load and prepare data
-  all_ids = ixi_data['IXI_ID'].values
-  valid_ids = [id for id in all_ids if not pd.isna(ixi_data[ixi_data['IXI_ID'] == id]['AGE'].iloc[0])]
-
+  all_imgs = glob.glob("/home/lchalcroft/Data/IXI/guys/t1/preprocessed/p_IXI*-T1.nii.gz")
+  
   # Sort and split data
-  valid_ids.sort()
-  total_samples = len(valid_ids)
+  all_imgs.sort()
+  total_samples = len(all_imgs)
   train_size = int(0.7 * total_samples)
   val_size = int(0.1 * total_samples)
 
-  train_ids = valid_ids[:train_size]
-  val_ids = valid_ids[train_size:train_size+val_size]
+  train_imgs = all_imgs[:train_size]
+  val_imgs = all_imgs[train_size:train_size+val_size]
+  train_ids = [int(os.path.basename(f).split("-")[0][5:]) for f in train_imgs]
+  val_ids = [int(os.path.basename(f).split("-")[0][5:]) for f in val_imgs]
 
-  train_dict = [{"image": glob.glob(os.path.join("/home/lchalcroft/Data/IXI/guys/t1/preprocessed", f"p_IXI{id:03d}*-T1.nii.gz"))[0], "filename": id} for id in train_ids]
-  val_dict = [{"image": glob.glob(os.path.join("/home/lchalcroft/Data/IXI/guys/t1/preprocessed", f"p_IXI{id:03d}*-T1.nii.gz"))[0], "filename": id} for id in val_ids]
-
-  train_dict = [{"image": f["image"], "label": [f["image"].replace("p_IXI", "c1p_IXI"), f["image"].replace("p_IXI", "c2p_IXI"), f["image"].replace("p_IXI", "c3p_IXI")]} for f in train_dict]
-  val_dict = [{"image": f["image"], "label": [f["image"].replace("p_IXI", "c1p_IXI"), f["image"].replace("p_IXI", "c2p_IXI"), f["image"].replace("p_IXI", "c3p_IXI")]} for f in val_dict]
+  train_dict = [{"image": f, "label": [f.replace("p_IXI", "c1p_IXI"), f.replace("p_IXI", "c2p_IXI"), f.replace("p_IXI", "c3p_IXI")]} for f in train_imgs]
+  val_dict = [{"image": f, "label": [f.replace("p_IXI", "c1p_IXI"), f.replace("p_IXI", "c2p_IXI"), f.replace("p_IXI", "c3p_IXI")]} for f in val_imgs]
 
   if pc_data < 100:
       train_dict = train_dict[:int(len(train_dict) * pc_data / 100)]
