@@ -51,6 +51,7 @@ def get_loaders(
   train_ids = all_ids[:train_size]
   val_ids = all_ids[train_size:train_size+val_size]
 
+  print(os.path.join("/home/lchalcroft/Data/IXI/guys/t1/preprocessed", f"p_IXI{train_ids[0]:03d}*-T1.nii.gz"))
   train_dict = [{"image": glob.glob(os.path.join("/home/lchalcroft/Data/IXI/guys/t1/preprocessed", f"p_IXI{id:03d}*-T1.nii.gz"))[0], "filename": id} for id in train_ids]
   val_dict = [{"image": glob.glob(os.path.join("/home/lchalcroft/Data/IXI/guys/t1/preprocessed", f"p_IXI{id:03d}*-T1.nii.gz"))[0], "filename": id} for id in val_ids]
 
