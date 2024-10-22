@@ -117,7 +117,7 @@ def run_model(args):
         for features, ages in tqdm(train_loader, desc=f"Epoch {epoch+1}/{num_epochs}"):
             optimizer.zero_grad()
             outputs = model(features)
-            loss = criterion(outputs, ages/100)
+            loss = criterion(outputs, ages)
             loss.backward()
             optimizer.step()
             train_loss += loss.item()
@@ -128,7 +128,7 @@ def run_model(args):
         with torch.no_grad():
             for features, ages in val_loader:
                 outputs = model(features)
-                loss = criterion(outputs, ages/100)
+                loss = criterion(outputs, ages)
                 val_loss += loss.item()
         
         # Calculate average losses
@@ -186,7 +186,7 @@ def run_model(args):
         with torch.no_grad():
             for features, ages in test_loader:
                 outputs = model(features)
-                all_outputs.extend(outputs.cpu().numpy() * 100)  # Scale back to original age
+                all_outputs.extend(outputs.cpu().numpy())  # Scale back to original age
                 all_ages.extend(ages.cpu().numpy())
                 all_ids.extend([test_dataset.ids[i] for i in range(len(ages))])
         
