@@ -131,11 +131,10 @@ def get_loaders(
             mn.transforms.RandGaussianNoiseD(keys="image", prob=0.8),
             mn.transforms.RandCropByLabelClassesD(
                 keys=["image", "seg"],
-                roi_size=(96, 96, 96) if not lowres else (48, 48, 48),
+                spatial_size=(96, 96, 96) if not lowres else (48, 48, 48),
                 label_key="seg",
                 num_samples=1,
                 ratios=[1, 6],
-                random_size=False,
                 allow_missing_keys=True,
             ),
             mn.transforms.ResizeD(
@@ -366,8 +365,8 @@ def run_model(args, device, train_loader, val_loader):
             except:
                 train_iter = iter(train_loader)
                 batch = next(train_iter)
-            img = batch["image"].to(device)
-            seg = batch["seg"].to(device)
+            img = batch["image"][0].to(device)
+            seg = batch["seg"][0].to(device)
             opt.zero_grad(set_to_none=True)
 
             if args.debug and step < 5:
@@ -411,8 +410,8 @@ def run_model(args, device, train_loader, val_loader):
                 val_loss = 0
                 val_dice = 0
                 for i, batch in enumerate(val_loader):
-                    img = batch["image"].to(device)
-                    seg = batch["seg"].to(device)
+                    img = batch["image"][0].to(device)
+                    seg = batch["seg"][0].to(device)
                     logits = net(img)
                     loss = crit(logits, seg)
                     val_loss += loss.item()
@@ -543,21 +542,21 @@ def set_up():
             else:
                 print(
                     "Image: ",
-                    batch["image"].shape,
-                    "min={}".format(batch["image"].min()),
-                    "max={}".format(batch["image"].max()),
+                    batch["image"][0].shape,
+                    "min={}".format(batch["image"][0].min()),
+                    "max={}".format(batch["image"][0].max()),
                 )
                 saver1(
-                    torch.Tensor(batch["image"][0].cpu().float()),
+                    torch.Tensor(batch["image"][0][0].cpu().float()),
                 )
                 print(
                     "Segmentation: ",
-                    batch["seg"].shape,
-                    "min={}".format(batch["seg"].min()),
-                    "max={}".format(batch["seg"].max()),
+                    batch["seg"][0].shape,
+                    "min={}".format(batch["seg"][0].min()),
+                    "max={}".format(batch["seg"][0].max()),
                 )
                 saver2(
-                    torch.Tensor(batch["seg"][0].cpu().float())
+                    torch.Tensor(batch["seg"][0][0].cpu().float())
                 )
 
     return args, device, train_loader, val_loader
