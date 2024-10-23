@@ -404,6 +404,8 @@ def run_model(args, device, train_loader, val_loader):
 
         if (epoch + 1) % args.val_interval == 0:
             img_list = []
+            age_list = []
+            pred_age_list = []
             regressor.eval()
             with torch.no_grad():
                 val_loss = 0
@@ -420,6 +422,8 @@ def run_model(args, device, train_loader, val_loader):
 
                     if i < 16:
                         img_list.append(img[0,...,img.shape[-1]//2])
+                        age_list.append(age[0])
+                        pred_age_list.append(pred_age[0])
                     elif i == 16:
                         grid_image1 = make_grid(
                             img_list,
@@ -432,7 +436,7 @@ def run_model(args, device, train_loader, val_loader):
                         # Create a list to store age information
                         age_info = []
                         for j in range(len(img_list)):
-                            age_info.append(f"True: {age[j].item():.1f}, Pred: {pred_age[j].item():.1f}")
+                            age_info.append(f"True: {age_list[j].item():.1f}, Pred: {pred_age_list[j].item():.1f}")
                         
                         # Create a text image with age information
                         text_img = Image.new('RGB', (400, 400), color='white')
