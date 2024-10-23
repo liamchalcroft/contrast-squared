@@ -65,7 +65,6 @@ def get_loaders(
       mn.transforms.EnsureChannelFirstD(
           keys=["image", "label"], allow_missing_keys=True
       ),
-      mn.transforms.LambdaD(keys="label", func=add_bg),
       mn.transforms.OrientationD(
           keys=["image", "label"], axcodes="RAS", allow_missing_keys=True
       ),
@@ -121,9 +120,10 @@ def get_loaders(
       mn.transforms.NormalizeIntensityD(
           keys="image", nonzero=False, channel_wise=True
       ),
-      mn.transforms.RandGaussianNoiseD(keys="image", prob=0.8),
+      mn.transforms.CopyItemsD(keys=["image"], names=["noisy_image"]),
+      mn.transforms.RandGaussianNoiseD(keys="noisy_image", prob=1.0),
       mn.transforms.RandCropByLabelClassesD(
-          keys=["image", "label"],
+          keys=["image", "label", "noisy_image"],
           spatial_size=(96, 96, 96) if not lowres else (48, 48, 48),
           label_key="label",
           num_samples=1,
@@ -131,12 +131,12 @@ def get_loaders(
           allow_missing_keys=True,
       ),
       mn.transforms.ResizeD(
-          keys=["image", "label"],
+          keys=["image", "label", "noisy_image"],
           spatial_size=(ptch, ptch, ptch),
           allow_missing_keys=True,
       ),
       mn.transforms.ToTensorD(
-          dtype=torch.float32, keys=["image", "label"]
+          dtype=torch.float32, keys=["image", "label", "noisy_image"]
       ),
   ])
 
@@ -177,7 +177,7 @@ def run_model(args, device, train_loader, val_loader):
         net = model.CNNUNet(
             spatial_dims=3, 
             in_channels=1,
-            out_channels=4,
+            out_channels=1,
             features=(64, 128, 256, 512, 768, 32),
             act="GELU", 
             norm="instance", 
@@ -189,7 +189,7 @@ def run_model(args, device, train_loader, val_loader):
         net = model.ViTUNet(
             spatial_dims=3,
             in_channels=1,
-            out_channels=4,
+            out_channels=1,
             img_size=(96 if args.lowres else 192),
             hidden_size=768,
             mlp_dim=3072,
@@ -251,21 +251,7 @@ def run_model(args, device, train_loader, val_loader):
         wandb.config.update(args)
     wandb.watch(net)
 
-    crit = mn.losses.DiceCELoss(
-        include_background=False,
-        to_onehot_y=False,
-        sigmoid=False,
-        softmax=True,
-        other_act=None,
-        squared_pred=False,
-        jaccard=False,
-        reduction="mean",
-        smooth_nr=1e-05,
-        smooth_dr=1e-05,
-        batch=True,
-        lambda_dice=1.0,
-        lambda_ce=1.0,
-    )
+    crit = torch.nn.MSELoss()
 
     class WandBID:
         def __init__(self, wandb_id):
@@ -309,7 +295,7 @@ def run_model(args, device, train_loader, val_loader):
         lr_scheduler = torch.optim.lr_scheduler.LambdaLR(opt, lr_lambda=[lambda1])
     else:
         start_epoch = 0
-        metric_best = 0
+        metric_best = 1e6
 
         def lambda1(epoch):
             return (1 - (epoch) / args.epochs) ** 0.9
@@ -329,7 +315,13 @@ def run_model(args, device, train_loader, val_loader):
             )
             saver2 = mn.transforms.SaveImage(
                 output_dir=os.path.join(args.logdir, args.name, "debug-train"),
-                output_postfix="seg",
+                output_postfix="noisy_image",
+                separate_folder=False,
+                print_log=False,
+            )
+            saver3 = mn.transforms.SaveImage(
+                output_dir=os.path.join(args.logdir, args.name, "debug-train"),
+                output_postfix="denoised_image",
                 separate_folder=False,
                 print_log=False,
             )
@@ -353,16 +345,17 @@ def run_model(args, device, train_loader, val_loader):
                 train_iter = iter(train_loader)
                 batch = next(train_iter)
             img = batch[0]["image"].to(device)
-            seg = batch[0]["label"].to(device)
+            noisy_img = batch[0]["noisy_image"].to(device)
+            noise = noisy_img - img
             opt.zero_grad(set_to_none=True)
 
             if args.debug and step < 5:
-                saver1(torch.Tensor(img[0].cpu().float()))
-                saver2(torch.Tensor(seg[0].cpu().float()))
-
+                saver1(torch.Tensor(img[0].detach().cpu().float()))
+                saver2(torch.Tensor(noisy_img[0].detach().cpu().float()))
+                saver3(torch.Tensor((noisy_img - pred_noise)[0].detach().cpu().float()))
             with ctx:
-                logits = net(img)
-                loss = crit(logits, seg)
+                pred_noise = net(noisy_img)
+                loss = crit(pred_noise, noise)
 
             if type(loss) == float or loss.isnan().sum() != 0:
                 print("NaN found in loss!")
@@ -391,25 +384,24 @@ def run_model(args, device, train_loader, val_loader):
 
         if (epoch + 1) % args.val_interval == 0:
             img_list = []
-            seg_list = []
-            probs_list = []
+            noisy_img_list = []
+            denoised_img_list = []
             net.eval()
             with torch.no_grad():
                 val_loss = 0
-                val_dice = 0
                 for i, batch in enumerate(val_loader):
                     img = batch[0]["image"].to(device)
-                    seg = batch[0]["label"].to(device)
-                    logits = net(img)
-                    loss = crit(logits, seg)
+                    noisy_img = batch[0]["noisy_image"].to(device)
+                    noise = noisy_img - img
+                    pred_noise = net(noisy_img)
+                    loss = crit(pred_noise, noise)
                     val_loss += loss.item()
-                    probs = logits.softmax(dim=1)
-                    val_dice += compute_dice(probs, seg).item()
+                    denoised_img = noisy_img - pred_noise
 
                     if i < 16:
                         img_list.append(img[0,...,img.shape[-1]//2])
-                        seg_list.append(probs.argmax(dim=1, keepdim=True).float()[0,...,seg.shape[-1]//2])
-                        probs_list.append(probs.argmax(dim=1, keepdim=True).float()[0,...,seg.shape[-1]//2])
+                        noisy_img_list.append(noisy_img[0,...,noisy_img.shape[-1]//2])
+                        denoised_img_list.append(denoised_img[0,...,denoised_img.shape[-1]//2])
                     elif i == 16:
                         grid_image1 = make_grid(
                                     img_list,
@@ -419,14 +411,14 @@ def run_model(args, device, train_loader, val_loader):
                                     scale_each=True,
                                 )
                         grid_image2 = make_grid(
-                                    seg_list,
+                                    noisy_img_list,
                                     nrow=int(4),
                                     padding=5,
                                     normalize=True,
                                     scale_each=True,
                                 )
                         grid_image3 = make_grid(
-                                    probs_list,
+                                    denoised_img_list,
                                     nrow=int(4),
                                     padding=5,
                                     normalize=True,
@@ -436,26 +428,25 @@ def run_model(args, device, train_loader, val_loader):
                             {
                                 "examples": [
                                     wandb.Image(
-                                        grid_image1[0].cpu().numpy(), caption="Images"
+                                        grid_image1[0].cpu().numpy(), caption="Images", cmap="jet"
                                     ),
                                     wandb.Image(
-                                        grid_image2[0].cpu().numpy(), caption="Segmentations", cmap="jet"
+                                        grid_image2[0].cpu().numpy(), caption="Noisy Images", cmap="jet"
                                     ),
                                     wandb.Image(
-                                        grid_image3[0].cpu().numpy(), caption="Predictions", cmap="jet"
+                                        grid_image3[0].cpu().numpy(), caption="Denoised Images", cmap="jet"
                                     ),
                                 ]
                             }
                         )
             
             val_loss /= len(val_loader)
-            val_dice /= len(val_loader)
 
-            wandb.log({"val/loss": val_loss, "val/dice": val_dice})
+            wandb.log({"val/loss": val_loss})
 
 
-            if val_dice > metric_best:
-                metric_best = val_dice
+            if val_loss < metric_best:
+                metric_best = val_loss
                 torch.save(
                     {
                         "model": net.state_dict(),
