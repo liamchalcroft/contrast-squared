@@ -249,9 +249,9 @@ def run_model(args, device, train_loader, val_loader):
         
     class Regression(torch.nn.Module):
         def __init__(self, in_features):
-            self.bilinear = torch.nn.Bilinear(in_features, 1, 512, bias=True).to(device)
+            self.bilinear = torch.nn.Bilinear(in_features, 1, 512, bias=True)
             self.gelu = torch.nn.GELU()
-            self.linear = torch.nn.Linear(512, 1, bias=True).to(device)
+            self.linear = torch.nn.Linear(512, 1, bias=True)
             self.scale = torch.nn.Parameter(torch.tensor(1.0))
 
         def forward(self, x, gender):
@@ -261,7 +261,7 @@ def run_model(args, device, train_loader, val_loader):
             x = self.scale * x
             return x
 
-    regressor = Regression(768)
+    regressor = Regression(768).to(device)
 
     if args.resume or args.resume_best:
         ckpts = glob.glob(
