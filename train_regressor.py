@@ -422,10 +422,10 @@ def run_model(args, device, train_loader, val_loader):
                             {
                                 "examples": [
                                     wandb.Image(
-                                        grid_image1[0].cpu().numpy(), caption="Images", cmap="jet"
+                                        grid_image1[0].cpu().numpy(), caption="Images"
                                     ),
                                     wandb.Image(
-                                        text_tensor[0].cpu().numpy(), caption="Age Information", cmap="jet"
+                                        text_tensor[0].cpu().numpy(), caption="Age Information"
                                     ),
                                 ]
                             }
