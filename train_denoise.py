@@ -534,6 +534,12 @@ def set_up():
             separate_folder=False,
             print_log=False,
         )
+        saver3 = mn.transforms.SaveImage(
+            output_dir=os.path.join(args.logdir, args.name, "debug"),
+            output_postfix="noisy_image",
+            separate_folder=False,
+            print_log=False,
+        )
         for i, batch in enumerate(train_loader):
             if i > 5:
                 break
@@ -555,6 +561,15 @@ def set_up():
                 )
                 saver2(
                     torch.Tensor(batch[0]["label"][0].argmax(dim=0, keepdim=True).cpu().float())
+                )
+                print(
+                    "Noisy Image: ",
+                    batch[0]["noisy_image"].shape,
+                    "min={}".format(batch[0]["noisy_image"].min()),
+                    "max={}".format(batch[0]["noisy_image"].max()),
+                )
+                saver3(
+                    torch.Tensor(batch[0]["noisy_image"][0].cpu().float())
                 )
 
     return args, device, train_loader, val_loader
