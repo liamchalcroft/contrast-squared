@@ -439,10 +439,10 @@ def run_model(args, device, train_loader, val_loader):
                                         grid_image1[0].cpu().numpy(), caption="Images"
                                     ),
                                     wandb.Image(
-                                        grid_image2[0].cpu().numpy(), caption="Segmentations", cmap="jet"
+                                        grid_image2[0].cpu().numpy(), caption="Segmentations"
                                     ),
                                     wandb.Image(
-                                        grid_image3[0].cpu().numpy(), caption="Predictions", cmap="jet"
+                                        grid_image3[0].cpu().numpy(), caption="Predictions"
                                     ),
                                 ]
                             }

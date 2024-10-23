@@ -428,13 +428,13 @@ def run_model(args, device, train_loader, val_loader):
                             {
                                 "examples": [
                                     wandb.Image(
-                                        grid_image1[0].cpu().numpy(), caption="Images", cmap="jet"
+                                        grid_image1[0].cpu().numpy(), caption="Images"
                                     ),
                                     wandb.Image(
-                                        grid_image2[0].cpu().numpy(), caption="Noisy Images", cmap="jet"
+                                        grid_image2[0].cpu().numpy(), caption="Noisy Images"
                                     ),
                                     wandb.Image(
-                                        grid_image3[0].cpu().numpy(), caption="Denoised Images", cmap="jet"
+                                        grid_image3[0].cpu().numpy(), caption="Denoised Images"
                                     ),
                                 ]
                             }
