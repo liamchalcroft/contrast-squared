@@ -247,10 +247,18 @@ def run_model(args, device, train_loader, val_loader):
     print(f"\nLoading encoder weights from {args.backbone_weights}")
     encoder.load_state_dict(checkpoint["encoder"], strict=True)
 
+    class Scale(torch.nn.Module):
+        def __init__(self):
+            super().__init__()
+            self.scale = torch.nn.Parameter(torch.tensor(1.0))
+        def forward(self, x):
+            return x * self.scale
+
     regressor = torch.nn.Sequential(
-        torch.nn.Linear(768 + 1, 512, bias=True).to(device),
+        torch.nn.Bilinear(768, 1, 512, bias=True).to(device),
         torch.nn.GELU(),
-        torch.nn.Linear(512, 1, bias=True).to(device)
+        torch.nn.Linear(512, 1, bias=True).to(device),
+        Scale()
     )
 
     if args.resume or args.resume_best:
