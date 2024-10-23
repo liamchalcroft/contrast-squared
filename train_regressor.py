@@ -249,6 +249,7 @@ def run_model(args, device, train_loader, val_loader):
         
     class Regression(torch.nn.Module):
         def __init__(self, in_features):
+            super().__init__()
             self.bilinear = torch.nn.Bilinear(in_features, 1, 512, bias=True)
             self.gelu = torch.nn.GELU()
             self.linear = torch.nn.Linear(512, 1, bias=True)
