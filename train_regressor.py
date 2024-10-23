@@ -247,7 +247,11 @@ def run_model(args, device, train_loader, val_loader):
     print(f"\nLoading encoder weights from {args.backbone_weights}")
     encoder.load_state_dict(checkpoint["encoder"], strict=True)
 
-    regressor = torch.nn.Linear(768 + 1, 1, bias=True).to(device)
+    regressor = torch.nn.Sequential(
+        torch.nn.Linear(768 + 1, 512, bias=True).to(device),
+        torch.nn.GELU(),
+        torch.nn.Linear(512, 1, bias=True).to(device)
+    )
 
     if args.resume or args.resume_best:
         ckpts = glob.glob(
@@ -374,7 +378,7 @@ def run_model(args, device, train_loader, val_loader):
                 features = encoder(img)
                 features = features.view(features.shape[0], features.shape[1], -1).mean(dim=-1)
                 features = torch.cat([features, gender], dim=1)
-                pred_age = regressor(features) * 100
+                pred_age = regressor(features)
                 loss = crit(pred_age, age)
 
             if type(loss) == float or loss.isnan().sum() != 0:
@@ -417,7 +421,7 @@ def run_model(args, device, train_loader, val_loader):
                     features = encoder(img)
                     features = features.view(features.shape[0], features.shape[1], -1).mean(dim=-1)
                     features = torch.cat([features, gender], dim=1)
-                    pred_age = regressor(features) * 100
+                    pred_age = regressor(features)
                     loss = torch.nn.functional.mse_loss(pred_age, age)
                     val_mse += loss.item()
                     loss = torch.nn.functional.l1_loss(pred_age, age)
