@@ -357,10 +357,13 @@ def run_model(args, device, train_loader, val_loader):
             if args.debug and step < 5:
                 saver1(torch.Tensor(img[0].detach().cpu().float()))
                 saver2(torch.Tensor(noisy_img[0].detach().cpu().float()))
-                saver3(torch.Tensor((noisy_img - pred_noise)[0].detach().cpu().float()))
+
             with ctx:
                 pred_noise = net(noisy_img)
                 loss = crit(pred_noise, noise)
+
+            if args.debug and step < 5:
+                saver3(torch.Tensor((noisy_img - pred_noise)[0].detach().cpu().float()))
 
             if type(loss) == float or loss.isnan().sum() != 0:
                 print("NaN found in loss!")
