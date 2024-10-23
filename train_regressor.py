@@ -58,23 +58,23 @@ def get_loaders(
   train_ages = []
   train_genders = []
   for i, id in enumerate(train_ids):
-      age = ixi_data.loc[ixi_data["IXI_ID"] == id]["Age"].values[0]
+      age = ixi_data.loc[ixi_data["IXI_ID"] == id]["AGE"].values[0]
       if np.isnan(age):
           train_ids.pop(i)
           train_imgs.pop(i)
       else:
           train_ages.append(age)
-          train_genders.append(ixi_data.loc[ixi_data["IXI_ID"] == id]["Gender"].values[0])
+          train_genders.append(ixi_data.loc[ixi_data["IXI_ID"] == id]["SEX_ID (1=m, 2=f)"].values[0])
   val_ages = []
   val_genders = []
   for i, id in enumerate(val_ids):
-      age = ixi_data.loc[ixi_data["IXI_ID"] == id]["Age"].values[0]
+      age = ixi_data.loc[ixi_data["IXI_ID"] == id]["AGE"].values[0]
       if np.isnan(age):
           val_ids.pop(i)
           val_imgs.pop(i)
       else:
           val_ages.append(age)
-          val_genders.append(ixi_data.loc[ixi_data["IXI_ID"] == id]["Gender"].values[0])
+          val_genders.append(ixi_data.loc[ixi_data["IXI_ID"] == id]["SEX_ID (1=m, 2=f)"].values[0])
 
   train_dict = [{"image": f, "label": [f.replace("p_IXI", "c1p_IXI"), f.replace("p_IXI", "c2p_IXI"), f.replace("p_IXI", "c3p_IXI")], "age": train_ages[i], "gender": train_genders[i]} for i, f in enumerate(train_imgs)]
   val_dict = [{"image": f, "label": [f.replace("p_IXI", "c1p_IXI"), f.replace("p_IXI", "c2p_IXI"), f.replace("p_IXI", "c3p_IXI")], "age": val_ages[i], "gender": val_genders[i]} for i, f in enumerate(val_imgs)]
