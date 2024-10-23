@@ -153,8 +153,8 @@ def get_loaders(
         ]
     )
 
-    train_data = mn.data.SmartCacheDataset(train_dict, transform=train_transform, cache_rate=0.3)
-    val_data = mn.data.SmartCacheDataset(val_dict, transform=train_transform, cache_rate=0.3)
+    train_data = mn.data.CacheDataset(train_dict, transform=train_transform, cache_rate=0.3, num_workers=8)
+    val_data = mn.data.CacheDataset(val_dict, transform=train_transform, cache_rate=0.3, num_workers=8)
 
     train_loader = DataLoader(
         train_data,

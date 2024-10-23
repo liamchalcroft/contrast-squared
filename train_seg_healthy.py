@@ -140,8 +140,8 @@ def get_loaders(
       ),
   ])
 
-  train_data = mn.data.SmartCacheDataset(train_dict, transform=data_transforms, cache_rate=0.3)
-  val_data = mn.data.SmartCacheDataset(val_dict, transform=data_transforms, cache_rate=0.3)
+  train_data = mn.data.CacheDataset(train_dict, transform=data_transforms, cache_rate=0.3, num_workers=8)
+  val_data = mn.data.CacheDataset(val_dict, transform=data_transforms, cache_rate=0.3, num_workers=8)
 
   train_loader = DataLoader(
       train_data,
@@ -149,7 +149,7 @@ def get_loaders(
       shuffle=True,
       sampler=None,
       batch_sampler=None,
-      num_workers=24,
+      num_workers=8,
   )
   val_loader = DataLoader(
       val_data,
@@ -157,7 +157,7 @@ def get_loaders(
       shuffle=False,
       sampler=None,
       batch_sampler=None,
-      num_workers=24,
+      num_workers=8,
   )
 
   return train_loader, val_loader
