@@ -374,6 +374,7 @@ def run_model(args, device, train_loader, val_loader):
                 saver1(torch.Tensor(img[0].detach().cpu().float()))
             with ctx:
                 features = encoder(img)
+                features = features.view(features.shape[0], features.shape[1], -1).mean(dim=-1)
                 features = torch.cat([features, gender], dim=1)
                 pred_age = regressor(features)
                 loss = crit(pred_age, age)
@@ -410,10 +411,10 @@ def run_model(args, device, train_loader, val_loader):
                 val_loss = 0
                 for i, batch in enumerate(val_loader):
                     img = batch[0]["image"].to(device)
-                    noisy_img = batch[0]["noisy_image"].to(device)
                     age = batch[0]["age"].to(device)
                     gender = batch[0]["gender"].to(device)
                     features = encoder(img)
+                    features = features.view(features.shape[0], features.shape[1], -1).mean(dim=-1)
                     features = torch.cat([features, gender], dim=1)
                     pred_age = regressor(features)
                     loss = crit(pred_age, age)
