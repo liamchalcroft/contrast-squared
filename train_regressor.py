@@ -58,14 +58,15 @@ def get_loaders(
   train_ages = []
   train_genders = []
   for i, id in enumerate(train_ids):
-      print(id)
-      print(ixi_data[ixi_data["IXI_ID"] == id]["AGE"].values)
-      age = ixi_data.loc[ixi_data["IXI_ID"] == id]["AGE"].values[0]
-      if np.isnan(age):
+      age = ixi_data.loc[ixi_data["IXI_ID"] == id]["AGE"].values
+      if len(age) == 0:
+          train_ids.pop(i)
+          train_imgs.pop(i)
+      elif np.isnan(age[0]):
           train_ids.pop(i)
           train_imgs.pop(i)
       else:
-          train_ages.append(age)
+          train_ages.append(age[0])
           train_genders.append(ixi_data.loc[ixi_data["IXI_ID"] == id]["SEX_ID (1=m, 2=f)"].values[0])
   val_ages = []
   val_genders = []
