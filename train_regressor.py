@@ -378,9 +378,9 @@ def run_model(args, device, train_loader, val_loader):
             except:
                 train_iter = iter(train_loader)
                 batch = next(train_iter)
-            img = batch[0]["image"].to(device)
-            age = batch[0]["age"][:, None].to(device)
-            gender = batch[0]["gender"][:, None].to(device)
+            img = batch[0]["image"].to(device).float()
+            age = batch[0]["age"][:, None].to(device).float()
+            gender = batch[0]["gender"][:, None].to(device).float()
             opt.zero_grad(set_to_none=True)
 
             if args.debug and step < 5:
@@ -425,9 +425,9 @@ def run_model(args, device, train_loader, val_loader):
                 val_mse = 0
                 val_mae = 0
                 for i, batch in enumerate(val_loader):
-                    img = batch[0]["image"].to(device)
-                    age = batch[0]["age"][:, None].to(device)
-                    gender = batch[0]["gender"][:, None].to(device)
+                    img = batch[0]["image"].to(device).float()
+                    age = batch[0]["age"][:, None].to(device).float()
+                    gender = batch[0]["gender"][:, None].to(device).float()
                     features = encoder(img)
                     features = features.view(features.shape[0], features.shape[1], -1).mean(dim=-1)
                     pred_age = regressor(features, gender)
