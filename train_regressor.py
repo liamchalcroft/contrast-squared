@@ -82,8 +82,8 @@ def get_loaders(
           val_ages.append(age)
           val_genders.append(ixi_data.loc[ixi_data["IXI_ID"] == id]["SEX_ID (1=m, 2=f)"].values[0])
 
-  print(len(train_imgs), len(train_ages), len(train_genders))
-  print(len(val_imgs), len(val_ages), len(val_genders))
+  print(len(train_ids), len(train_imgs), len(train_ages), len(train_genders))
+  print(len(val_ids), len(val_imgs), len(val_ages), len(val_genders))
   train_dict = [{"image": f, "label": [f.replace("p_IXI", "c1p_IXI"), f.replace("p_IXI", "c2p_IXI"), f.replace("p_IXI", "c3p_IXI")], "age": train_ages[i], "gender": train_genders[i]} for i, f in enumerate(train_imgs)]
   val_dict = [{"image": f, "label": [f.replace("p_IXI", "c1p_IXI"), f.replace("p_IXI", "c2p_IXI"), f.replace("p_IXI", "c3p_IXI")], "age": val_ages[i], "gender": val_genders[i]} for i, f in enumerate(val_imgs)]
 
