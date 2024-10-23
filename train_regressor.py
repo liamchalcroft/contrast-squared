@@ -368,6 +368,9 @@ def run_model(args, device, train_loader, val_loader):
             img = batch[0]["image"].to(device)
             age = batch[0]["age"].to(device)
             gender = batch[0]["gender"].to(device)
+            print(img.shape)
+            print(age.shape)
+            print(gender.shape)
             opt.zero_grad(set_to_none=True)
 
             if args.debug and step < 5:
