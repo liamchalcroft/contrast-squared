@@ -27,140 +27,145 @@ def add_bg(x):
     return torch.cat([1-x.sum(dim=0, keepdim=True), x], dim=0)
 
 def get_loaders(
-    batch_size=1,
-    device="cpu",
-    lowres=False,
-    ptch=128,
-    pc_data=100,
-):
+        batch_size=1,
+        device="cpu",
+        lowres=False,
+        ptch=128,
+        pc_data=100,
+    ):
 
-  ## Generate training data for the guys t1 modality
-  # Load IXI spreadsheet
-  ixi_data = pd.read_excel('/home/lchalcroft/Data/IXI/IXI.xls')
+    ## Generate training data for the guys t1 modality
+    # Load IXI spreadsheet
+    ixi_data = pd.read_excel('/home/lchalcroft/Data/IXI/IXI.xls')
 
-  # Load and prepare data
-  all_imgs = glob.glob("/home/lchalcroft/Data/IXI/guys/t1/preprocessed/p_IXI*-T1.nii.gz")
-  
-  # Sort and split data
-  all_imgs.sort()
-  total_samples = len(all_imgs)
-  train_size = int(0.7 * total_samples)
-  val_size = int(0.1 * total_samples)
+    # Load and prepare data
+    all_imgs = glob.glob("/home/lchalcroft/Data/IXI/guys/t1/preprocessed/p_IXI*-T1.nii.gz")
+    
+    # Sort and split data
+    all_imgs.sort()
+    total_samples = len(all_imgs)
+    train_size = int(0.7 * total_samples)
+    val_size = int(0.1 * total_samples)
 
-  train_imgs = all_imgs[:train_size]
-  val_imgs = all_imgs[train_size:train_size+val_size]
-  train_ids = [int(os.path.basename(f).split("-")[0][5:]) for f in train_imgs]
-  val_ids = [int(os.path.basename(f).split("-")[0][5:]) for f in val_imgs]
+    train_imgs = all_imgs[:train_size]
+    val_imgs = all_imgs[train_size:train_size+val_size]
+    train_ids = [int(os.path.basename(f).split("-")[0][5:]) for f in train_imgs]
+    val_ids = [int(os.path.basename(f).split("-")[0][5:]) for f in val_imgs]
 
-  train_dict = [{"image": f, "label": [f.replace("p_IXI", "c1p_IXI"), f.replace("p_IXI", "c2p_IXI"), f.replace("p_IXI", "c3p_IXI")]} for f in train_imgs]
-  val_dict = [{"image": f, "label": [f.replace("p_IXI", "c1p_IXI"), f.replace("p_IXI", "c2p_IXI"), f.replace("p_IXI", "c3p_IXI")]} for f in val_imgs]
+    train_dict = [{"image": f, "label": [f.replace("p_IXI", "c1p_IXI"), f.replace("p_IXI", "c2p_IXI"), f.replace("p_IXI", "c3p_IXI")]} for f in train_imgs]
+    val_dict = [{"image": f, "label": [f.replace("p_IXI", "c1p_IXI"), f.replace("p_IXI", "c2p_IXI"), f.replace("p_IXI", "c3p_IXI")]} for f in val_imgs]
 
-  if pc_data < 100:
-      train_dict = train_dict[:int(len(train_dict) * pc_data / 100)]
+    if pc_data < 100:
+        train_dict = train_dict[:int(len(train_dict) * pc_data / 100)]
 
-  data_transforms = mn.transforms.Compose([
-      mn.transforms.LoadImageD(
-          keys=["image", "label"], image_only=True, allow_missing_keys=True
-      ),
-      mn.transforms.EnsureChannelFirstD(
-          keys=["image", "label"], allow_missing_keys=True
-      ),
-      mn.transforms.OrientationD(
-          keys=["image", "label"], axcodes="RAS", allow_missing_keys=True
-      ),
-      mn.transforms.SpacingD(
-          keys=["image", "label"],
-          pixdim=1 if not lowres else 2,
-          allow_missing_keys=True,
-      ),
-      # mn.transforms.ResizeWithPadOrCropD(
-      #     keys=["image", "seg"],
-      #     spatial_size=(256, 256, 256) if not lowres else (128, 128, 128),
-      #     allow_missing_keys=True,
-      # ),
-      mn.transforms.ToTensorD(
-          dtype=float,
-          keys=["image", "label"],
-          allow_missing_keys=True,
-      ),
-      mn.transforms.LambdaD(
-          keys=["image", "label"],
-          func=mn.transforms.SignalFillEmpty(),
-          allow_missing_keys=True,
-      ),
-      mn.transforms.RandAffineD(
-          keys=["image", "label"],
-          rotate_range=15, shear_range=0.012, scale_range=0.15,
-          prob=0.8, 
-          # cache_grid=True, spatial_size=(256, 256, 256) if not lowres else (128, 128, 128),
-          allow_missing_keys=True,
-      ),
-      mn.transforms.RandBiasFieldD(keys="image", prob=0.8),
-      mn.transforms.RandAxisFlipd(
-          keys=["image", "label"],
-          prob=0.8,
-          allow_missing_keys=True,
-      ),
-      mn.transforms.RandAxisFlipd(
-          keys=["image", "label"],
-          prob=0.8,
-          allow_missing_keys=True,
-      ),
-      mn.transforms.RandAxisFlipd(
-          keys=["image", "label"],
-          prob=0.8,
-          allow_missing_keys=True,
-      ),
-      mn.transforms.ScaleIntensityRangePercentilesD(
-          keys=["image"],
-          lower=0.5, upper=99.5, b_min=0, b_max=1,
-          clip=True, channel_wise=True,
-      ),
-      mn.transforms.HistogramNormalizeD(keys="image", min=0, max=1, allow_missing_keys=True),
-      mn.transforms.NormalizeIntensityD(
-          keys="image", nonzero=False, channel_wise=True
-      ),
-      mn.transforms.CopyItemsD(keys=["image"], names=["noisy_image"]),
-      mn.transforms.RandGaussianNoiseD(keys="noisy_image", prob=1.0),
-      mn.transforms.RandCropByLabelClassesD(
-          keys=["image", "label", "noisy_image"],
-          spatial_size=(96, 96, 96) if not lowres else (48, 48, 48),
-          label_key="label",
-          num_samples=1,
-          ratios=[1, 5, 5, 5],
-          allow_missing_keys=True,
-      ),
-      mn.transforms.ResizeD(
-          keys=["image", "label", "noisy_image"],
-          spatial_size=(ptch, ptch, ptch),
-          allow_missing_keys=True,
-      ),
-      mn.transforms.ToTensorD(
-          dtype=torch.float32, keys=["image", "label", "noisy_image"]
-      ),
-  ])
+    data_transforms = mn.transforms.Compose([
+        mn.transforms.LoadImageD(
+            keys=["image", "label"], image_only=True, allow_missing_keys=True
+        ),
+        mn.transforms.EnsureChannelFirstD(
+            keys=["image", "label"], allow_missing_keys=True
+        ),
+        mn.transforms.LambdaD(
+            keys=["label"],
+            func=add_bg,
+            allow_missing_keys=True,
+        ),
+        mn.transforms.OrientationD(
+            keys=["image", "label"], axcodes="RAS", allow_missing_keys=True
+        ),
+        mn.transforms.SpacingD(
+            keys=["image", "label"],
+            pixdim=1 if not lowres else 2,
+            allow_missing_keys=True,
+        ),
+        # mn.transforms.ResizeWithPadOrCropD(
+        #     keys=["image", "seg"],
+        #     spatial_size=(256, 256, 256) if not lowres else (128, 128, 128),
+        #     allow_missing_keys=True,
+        # ),
+        mn.transforms.ToTensorD(
+            dtype=float,
+            keys=["image", "label"],
+            allow_missing_keys=True,
+        ),
+        mn.transforms.LambdaD(
+            keys=["image", "label"],
+            func=mn.transforms.SignalFillEmpty(),
+            allow_missing_keys=True,
+        ),
+        mn.transforms.RandAffineD(
+            keys=["image", "label"],
+            rotate_range=15, shear_range=0.012, scale_range=0.15,
+            prob=0.8, 
+            # cache_grid=True, spatial_size=(256, 256, 256) if not lowres else (128, 128, 128),
+            allow_missing_keys=True,
+        ),
+        mn.transforms.RandBiasFieldD(keys="image", prob=0.8),
+        mn.transforms.RandAxisFlipd(
+            keys=["image", "label"],
+            prob=0.8,
+            allow_missing_keys=True,
+        ),
+        mn.transforms.RandAxisFlipd(
+            keys=["image", "label"],
+            prob=0.8,
+            allow_missing_keys=True,
+        ),
+        mn.transforms.RandAxisFlipd(
+            keys=["image", "label"],
+            prob=0.8,
+            allow_missing_keys=True,
+        ),
+        mn.transforms.ScaleIntensityRangePercentilesD(
+            keys=["image"],
+            lower=0.5, upper=99.5, b_min=0, b_max=1,
+            clip=True, channel_wise=True,
+        ),
+        mn.transforms.HistogramNormalizeD(keys="image", min=0, max=1, allow_missing_keys=True),
+        mn.transforms.NormalizeIntensityD(
+            keys="image", nonzero=False, channel_wise=True
+        ),
+        mn.transforms.CopyItemsD(keys=["image"], names=["noisy_image"]),
+        mn.transforms.RandGaussianNoiseD(keys="noisy_image", prob=1.0),
+        mn.transforms.RandCropByLabelClassesD(
+            keys=["image", "label", "noisy_image"],
+            spatial_size=(96, 96, 96) if not lowres else (48, 48, 48),
+            label_key="label",
+            num_samples=1,
+            ratios=[1, 5, 5, 5],
+            allow_missing_keys=True,
+        ),
+        mn.transforms.ResizeD(
+            keys=["image", "label", "noisy_image"],
+            spatial_size=(ptch, ptch, ptch),
+            allow_missing_keys=True,
+        ),
+        mn.transforms.ToTensorD(
+            dtype=torch.float32, keys=["image", "label", "noisy_image"]
+        ),
+    ])
 
-  train_data = mn.data.Dataset(train_dict, transform=data_transforms)
-  val_data = mn.data.Dataset(val_dict, transform=data_transforms)
+    train_data = mn.data.Dataset(train_dict, transform=data_transforms)
+    val_data = mn.data.Dataset(val_dict, transform=data_transforms)
 
-  train_loader = DataLoader(
-      train_data,
-      batch_size=batch_size,
-      shuffle=True,
-      sampler=None,
-      batch_sampler=None,
-      num_workers=24,
-  )
-  val_loader = DataLoader(
-      val_data,
-      batch_size=1,
-      shuffle=False,
-      sampler=None,
-      batch_sampler=None,
-      num_workers=24,
-  )
+    train_loader = DataLoader(
+        train_data,
+        batch_size=batch_size,
+        shuffle=True,
+        sampler=None,
+        batch_sampler=None,
+        num_workers=24,
+    )
+    val_loader = DataLoader(
+        val_data,
+        batch_size=1,
+        shuffle=False,
+        sampler=None,
+        batch_sampler=None,
+        num_workers=24,
+    )
 
-  return train_loader, val_loader
+    return train_loader, val_loader
 
 
 def compute_dice(y_pred, y, eps=1e-8):
