@@ -249,7 +249,7 @@ def run_model(args, device, train_loader, val_loader):
     print(f"\nLoading encoder weights from {args.backbone_weights}")
     encoder.load_state_dict(checkpoint["encoder"], strict=True)
 
-    regressor = torch.nn.Linear(768, 1, bias=True).to(device)
+    regressor = torch.nn.Linear(768 + 1, 1, bias=True).to(device)
 
     if args.resume or args.resume_best:
         ckpts = glob.glob(
