@@ -110,6 +110,11 @@ def get_loaders(
         mn.transforms.EnsureChannelFirstD(
             keys=["image", "label"], allow_missing_keys=True
         ),
+        mn.transforms.LambdaD(
+            keys=["label"],
+            func=add_bg,
+            allow_missing_keys=True,
+        ),
         mn.transforms.OrientationD(
             keys=["image", "label"], axcodes="RAS", allow_missing_keys=True
         ),
