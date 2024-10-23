@@ -366,8 +366,8 @@ def run_model(args, device, train_loader, val_loader):
                 train_iter = iter(train_loader)
                 batch = next(train_iter)
             img = batch[0]["image"].to(device)
-            age = batch[0]["age"].to(device)
-            gender = batch[0]["gender"].to(device)
+            age = batch[0]["age"][:, None].to(device)
+            gender = batch[0]["gender"][:, None].to(device)
             print(img.shape)
             print(age.shape)
             print(gender.shape)
@@ -414,8 +414,8 @@ def run_model(args, device, train_loader, val_loader):
                 val_loss = 0
                 for i, batch in enumerate(val_loader):
                     img = batch[0]["image"].to(device)
-                    age = batch[0]["age"].to(device)
-                    gender = batch[0]["gender"].to(device)
+                    age = batch[0]["age"][:, None].to(device)
+                    gender = batch[0]["gender"][:, None].to(device)
                     features = encoder(img)
                     features = features.view(features.shape[0], features.shape[1], -1).mean(dim=-1)
                     features = torch.cat([features, gender], dim=1)
