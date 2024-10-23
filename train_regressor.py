@@ -95,8 +95,6 @@ def get_loaders(
     val_imgs = val_imgs_new
     val_ids = val_ids_new
 
-    print(len(train_ids_new), len(train_imgs_new), len(train_ages), len(train_genders))
-    print(len(val_ids), len(val_imgs), len(val_ages), len(val_genders))
     train_dict = [{"image": f, "label": [f.replace("p_IXI", "c1p_IXI"), f.replace("p_IXI", "c2p_IXI"), f.replace("p_IXI", "c3p_IXI")], "age": train_ages[i], "gender": train_genders[i]} for i, f in enumerate(train_imgs)]
     val_dict = [{"image": f, "label": [f.replace("p_IXI", "c1p_IXI"), f.replace("p_IXI", "c2p_IXI"), f.replace("p_IXI", "c3p_IXI")], "age": val_ages[i], "gender": val_genders[i]} for i, f in enumerate(val_imgs)]
 
@@ -368,9 +366,6 @@ def run_model(args, device, train_loader, val_loader):
             img = batch[0]["image"].to(device)
             age = batch[0]["age"][:, None].to(device)
             gender = batch[0]["gender"][:, None].to(device)
-            print(img.shape)
-            print(age.shape)
-            print(gender.shape)
             opt.zero_grad(set_to_none=True)
 
             if args.debug and step < 5:
