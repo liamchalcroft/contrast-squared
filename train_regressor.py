@@ -246,20 +246,22 @@ def run_model(args, device, train_loader, val_loader):
     checkpoint = torch.load(args.backbone_weights, map_location=device)
     print(f"\nLoading encoder weights from {args.backbone_weights}")
     encoder.load_state_dict(checkpoint["encoder"], strict=True)
-
-    class Scale(torch.nn.Module):
-        def __init__(self):
-            super().__init__()
+        
+    class Regression(torch.nn.Module):
+        def __init__(self, in_features):
+            self.bilinear = torch.nn.Bilinear(in_features, 1, 512, bias=True).to(device)
+            self.gelu = torch.nn.GELU()
+            self.linear = torch.nn.Linear(512, 1, bias=True).to(device)
             self.scale = torch.nn.Parameter(torch.tensor(1.0))
-        def forward(self, x):
-            return x * self.scale
 
-    regressor = torch.nn.Sequential(
-        torch.nn.Bilinear(768, 1, 512, bias=True).to(device),
-        torch.nn.GELU(),
-        torch.nn.Linear(512, 1, bias=True).to(device),
-        Scale()
-    )
+        def forward(self, x, gender):
+            x = self.bilinear(x, gender)
+            x = self.gelu(x)
+            x = self.linear(x)
+            x = self.scale * x
+            return x
+
+    regressor = Regression(768)
 
     if args.resume or args.resume_best:
         ckpts = glob.glob(
