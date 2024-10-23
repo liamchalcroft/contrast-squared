@@ -59,7 +59,7 @@ def get_loaders(
   train_genders = []
   for i, id in enumerate(train_ids):
       print(id)
-      print(ixi_data[ixi_data["IXI_ID"] == id]["AGE"])
+      print(ixi_data[ixi_data["IXI_ID"] == id]["AGE"].values)
       age = ixi_data.loc[ixi_data["IXI_ID"] == id]["AGE"].values[0]
       if np.isnan(age):
           train_ids.pop(i)
