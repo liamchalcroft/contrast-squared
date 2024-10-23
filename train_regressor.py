@@ -374,7 +374,7 @@ def run_model(args, device, train_loader, val_loader):
                 features = encoder(img)
                 features = features.view(features.shape[0], features.shape[1], -1).mean(dim=-1)
                 features = torch.cat([features, gender], dim=1)
-                pred_age = regressor(features)
+                pred_age = regressor(features) * 100
                 loss = crit(pred_age, age)
 
             if type(loss) == float or loss.isnan().sum() != 0:
@@ -408,7 +408,8 @@ def run_model(args, device, train_loader, val_loader):
             pred_age_list = []
             regressor.eval()
             with torch.no_grad():
-                val_loss = 0
+                val_mse = 0
+                val_mae = 0
                 for i, batch in enumerate(val_loader):
                     img = batch[0]["image"].to(device)
                     age = batch[0]["age"][:, None].to(device)
@@ -416,9 +417,11 @@ def run_model(args, device, train_loader, val_loader):
                     features = encoder(img)
                     features = features.view(features.shape[0], features.shape[1], -1).mean(dim=-1)
                     features = torch.cat([features, gender], dim=1)
-                    pred_age = regressor(features)
-                    loss = crit(pred_age, age)
-                    val_loss += loss.item()
+                    pred_age = regressor(features) * 100
+                    loss = torch.nn.functional.mse_loss(pred_age, age)
+                    val_mse += loss.item()
+                    loss = torch.nn.functional.l1_loss(pred_age, age)
+                    val_mae += loss.item()
 
                     if i < 16:
                         img_list.append(img[0,...,img.shape[-1]//2])
@@ -460,13 +463,14 @@ def run_model(args, device, train_loader, val_loader):
                             }
                         )
             
-            val_loss /= len(val_loader)
+            val_mse /= len(val_loader)
+            val_mae /= len(val_loader)
 
-            wandb.log({"val/loss": val_loss})
+            wandb.log({"val/mse": val_mse, "val/mae": val_mae})
 
 
-            if val_loss < metric_best:
-                metric_best = val_loss
+            if val_mse < metric_best:
+                metric_best = val_mse
                 torch.save(
                     {
                         "model": regressor.state_dict(),
