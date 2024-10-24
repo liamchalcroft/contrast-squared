@@ -35,12 +35,11 @@ def extract_encoder_weights(unet_checkpoint_path, encoder_type, output_path):
     # Extract encoder weights from the UNet state dict
     encoder_state_dict = {}
     for key, value in checkpoint['model'].items():
-        if key.startswith('encoder'):
-            new_key = key.replace('encoder.', '')
-            encoder_state_dict[new_key] = value
+        if key.startswith('conv_0'):
+            encoder_state_dict[key] = value
+        elif key.startswith('down_'):
+            encoder_state_dict[key] = value
 
-    print(encoder_state_dict.keys())
-    print(encoder)
     # Load the extracted weights into the encoder
     encoder.load_state_dict(encoder_state_dict)
 
