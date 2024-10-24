@@ -26,6 +26,7 @@ def add_bg(x):
     return torch.cat([1-x.sum(dim=0, keepdim=True), x], dim=0)
 
 def get_loaders(
+    args,
     batch_size=1,
     device="cpu",
     lowres=False,
@@ -153,8 +154,8 @@ def get_loaders(
         ]
     )
 
-    train_data = mn.data.CacheDataset(train_dict, transform=train_transform, cache_rate=0.3, num_workers=8)
-    val_data = mn.data.CacheDataset(val_dict, transform=train_transform, cache_rate=0.3, num_workers=8)
+    train_data = mn.data.PersistentDataset(train_dict, transform=train_transform, cache_dir=os.path.join(args.logdir, args.name, "train_cache"))
+    val_data = mn.data.PersistentDataset(val_dict, transform=train_transform, cache_dir=os.path.join(args.logdir, args.name, "val_cache"))
 
     train_loader = DataLoader(
         train_data,
@@ -521,7 +522,7 @@ def set_up():
         print("Memory Usage:")
         print("Allocated:", round(torch.cuda.memory_allocated(0) / 1024**3, 1), "GB")
         print("Cached:   ", round(torch.cuda.memory_reserved(0) / 1024**3, 1), "GB")
-    train_loader, val_loader = get_loaders(batch_size=args.batch_size, device=device, lowres=args.lowres, ptch=48 if args.lowres else 96, pc_data=args.pc_data)
+    train_loader, val_loader = get_loaders(args=args, batch_size=args.batch_size, device=device, lowres=args.lowres, ptch=48 if args.lowres else 96, pc_data=args.pc_data)
 
     if args.debug:
         saver1 = mn.transforms.SaveImage(
