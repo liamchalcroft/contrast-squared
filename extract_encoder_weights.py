@@ -39,6 +39,8 @@ def extract_encoder_weights(unet_checkpoint_path, encoder_type, output_path):
             new_key = key.replace('encoder.', '')
             encoder_state_dict[new_key] = value
 
+    print(encoder_state_dict.keys())
+    print(encoder)
     # Load the extracted weights into the encoder
     encoder.load_state_dict(encoder_state_dict)
 
