@@ -1,6 +1,6 @@
 #! /bin/bash
 
-python pretrain_3d.py \
+python ../pretrain_3d.py \
     --name 3d-cnn-simclr-mprage \
     --batch_size 8 \
     --epochs 200 \
@@ -14,7 +14,7 @@ python pretrain_3d.py \
     --debug \
     --resume
 
-python pretrain_3d.py \
+python ../pretrain_3d.py \
     --name 3d-cnn-simclr-mprage \
     --batch_size 8 \
     --epochs 200 \
@@ -28,7 +28,7 @@ python pretrain_3d.py \
     --debug \
     --resume
 
-python pretrain_3d.py \
+python ../pretrain_3d.py \
     --name 3d-cnn-simclr-bloch-paired \
     --batch_size 8 \
     --epochs 200 \
