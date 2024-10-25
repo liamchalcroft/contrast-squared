@@ -10,7 +10,7 @@ python pretrain_3d.py \
     --data mprage \
     --net vit \
     --amp \
-    --logdir ../logs \
+    --logdir ../ \
     --debug \
     --resume
 
@@ -24,7 +24,7 @@ python pretrain_3d.py \
     --data mprage \
     --net vit \
     --amp \
-    --logdir ../logs \
+    --logdir ../ \
     --debug \
     --resume
 
@@ -38,6 +38,6 @@ python pretrain_3d.py \
     --data mprage-paired \
     --net vit \
     --amp \
-    --logdir ../logs \
+    --logdir ../ \
     --debug \
     --resume

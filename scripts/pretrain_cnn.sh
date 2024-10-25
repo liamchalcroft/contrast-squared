@@ -10,7 +10,7 @@ python pretrain_3d.py \
     --data mprage \
     --net cnn \
     --amp \
-    --logdir ../logs \
+    --logdir ../ \
     --debug \
     --resume
 
@@ -24,7 +24,7 @@ python pretrain_3d.py \
     --data mprage \
     --net cnn \
     --amp \
-    --logdir ../logs \
+    --logdir ../ \
     --debug \
     --resume
 
@@ -38,6 +38,6 @@ python pretrain_3d.py \
     --data bloch-paired \
     --net cnn \
     --amp \
-    --logdir ../logs \
+    --logdir ../ \
     --debug \
     --resume
