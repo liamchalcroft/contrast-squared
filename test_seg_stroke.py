@@ -211,22 +211,16 @@ def run_model(args, device):
         for batch in tqdm(test_loader, desc="Testing", total=len(test_loader)):
             image = batch["image"].to(device)
             seg = batch["seg"].to(device)
-            print(f"image.shape: {image.shape}, seg.shape: {seg.shape}")
             
             # Run inference with sliding window
             with torch.cuda.amp.autocast() if args.amp else nullcontext():
                 pred = window(image, net)
-                print(f"pred.shape: {pred.shape}")
                 pred = torch.softmax(pred, dim=1)
-                print(f"pred.shape: {pred.shape}")
                 pred_argmax = pred.argmax(dim=1, keepdim=True)
-                print(f"pred_argmax.shape: {pred_argmax.shape}")
             # Calculate metrics for each class (excluding background)
             for c in range(1, pred.shape[1]):
                 pred_c = (pred_argmax == c).float()
                 seg_c = (seg[:, [c]] > 0.5).float()
-                print(f"seg_c.shape: {seg_c.shape}")
-                print(f"pred_c.shape: {pred_c.shape}")
                 
                 if seg_c.sum() > 0:  # Only calculate metrics if class exists in ground truth
                     # Dice score
