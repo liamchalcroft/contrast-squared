@@ -433,7 +433,7 @@ def run_model(args, device, train_loader, val_loader):
                     pred_age = regressor(features, gender)
                     val_loss += crit(pred_age, age).item()
                     pred_age = pred_age.softmax(dim=1).argmax(dim=1)
-                    val_acc += (pred_age == age).float().mean()
+                    val_acc += (pred_age == age).float().mean().item()
 
                     if i < 16:
                         img_list.append(img[0,...,img.shape[-1]//2])
