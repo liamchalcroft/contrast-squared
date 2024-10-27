@@ -215,6 +215,7 @@ def run_model(args, device):
             # Run inference with sliding window
             with torch.cuda.amp.autocast() if args.amp else nullcontext():
                 pred = window(image, net)
+                print(image.shape, pred.shape, seg.shape)
                 pred = torch.softmax(pred, dim=1)
                 pred_argmax = pred.argmax(dim=1, keepdim=True)
             # Calculate metrics for each class (excluding background)
