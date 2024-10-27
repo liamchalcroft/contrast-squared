@@ -231,7 +231,7 @@ def run_model(args, device):
                         hd95 = mn.metrics.compute_hausdorff_distance(
                             pred_c, seg_c,
                             percentile=95,
-                            spacing=batch["image_meta_dict"]["pixdim"][0][1:4].tolist()
+                            spacing=1 if not args.lowres else 2
                         ).item()
                     else:
                         hd95 = float('nan')
