@@ -194,7 +194,9 @@ def run_model(args, device):
         for f in arc_flair_test_list
     ]
     
+    print(f"Test data: \nATLAS T1w: {len(atlas_t1_test_dict)}\nARC T1w: {len(arc_t1_test_dict)}\nARC T2w: {len(arc_t2_test_dict)}\nARC FLAIR: {len(arc_flair_test_dict)}")
     test_dict = atlas_t1_test_dict + arc_t1_test_dict + arc_t2_test_dict + arc_flair_test_dict
+    test_dict = test_dict[140:] # Debugging a weird issue with sizes
     test_loader = get_loaders(test_dict, lowres=args.lowres)
 
     net.eval()
@@ -211,16 +213,23 @@ def run_model(args, device):
         for batch in tqdm(test_loader, desc="Testing", total=len(test_loader)):
             image = batch["image"].to(device)
             seg = batch["seg"].to(device)
+            print(f"image: {image.shape}, seg: {seg.shape}")
+            print(batch["file"])
             
             # Run inference with sliding window
             with torch.cuda.amp.autocast() if args.amp else nullcontext():
                 pred = window(image, net)
+                print(f"pred: {pred.shape}")
                 pred = torch.softmax(pred, dim=1)
+                print(f"pred_softmax: {pred.shape}")
                 pred_argmax = pred.argmax(dim=1, keepdim=True)
+                print(f"pred_argmax: {pred_argmax.shape}")
             # Calculate metrics for each class (excluding background)
             for c in range(1, pred.shape[1]):
                 pred_c = (pred_argmax == c).float()
+                print(f"pred_c: {pred_c.shape}")
                 seg_c = (seg[:, [c]] > 0.5).float()
+                print(f"seg_c: {seg_c.shape}")
                 
                 if seg_c.sum() > 0:  # Only calculate metrics if class exists in ground truth
                     # Dice score
