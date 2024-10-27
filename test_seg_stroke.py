@@ -187,7 +187,7 @@ def run_model(args, device):
         {
             "image": f,
             "file": f,
-            "seg": glob.glob(os.path.join(os.path.dirname(f), "*_FLAIR_desc-lesion_mask.nii.gz"))[0],
+            "seg": glob.glob(os.path.join(os.path.dirname(f), "*_T2w_desc-lesion_mask.nii.gz"))[0],
             "dataset": "ARC",
             "modality": "FLAIR"
         }
