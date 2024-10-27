@@ -268,7 +268,6 @@ def set_up():
     parser.add_argument("--lowres", default=False, action="store_true", help="Train with 2mm resolution images.")
     args = parser.parse_args()
 
-    os.makedirs(os.path.join(args.logdir, args.name), exist_ok=True)
     device = (
         torch.device(args.device)
         if args.device is not None
