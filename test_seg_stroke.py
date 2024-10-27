@@ -199,7 +199,7 @@ def run_model(args, device):
 
     net.eval()
     
-    window = mn.inferers.SlidingWindowInferer(roi_size=(96, 96, 96), sw_batch_size=8, overlap=0.5, mode="gaussian")
+    window = mn.inferers.SlidingWindowInferer(roi_size=(96, 96, 96), sw_batch_size=2, overlap=0.5, mode="gaussian")
 
     class_dict = {
         0: "Background",
