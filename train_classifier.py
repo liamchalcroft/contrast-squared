@@ -379,8 +379,8 @@ def run_model(args, device, train_loader, val_loader):
                 train_iter = iter(train_loader)
                 batch = next(train_iter)
             img = batch[0]["image"].to(device).float()
-            age = batch[0]["age"][:, None].to(device).float()
-            gender = batch[0]["gender"].to(device).long()
+            age = batch[0]["age"].to(device).long()
+            gender = batch[0]["gender"][:, None].to(device).float()
             opt.zero_grad(set_to_none=True)
 
             if args.debug and step < 5:
@@ -426,7 +426,7 @@ def run_model(args, device, train_loader, val_loader):
                 val_acc = 0
                 for i, batch in enumerate(val_loader):
                     img = batch[0]["image"].to(device).float()
-                    age = batch[0]["age"][:, None].to(device).float()
+                    age = batch[0]["age"].to(device).long()
                     gender = batch[0]["gender"][:, None].to(device).float()
                     features = encoder(img)
                     features = features.view(features.shape[0], features.shape[1], -1).mean(dim=-1)
