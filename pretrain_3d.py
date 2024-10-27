@@ -219,12 +219,12 @@ def run_model(args, device, train_loader, train_transform):
                 if args.amp:
                     scaler.scale(loss).backward()
                     scaler.unscale_(opt)
-                    torch.nn.utils.clip_grad_norm_(encoder.parameters(), 12)
+                    torch.nn.utils.clip_grad_norm_(encoder.parameters(), 12 if args.net == "cnn" else 1)
                     scaler.step(opt)
                     scaler.update()
                 else:
                     loss.backward()
-                    torch.nn.utils.clip_grad_norm_(encoder.parameters(), 12)
+                    torch.nn.utils.clip_grad_norm_(encoder.parameters(), 12 if args.net == "cnn" else 1)
                     opt.step()
 
                 epoch_loss += loss.item()
