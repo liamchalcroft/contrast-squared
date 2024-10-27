@@ -1,6 +1,6 @@
 #! /bin/bash
 
-python ../train_regressor.py \
+python ../train_classifier.py \
     --name age-cnn-simclr-mprage-pc100 \
     --net cnn \
     --amp \
@@ -10,7 +10,7 @@ python ../train_regressor.py \
     --debug \
     --resume
 
-python ../train_regressor.py \
+python ../train_classifier.py \
     --name age-cnn-simclr-bloch-pc100 \
     --net cnn \
     --amp \
@@ -20,7 +20,7 @@ python ../train_regressor.py \
     --debug \
     --resume
 
-python ../train_regressor.py \
+python ../train_classifier.py \
     --name age-cnn-simclr-bloch-paired-pc100 \
     --net cnn \
     --amp \
