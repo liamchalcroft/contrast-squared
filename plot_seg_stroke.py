@@ -87,6 +87,9 @@ results_df = pd.concat(all_results, ignore_index=True)
 # Tidy up names of columns
 results_df.rename(columns={"dice": "DSC", "hd95": "HD95", "class": "Class", "modality": "Modality", "dataset": "Dataset"}, inplace=True)
 
+# Multiply DSC by 100 to get percentage
+results_df["DSC"] = results_df["DSC"] * 100
+
 # Create a merged column for modality and dataset
 results_df["Modality Dataset"] = results_df["Dataset"] + " [" + results_df["Modality"] + "]"
 
@@ -99,7 +102,7 @@ ax = sns.boxplot(data=results_df, x="Modality Dataset", y="DSC", hue="Method",
                  width=0.8)
 plt.title("Dice Similarity Coefficient by Modality and Dataset", pad=20, fontsize=16, fontweight='bold')
 plt.xlabel("Modality Dataset", fontsize=14, labelpad=15)
-plt.ylabel("DSC", fontsize=14, labelpad=15)
+plt.ylabel("DSC (%)", fontsize=14, labelpad=15)
 plt.xticks(rotation=45, ha='right')
 ax.grid(True, linestyle='--', alpha=0.7)
 plt.legend(title="Method", title_fontsize=12, fontsize=11, bbox_to_anchor=(1.05, 1))
