@@ -3,7 +3,7 @@
 python ../pretrain_3d.py \
     --name 3d-vit-simclr-mprage \
     --batch_size 8 \
-    --epochs 200 \
+    --epochs 300 \
     --epoch_length 200 \
     --lr 1e-3 \
     --loss simclr \
@@ -17,7 +17,7 @@ python ../pretrain_3d.py \
 python ../pretrain_3d.py \
     --name 3d-vit-simclr-mprage \
     --batch_size 8 \
-    --epochs 200 \
+    --epochs 300 \
     --epoch_length 200 \
     --lr 1e-3 \
     --loss simclr \
@@ -31,7 +31,7 @@ python ../pretrain_3d.py \
 python ../pretrain_3d.py \
     --name 3d-vit-simclr-mprage-paired \
     --batch_size 8 \
-    --epochs 200 \
+    --epochs 300 \
     --epoch_length 200 \
     --lr 1e-3 \
     --loss simclr \

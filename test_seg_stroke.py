@@ -204,9 +204,7 @@ def run_model(args, device):
 
     class_dict = {
         0: "Background",
-        1: "Gray Matter",
-        2: "White Matter",
-        3: "CSF"
+        1: "Stroke"
     }
 
     results = []
