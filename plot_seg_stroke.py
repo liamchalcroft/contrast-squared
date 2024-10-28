@@ -139,7 +139,7 @@ plt.savefig(os.path.join(plot_dir, "hd95_spider_plot.png"), dpi=300, bbox_inches
 plt.close()
 
 # 5. Summary statistics table
-summary_stats = results_df.groupby(['Modality Dataset', 'Method'])[['DSC', 'HD95']].agg(['mean', 'std', 'median', 'min', 'max', 'sem']).round(3)
+summary_stats = results_df.groupby(['Modality Dataset', 'Method'])[['DSC', 'HD95']].agg(['mean', 'std', 'median', 'min', 'max', 'sem']).round(1)
 summary_stats.to_csv(os.path.join(plot_dir, "summary_statistics.csv"))
 
 # Print overall summary
