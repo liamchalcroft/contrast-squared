@@ -10,7 +10,7 @@ def get_results_df(results_dir):
     if os.path.exists(results_file):
         df = pd.read_csv(results_file)
         print(f"results_dir: {results_dir}")
-        run_name = results_dir.split("/")[-1]
+        run_name = results_dir.split("/")[0]
         print(f"run_name: {run_name}")
         data_pc = int(run_name.split("pc")[1])
         df["% Training Data"] = data_pc
