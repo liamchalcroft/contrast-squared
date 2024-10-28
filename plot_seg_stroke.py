@@ -56,6 +56,14 @@ def spider_plot(results_df, metric="DSC"):
     plt.title(f"Mean {metric} by Modality Dataset and Method")
     return fig
 
+# Set style for fancy plots
+plt.style.use('seaborn-whitegrid')
+sns.set_palette("husl")
+plt.rcParams['font.family'] = 'sans-serif'
+plt.rcParams['font.sans-serif'] = ['Arial']
+plt.rcParams['font.size'] = 12
+plt.rcParams['axes.linewidth'] = 2
+
 # List of model configurations to check
 results_dirs = glob.glob("stroke-cnn-simclr-*/")
 
@@ -81,36 +89,50 @@ results_df.rename(columns={"dice": "DSC", "hd95": "HD95", "class": "Class", "mod
 
 # Create a merged column for modality and dataset
 results_df["Modality Dataset"] = results_df["Dataset"] + " [" + results_df["Modality"] + "]"
-# Generate plots
 
+# Generate plots with enhanced styling
 # 1. Boxplot of Dice scores by model and dataset
-plt.figure(figsize=(12, 6))
-sns.boxplot(data=results_df, x="Modality Dataset", y="DSC", hue="Method")
-plt.title("Dice Scores by Model and Dataset")
-plt.xticks(rotation=45)
+plt.figure(figsize=(15, 8))
+ax = sns.boxplot(data=results_df, x="Modality Dataset", y="DSC", hue="Method",
+                 boxprops={'alpha': 0.8, 'linewidth': 2},
+                 showfliers=False, # Hide outliers for cleaner look
+                 width=0.8)
+plt.title("Dice Similarity Coefficient by Modality and Dataset", pad=20, fontsize=16, fontweight='bold')
+plt.xlabel("Modality Dataset", fontsize=14, labelpad=15)
+plt.ylabel("DSC", fontsize=14, labelpad=15)
+plt.xticks(rotation=45, ha='right')
+ax.grid(True, linestyle='--', alpha=0.7)
+plt.legend(title="Method", title_fontsize=12, fontsize=11, bbox_to_anchor=(1.05, 1))
 plt.tight_layout()
-plt.savefig(os.path.join(plot_dir, "dice_by_modality_dataset.png"))
+plt.savefig(os.path.join(plot_dir, "dice_by_modality_dataset.png"), dpi=300, bbox_inches='tight')
 plt.close()
 
 # 2. Boxplot of HD95 scores by model and dataset
-plt.figure(figsize=(12, 6))
-sns.boxplot(data=results_df, x="Modality Dataset", y="HD95", hue="Method")
-plt.title("HD95 Scores by Model and Dataset")
-plt.xticks(rotation=45)
+plt.figure(figsize=(15, 8))
+ax = sns.boxplot(data=results_df, x="Modality Dataset", y="HD95", hue="Method",
+                 boxprops={'alpha': 0.8, 'linewidth': 2},
+                 showfliers=False,
+                 width=0.8)
+plt.title("95% Hausdorff Distance by Modality and Dataset", pad=20, fontsize=16, fontweight='bold')
+plt.xlabel("Modality Dataset", fontsize=14, labelpad=15)
+plt.ylabel("HD95 (mm)", fontsize=14, labelpad=15)
+plt.xticks(rotation=45, ha='right')
+ax.grid(True, linestyle='--', alpha=0.7)
+plt.legend(title="Method", title_fontsize=12, fontsize=11, bbox_to_anchor=(1.05, 1))
 plt.tight_layout()
-plt.savefig(os.path.join(plot_dir, "hd95_by_modality_dataset.png"))
+plt.savefig(os.path.join(plot_dir, "hd95_by_modality_dataset.png"), dpi=300, bbox_inches='tight')
 plt.close()
 
 # 3. Spider plot of Dice scores by modality and dataset
 plt.figure(figsize=(10, 10))
 spider_plot(results_df, metric="DSC")
-plt.savefig(os.path.join(plot_dir, "dice_spider_plot.png"))
+plt.savefig(os.path.join(plot_dir, "dice_spider_plot.png"), dpi=300, bbox_inches='tight')
 plt.close()
 
 # 4. Spider plot of HD95 scores by modality and dataset
 plt.figure(figsize=(10, 10))
 spider_plot(results_df, metric="HD95")
-plt.savefig(os.path.join(plot_dir, "hd95_spider_plot.png"))
+plt.savefig(os.path.join(plot_dir, "hd95_spider_plot.png"), dpi=300, bbox_inches='tight')
 plt.close()
 
 # 5. Summary statistics table
