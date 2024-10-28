@@ -209,18 +209,13 @@ def run_model(args, device):
         for batch in tqdm(test_loader, desc="Testing", total=len(test_loader)):
             image = batch["image"].to(device)
             seg = batch["seg"].to(device)
-            print(f"image: {image.shape}, seg: {seg.shape}")
             seg_argmax = seg.argmax(dim=1, keepdim=True)
-            print(f"seg_argmax: {seg_argmax.shape}")
             
             # Run inference with sliding window
             with torch.cuda.amp.autocast() if args.amp else nullcontext():
                 pred = window(image, net)
-                print(f"pred: {pred.shape}")
                 pred = torch.softmax(pred, dim=1)
-                print(f"pred_softmax: {pred.shape}")
                 pred_argmax = pred.argmax(dim=1, keepdim=True)
-                print(f"pred_argmax: {pred_argmax.shape}")
             # Calculate metrics for each class (excluding background)
             for c in range(1, pred.shape[1]):
                 pred_c = (pred_argmax == c).float()
