@@ -42,7 +42,7 @@ def get_loaders(
             mn.transforms.EnsureChannelFirstD(
                 keys=["image", "seg"], allow_missing_keys=True
             ),
-            mn.transforms.LambdaD(keys="seg", func=add_bg),
+            mn.transforms.LambdaD(keys="seg", func=add_bg, allow_missing_keys=True),
             mn.transforms.OrientationD(
                 keys=["image", "seg"], axcodes="RAS", allow_missing_keys=True
             ),
@@ -74,13 +74,13 @@ def get_loaders(
             mn.transforms.ScaleIntensityRangePercentilesD(
                 keys=["image"],
                 lower=0.5, upper=99.5, b_min=0, b_max=1,
-                clip=True, channel_wise=True,
+                clip=True, channel_wise=True, allow_missing_keys=True,
             ),
             mn.transforms.HistogramNormalizeD(keys="image", min=0, max=1, allow_missing_keys=True),
             mn.transforms.NormalizeIntensityD(
-                keys="image", nonzero=False, channel_wise=True
+                keys="image", nonzero=False, channel_wise=True, allow_missing_keys=True
             ),
-            mn.transforms.ToTensorD(keys=["image", "seg"], dtype=torch.float32),
+            mn.transforms.ToTensorD(keys=["image", "seg"], dtype=torch.float32, allow_missing_keys=True),
         ]
     )
 
