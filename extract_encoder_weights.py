@@ -2,7 +2,7 @@ import torch
 import argparse
 from model import CNNEncoder, ViTEncoder
 
-def extract_encoder_weights(unet_checkpoint_path, encoder_type, output_path):
+def extract_encoder_weights(unet_checkpoint_path, encoder_type, output_path, wandb_id, epoch, metric):
     # Load the full UNet checkpoint
     checkpoint = torch.load(unet_checkpoint_path, map_location='cpu')
     
@@ -43,10 +43,34 @@ def extract_encoder_weights(unet_checkpoint_path, encoder_type, output_path):
     # Load the extracted weights into the encoder
     encoder.load_state_dict(encoder_state_dict)
 
+    class WandBID:
+        def __init__(self, wandb_id):
+            self.wandb_id = wandb_id
+
+        def state_dict(self):
+            return self.wandb_id
+
+    class Epoch:
+        def __init__(self, epoch):
+            self.epoch = epoch
+
+        def state_dict(self):
+            return self.epoch
+
+    class Metric:
+        def __init__(self, metric):
+            self.metric = metric
+
+        def state_dict(self):
+            return self.metric
+
     # Save the encoder weights to a new checkpoint file
     torch.save({
         'encoder': encoder.state_dict(),
-        'encoder_type': encoder_type
+        'encoder_type': encoder_type,
+        'wandb_id': WandBID(wandb_id),
+        'epoch': Epoch(epoch),
+        'metric': Metric(metric)
     }, output_path)
 
     print(f"Encoder weights extracted and saved to {output_path}")
@@ -56,7 +80,10 @@ if __name__ == "__main__":
     parser.add_argument("unet_checkpoint", type=str, help="Path to the UNet checkpoint file")
     parser.add_argument("encoder_type", type=str, choices=['cnn', 'vit'], help="Type of encoder (cnn or vit)")
     parser.add_argument("output_path", type=str, help="Path to save the extracted encoder weights")
+    parser.add_argument("--wandb_id", type=str, help="WANDB ID")
+    parser.add_argument("--epoch", type=int, help="Epoch")
+    parser.add_argument("--metric", type=float, help="Metric")
     
     args = parser.parse_args()
 
-    extract_encoder_weights(args.unet_checkpoint, args.encoder_type, args.output_path)
+    extract_encoder_weights(args.unet_checkpoint, args.encoder_type, args.output_path, args.wandb_id, args.epoch, args.metric)
