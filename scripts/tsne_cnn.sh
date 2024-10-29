@@ -6,7 +6,7 @@ python ../plot_tsne.py \
     --amp \
 
 python ../plot_tsne.py \
-    --weights ../3d-cnn-simclr-mprage/checkpoint.pt \
+    --weights ../3d-cnn-simclr-bloch/checkpoint.pt \
     --net cnn \
     --amp \
 
