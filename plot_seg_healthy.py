@@ -83,6 +83,8 @@ if not all_results:
 
 results_df = pd.concat(all_results, ignore_index=True)
 
+results_df = results_df[results_df["% Training Data"] == 100]
+
 # Tidy up names of columns
 results_df.rename(columns={"dice": "DSC", "hd95": "HD95", "class": "Class", "modality": "Modality", "dataset": "Dataset"}, inplace=True)
 
