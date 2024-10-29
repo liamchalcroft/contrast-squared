@@ -48,9 +48,14 @@ def get_loaders(
                 pixdim=1 if not lowres else 2,
                 allow_missing_keys=True,
             ),
-            mn.transforms.ResizeWithPadOrCropD(
+            # mn.transforms.ResizeWithPadOrCropD(
+            #     keys=["image", "seg"],
+            #     spatial_size=(256, 256, 256) if not lowres else (128, 128, 128),
+            #     allow_missing_keys=True,
+            # ),
+            mn.transforms.CropForegroundD(
                 keys=["image", "seg"],
-                spatial_size=(256, 256, 256) if not lowres else (128, 128, 128),
+                source_key="image",
                 allow_missing_keys=True,
             ),
             mn.transforms.ToTensorD(
