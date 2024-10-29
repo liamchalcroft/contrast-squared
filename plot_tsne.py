@@ -130,7 +130,7 @@ def run_model(args, device):
 
     checkpoint = torch.load(args.weights, map_location=device)
     print(f"\nLoading weights from epoch #{checkpoint['epoch']}")
-    net.load_state_dict(checkpoint["model"], strict=False)
+    net.load_state_dict(checkpoint["encoder"], strict=False)
     net.eval()
 
     # Prepare data
