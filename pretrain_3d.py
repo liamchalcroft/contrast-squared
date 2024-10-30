@@ -120,11 +120,14 @@ def run_model(args, device, train_loader, train_transform):
     # Try to load most recent weight
     if args.resume or args.resume_best:
         encoder.load_state_dict(
-            checkpoint["encoder"], strict=False
+            checkpoint["encoder"]
         )  # strict False in case of switch between subpixel and transpose
-        projector.load_state_dict(checkpoint["projector"], strict=False)
-        reconstructor.load_state_dict(checkpoint["reconstructor"], strict=False)
-        opt.load_state_dict(checkpoint["opt"])
+        if "projector" in checkpoint:
+            projector.load_state_dict(checkpoint["projector"], strict=False)
+        if "reconstructor" in checkpoint:
+            reconstructor.load_state_dict(checkpoint["reconstructor"], strict=False)
+        if "opt" in checkpoint:
+            opt.load_state_dict(checkpoint["opt"])
         start_epoch = checkpoint["epoch"] + 1
         metric_best = checkpoint["metric"]
         # correct scheduler in cases where max epochs has changed
