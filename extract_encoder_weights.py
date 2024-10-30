@@ -68,7 +68,7 @@ def extract_encoder_weights(unet_checkpoint_path, encoder_type, output_path, wan
     torch.save({
         'encoder': encoder.state_dict(),
         'encoder_type': encoder_type,
-        'wandb_id': WandBID(wandb_id).state_dict(),
+        'wandb': WandBID(wandb_id).state_dict(),
         'epoch': Epoch(epoch).state_dict(),
         'metric': Metric(metric).state_dict()
     }, output_path)
