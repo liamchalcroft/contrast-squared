@@ -210,7 +210,7 @@ def run_model(args, device):
 
     # Create figure for visualization
     df_path = os.path.join(odir, 'predictions.csv')
-    df = pd.read_csv(df_path) if os.path.exists(df_path) else pd.DataFrame(columns=["Dataset", "Modality", "Site", "IXI ID", "Dice", "HD95", "NSD"])
+    df = pd.read_csv(df_path) if os.path.exists(df_path) else pd.DataFrame(columns=["Dataset", "Modality", "Site", "IXI ID", "Dice", "HD95", "NSD", "Class"])
 
     pred_dir = os.path.join(odir, 'predictions')
     os.makedirs(pred_dir, exist_ok=True)
@@ -236,6 +236,8 @@ def run_model(args, device):
         output_dtype=np.int16,
         resample=False,
     )
+
+    class_names = ["Background", "Gray Matter", "White Matter", "CSF"]
 
     with torch.no_grad():
         for ix, batch in tqdm(enumerate(test_loader), total=len(test_loader), desc="Processing batches"):
@@ -266,7 +268,7 @@ def run_model(args, device):
                 pred_saver(pred_argmax[0].detach().cpu())
 
             # Per channel: compute dice and hd95
-            for i in range(1, 4):
+            for i, class_name in enumerate(class_names):
                 pred_i = pred_argmax == i
                 pred_i = torch.stack([1. - pred_i, pred_i], dim=1)
                 seg_i = seg_argmax == i
@@ -284,9 +286,11 @@ def run_model(args, device):
                     "Dice": dice,
                     "HD95": hd95,
                     "NSD": nsd,
+                    "Class": class_name,
                 }, ignore_index=True)
 
     df.to_csv(df_path, index=False)
+
 def set_up():
     parser = argparse.ArgumentParser(argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--weights", type=str, help="Path to model weights.")

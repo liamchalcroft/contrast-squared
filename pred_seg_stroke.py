@@ -151,23 +151,30 @@ def run_model(args, device):
 
     odir = os.path.dirname(args.weights)
 
-    atlas_t1_test_list = np.loadtxt("/home/lchalcroft/git/lab-vae/atlas_test.txt", dtype=str)
-    arc_t1_test_list = glob.glob("/home/lchalcroft/Data/ARC/PREPROC/sub-*/ses-*/*_T1w_flirt.nii.gz")
-    arc_t2_test_list = glob.glob("/home/lchalcroft/Data/ARC/PREPROC/sub-*/ses-*/*_T2w.nii.gz")
-    arc_flair_test_list = glob.glob("/home/lchalcroft/Data/ARC/PREPROC/sub-*/ses-*/*_FLAIR_flirt.nii.gz")
+    arc_t1_data_list = glob.glob("/home/lchalcroft/Data/ARC/PREPROC/sub-*/ses-*/*_T1w_flirt.nii.gz")
+    arc_t1_data_list.sort()
+    total_samples = len(arc_t1_data_list)
+    train_size = int(0.7 * total_samples)
+    val_size = int(0.1 * total_samples)
+    test_size = total_samples - train_size - val_size
+    arc_t1_test_list = arc_t1_data_list[train_size+val_size:]
 
-    atlas_t1_test_dict = [
-        {
-            "seg": f.replace("1mm_sub", "sub"),
-            "image": f.replace("_label-L_desc-T1lesion_mask", "_T1w").replace(
-                "1mm_sub", "sub"
-            ),
-            "file": f.replace("1mm_sub", "sub"),
-            "dataset": "ATLAS",
-            "modality": "T1w"
-        }
-        for f in atlas_t1_test_list
-    ]
+    arc_t2_data_list = glob.glob("/home/lchalcroft/Data/ARC/PREPROC/sub-*/ses-*/*_T2w.nii.gz")
+    arc_t2_data_list.sort()
+    total_samples = len(arc_t2_data_list)
+    train_size = int(0.7 * total_samples)
+    val_size = int(0.1 * total_samples)
+    test_size = total_samples - train_size - val_size
+    arc_t2_test_list = arc_t2_data_list[train_size+val_size:]
+
+    arc_flair_data_list = glob.glob("/home/lchalcroft/Data/ARC/PREPROC/sub-*/ses-*/*_FLAIR_flirt.nii.gz")
+    arc_flair_data_list.sort()
+    total_samples = len(arc_flair_data_list)
+    train_size = int(0.7 * total_samples)
+    val_size = int(0.1 * total_samples)
+    test_size = total_samples - train_size - val_size
+    arc_flair_test_list = arc_flair_data_list[train_size+val_size:]
+
     arc_t1_test_dict = [
         {
             "image": f,
@@ -199,8 +206,8 @@ def run_model(args, device):
         for f in arc_flair_test_list
     ]
     
-    print(f"Test data: \nATLAS T1w: {len(atlas_t1_test_dict)}\nARC T1w: {len(arc_t1_test_dict)}\nARC T2w: {len(arc_t2_test_dict)}\nARC FLAIR: {len(arc_flair_test_dict)}")
-    test_dict = atlas_t1_test_dict + arc_t1_test_dict + arc_t2_test_dict + arc_flair_test_dict
+    print(f"Test data: \nARC T1w: {len(arc_t1_test_dict)}\nARC T2w: {len(arc_t2_test_dict)}\nARC FLAIR: {len(arc_flair_test_dict)}")
+    test_dict = arc_t1_test_dict + arc_t2_test_dict + arc_flair_test_dict
     test_loader = get_loaders(test_dict, lowres=args.lowres)
 
     net.eval()
@@ -208,79 +215,87 @@ def run_model(args, device):
     window = mn.inferers.SlidingWindowInferer(roi_size=(96, 96, 96), sw_batch_size=2, overlap=0.5, mode="gaussian")
 
     # Create figure for visualization
-    fig_dir = os.path.join(odir, 'debug_visualizations')
-    os.makedirs(fig_dir, exist_ok=True)
+    df_path = os.path.join(odir, 'predictions.csv')
+    df = pd.read_csv(df_path) if os.path.exists(df_path) else pd.DataFrame(columns=["Dataset", "Modality", "Site", "IXI ID", "Dice", "HD95", "NSD", "Class"])
 
-    datasets = ['ATLAS', 'ARC']
-    modalities = ['T1w', 'T2w', 'FLAIR']
+    pred_dir = os.path.join(odir, 'predictions')
+    os.makedirs(pred_dir, exist_ok=True)
+
+    img_saver = mn.transforms.SaveImage(
+        output_postfix="img",
+        output_dir=pred_dir,
+        output_ext=".nii.gz",
+        output_dtype=np.float32,
+        resample=False,
+    )
+    gt_saver = mn.transforms.SaveImage(
+        output_postfix="gt",
+        output_dir=pred_dir,
+        output_ext=".nii.gz",
+        output_dtype=np.int16,
+        resample=False,
+    )
+    pred_saver = mn.transforms.SaveImage(
+        output_postfix="pred",
+        output_dir=pred_dir,
+        output_ext=".nii.gz",
+        output_dtype=np.int16,
+        resample=False,
+    )
+
+    class_names = ["Background", "Lesion"]
 
     with torch.no_grad():
-        for dataset in datasets:
-            for modality in modalities:
-                # Skip ATLAS combinations that don't exist
-                if dataset == 'ATLAS' and modality != 'T1w':
-                    continue
-                    
-                count = 0
-                fig, axes = plt.subplots(5, 3, figsize=(15, 25))
-                fig.suptitle(f'{dataset} - {modality}')
-                
-                for batch in test_loader:
-                    # Skip if not the current dataset/modality
-                    if batch["dataset"][0] != dataset or batch["modality"][0] != modality:
-                        continue
-                    
-                    if count >= 5:
-                        break
+        for ix, batch in tqdm(enumerate(test_loader), total=len(test_loader), desc="Processing batches"):
+            image = batch["image"].to(device)
+            seg = batch["seg"].to(device)
+            seg_argmax = seg.argmax(dim=1)
 
-                    image = batch["image"].to(device)
-                    seg = batch["seg"].to(device)
-                    seg_argmax = seg.argmax(dim=1)
-                    
-                    # Run inference
-                    with torch.cuda.amp.autocast() if args.amp else nullcontext():
-                        pred = window(image, net)
-                        pred = torch.softmax(pred, dim=1)
-                        pred_argmax = pred.argmax(dim=1)
+            # Metadata
+            dataset = batch["dataset"][0]
+            modality = batch["modality"][0]
+            site = batch["site"][0]
+            ixi_id = batch["IXI_ID"][0]
 
-                    # Get middle slices
-                    mid_slice = image.shape[-1] // 2
-                    image_slice = image[0, 0, :, :, mid_slice].cpu()
-                    seg_slice = seg_argmax[0, :, :, mid_slice].cpu()
-                    pred_slice = pred_argmax[0, :, :, mid_slice].cpu()
+            # If file already in dataframe, skip
+            if df.loc[(df["Dataset"] == dataset) & (df["Modality"] == modality) & (df["Site"] == site) & (df["IXI ID"] == ixi_id)].shape[0] > 0:
+                continue
+            
+            # Run inference
+            with torch.cuda.amp.autocast() if args.amp else nullcontext():
+                pred = window(image, net)
+                pred = torch.softmax(pred, dim=1)
+                pred_argmax = pred.argmax(dim=1)
 
-                    # Plot
-                    axes[count, 0].imshow(image_slice, cmap='gray')
-                    axes[count, 0].set_title(f'Input - {os.path.basename(batch["file"][0])}')
-                    axes[count, 0].axis('off')
-                    
-                    axes[count, 1].imshow(seg_slice, cmap='tab10', vmin=0, vmax=1)
-                    axes[count, 1].set_title('Ground Truth')
-                    axes[count, 1].axis('off')
-                    
-                    axes[count, 2].imshow(pred_slice, cmap='tab10', vmin=0, vmax=1)
-                    axes[count, 2].set_title('Prediction')
-                    axes[count, 2].axis('off')
+            # For first few batches, save images
+            if ix < 5:
+                img_saver(image[0].detach().cpu())
+                gt_saver(seg_argmax[0].detach().cpu())
+                pred_saver(pred_argmax[0].detach().cpu())
 
-                    count += 1
+            # Per channel: compute dice and hd95
+            for i, class_name in enumerate(class_names):
+                pred_i = pred_argmax == i
+                pred_i = torch.stack([1. - pred_i, pred_i], dim=1)
+                seg_i = seg_argmax == i
+                seg_i = torch.stack([1. - seg_i, seg_i], dim=1)
 
-                # If we didn't find any cases, skip saving this figure
-                if count == 0:
-                    plt.close()
-                    continue
+                dice = compute_dice(pred_i, seg_i).item()
+                hd95 = mn.metrics.compute_hausdorff_distance(pred_i, seg_i, include_background=False, percentile=95).item()
+                nsd = mn.metrics.compute_surface_dice(pred_i, seg_i, class_thresholds=0.5, include_background=False).item()
 
-                # Fill remaining slots with empty plots if less than 5 cases
-                while count < 5:
-                    axes[count, 0].axis('off')
-                    axes[count, 1].axis('off')
-                    axes[count, 2].axis('off')
-                    count += 1
+                df = df.append({
+                    "Dataset": dataset,
+                    "Modality": modality,
+                    "Site": site,
+                    "IXI ID": ixi_id,
+                    "Dice": dice,
+                    "HD95": hd95,
+                    "NSD": nsd,
+                    "Class": class_name,
+                }, ignore_index=True)
 
-                plt.tight_layout()
-                plt.savefig(os.path.join(fig_dir, f'debug_{dataset}_{modality}.png'))
-                plt.close()
-
-    print(f"\nDebug visualizations saved to: {fig_dir}")
+    df.to_csv(df_path, index=False)
 
 def set_up():
     parser = argparse.ArgumentParser(argparse.ArgumentDefaultsHelpFormatter)
