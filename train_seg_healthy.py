@@ -1,7 +1,6 @@
 import glob
 import os
 import model
-import preprocess_2d
 import torch
 import wandb
 import logging
@@ -27,36 +26,40 @@ def add_bg(x):
     return torch.cat([1-x.sum(dim=0, keepdim=True), x], dim=0)
 
 def get_loaders(
+    modality,
     batch_size=1,
     device="cpu",
     lowres=False,
     ptch=128,
     pc_data=100,
 ):
+  print(f"Modality: {modality}")
 
-  ## Generate training data for the guys t1 modality
-  # Load IXI spreadsheet
-  ixi_data = pd.read_excel('/home/lchalcroft/Data/IXI/IXI.xls')
+  if modality == "t1":
+      data_list = glob.glob("/home/lchalcroft/Data/IXI/guys/t1/preprocessed/p_IXI*-T1.nii.gz")
+      data_dict = [{"image": f, "file": f, "seg": [f.replace("p_IXI", "c1p_IXI"), f.replace("p_IXI", "c2p_IXI"), f.replace("p_IXI", "c3p_IXI")], "dataset": "IXI", "site": "guys", "modality": "T1w", "IXI_ID": int(os.path.basename(f).split("-")[0][5:])} for f in data_list]
+  elif modality == "t2":
+      data_list = glob.glob("/home/lchalcroft/Data/IXI/guys/t2/preprocessed/p_IXI*-T2.nii.gz")
+      data_dict = [{"image": f, "file": f, "seg": [f.replace("p_IXI", "c1p_IXI"), f.replace("p_IXI", "c2p_IXI"), f.replace("p_IXI", "c3p_IXI")], "dataset": "IXI", "site": "guys", "modality": "T2w", "IXI_ID": int(os.path.basename(f).split("-")[0][5:])} for f in data_list]
+  elif modality == "pd":
+      data_list = glob.glob("/home/lchalcroft/Data/IXI/guys/pd/preprocessed/p_IXI*-PD.nii.gz")
+      data_dict = [{"image": f, "file": f, "seg": [f.replace("p_IXI", "c1p_IXI"), f.replace("p_IXI", "c2p_IXI"), f.replace("p_IXI", "c3p_IXI")], "dataset": "IXI", "site": "guys", "modality": "PDw", "IXI_ID": int(os.path.basename(f).split("-")[0][5:])} for f in data_list]
 
-  # Load and prepare data
-  all_imgs = glob.glob("/home/lchalcroft/Data/IXI/guys/t1/preprocessed/p_IXI*-T1.nii.gz")
-  
-  # Sort and split data
-  all_imgs.sort()
-  total_samples = len(all_imgs)
+  data_dict.sort()
+
+  total_samples = len(data_dict)
   train_size = int(0.7 * total_samples)
   val_size = int(0.1 * total_samples)
+  test_size = total_samples - train_size - val_size
 
-  train_imgs = all_imgs[:train_size]
-  val_imgs = all_imgs[train_size:train_size+val_size]
-  train_ids = [int(os.path.basename(f).split("-")[0][5:]) for f in train_imgs]
-  val_ids = [int(os.path.basename(f).split("-")[0][5:]) for f in val_imgs]
-
-  train_dict = [{"image": f, "label": [f.replace("p_IXI", "c1p_IXI"), f.replace("p_IXI", "c2p_IXI"), f.replace("p_IXI", "c3p_IXI")]} for f in train_imgs]
-  val_dict = [{"image": f, "label": [f.replace("p_IXI", "c1p_IXI"), f.replace("p_IXI", "c2p_IXI"), f.replace("p_IXI", "c3p_IXI")]} for f in val_imgs]
+  train_dict = data_dict[:train_size]
+  val_dict = data_dict[train_size:train_size+val_size]
+  test_dict = data_dict[train_size+val_size:]
 
   if pc_data < 100:
       train_dict = train_dict[:int(len(train_dict) * pc_data / 100)]
+
+  print(f"Using {len(train_dict)} training samples, {len(val_dict)} validation samples, and {len(test_dict)} test samples")
 
   data_transforms = mn.transforms.Compose([
       mn.transforms.LoadImageD(
@@ -497,6 +500,7 @@ def set_up():
     )
     parser.add_argument("--amp", default=False, action="store_true")
     parser.add_argument("--logdir", type=str, default="./", help="Path to saved outputs")
+    parser.add_argument("--modality", type=str, choices=["t1", "t2", "pd"], help="Modality to train on.")
     parser.add_argument("--resume", default=False, action="store_true")
     parser.add_argument("--resume_best", default=False, action="store_true")
     parser.add_argument("--device", type=str, default=None, help="Device to use. If not specified then will check for CUDA.")
@@ -520,7 +524,7 @@ def set_up():
         print("Memory Usage:")
         print("Allocated:", round(torch.cuda.memory_allocated(0) / 1024**3, 1), "GB")
         print("Cached:   ", round(torch.cuda.memory_reserved(0) / 1024**3, 1), "GB")
-    train_loader, val_loader = get_loaders(batch_size=args.batch_size, device=device, lowres=args.lowres, ptch=48 if args.lowres else 96, pc_data=args.pc_data)
+    train_loader, val_loader = get_loaders(modality=args.modality, batch_size=args.batch_size, device=device, lowres=args.lowres, ptch=48 if args.lowres else 96, pc_data=args.pc_data)
 
     if args.debug:
         saver1 = mn.transforms.SaveImage(

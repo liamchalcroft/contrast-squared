@@ -1,7 +1,6 @@
 import glob
 import os
 import model
-import preprocess_2d
 import torch
 import wandb
 import logging
@@ -26,43 +25,40 @@ def add_bg(x):
     return torch.cat([1-x.sum(dim=0, keepdim=True), x], dim=0)
 
 def get_loaders(
+    modality,
     batch_size=1,
     device="cpu",
     lowres=False,
     ptch=128,
     pc_data=100,
 ):
+    print(f"Modality: {modality}")
 
-    train_label_list = list(
-        np.loadtxt("/home/lchalcroft/git/lab-vae/atlas_train.txt", dtype=str)
-    )
-    val_label_list = list(
-        np.loadtxt("/home/lchalcroft/git/lab-vae/atlas_val.txt", dtype=str)
-    )
+    if modality == "t1":
+        data_list = glob.glob("/home/lchalcroft/Data/ARC/PREPROC/sub-*/ses-*/*_T1w_flirt.nii.gz")
+        data_dict = [{"image": f, "file": f, "seg": glob.glob(os.path.join(os.path.dirname(f), "*_T2w_desc-lesion_mask.nii.gz"))[0], "dataset": "ARC", "modality": "T1w"} for f in data_list]
+    elif modality == "t2":
+        data_list = glob.glob("/home/lchalcroft/Data/ARC/PREPROC/sub-*/ses-*/*_T2w.nii.gz")
+        data_dict = [{"image": f, "file": f, "seg": glob.glob(os.path.join(os.path.dirname(f), "*_T2w_desc-lesion_mask.nii.gz"))[0], "dataset": "ARC", "modality": "T2w"} for f in data_list]
+    elif modality == "flair":
+        data_list = glob.glob("/home/lchalcroft/Data/ARC/PREPROC/sub-*/ses-*/*_FLAIR_flirt.nii.gz")
+        data_dict = [{"image": f, "file": f, "seg": glob.glob(os.path.join(os.path.dirname(f), "*_T2w_desc-lesion_mask.nii.gz"))[0], "dataset": "ARC", "modality": "FLAIR"} for f in data_list]
+
+    data_dict.sort()
+
+    total_samples = len(data_dict)
+    train_size = int(0.7 * total_samples)
+    val_size = int(0.1 * total_samples)
+    test_size = total_samples - train_size - val_size
+
+    train_dict = data_dict[:train_size]
+    val_dict = data_dict[train_size:train_size+val_size]
+    test_dict = data_dict[train_size+val_size:]
 
     if pc_data < 100:
-        train_label_list = train_label_list[:int(len(train_label_list) * pc_data / 100)]
+        train_dict = train_dict[:int(len(train_dict) * pc_data / 100)]
 
-    train_dict = [
-        {
-            "seg": f.replace("1mm_sub", "sub"),
-            "image": f.replace("_label-L_desc-T1lesion_mask", "_T1w").replace(
-                "1mm_sub", "sub"
-            ),
-        }
-        for f in train_label_list
-    ]
-    val_dict = [
-        {
-            "seg": f.replace("1mm_sub", "sub"),
-            "image": f.replace("_label-L_desc-T1lesion_mask", "_T1w").replace(
-                "1mm_sub", "sub"
-            ),
-        }
-        for f in val_label_list
-    ]
-
-    print(f"train_dict: {len(train_dict)}, val_dict: {len(val_dict)}")
+    print(f"Using {len(train_dict)} training samples, {len(val_dict)} validation samples, and {len(test_dict)} test samples")
 
     train_transform = mn.transforms.Compose(
         transforms=[
@@ -498,6 +494,7 @@ def set_up():
     )
     parser.add_argument("--amp", default=False, action="store_true")
     parser.add_argument("--logdir", type=str, default="./", help="Path to saved outputs")
+    parser.add_argument("--modality", type=str, choices=["t1", "t2", "flair"], help="Modality to train on.")
     parser.add_argument("--resume", default=False, action="store_true")
     parser.add_argument("--resume_best", default=False, action="store_true")
     parser.add_argument("--device", type=str, default=None, help="Device to use. If not specified then will check for CUDA.")
@@ -521,7 +518,7 @@ def set_up():
         print("Memory Usage:")
         print("Allocated:", round(torch.cuda.memory_allocated(0) / 1024**3, 1), "GB")
         print("Cached:   ", round(torch.cuda.memory_reserved(0) / 1024**3, 1), "GB")
-    train_loader, val_loader = get_loaders(batch_size=args.batch_size, device=device, lowres=args.lowres, ptch=48 if args.lowres else 96, pc_data=args.pc_data)
+    train_loader, val_loader = get_loaders(modality=args.modality, batch_size=args.batch_size, device=device, lowres=args.lowres, ptch=48 if args.lowres else 96, pc_data=args.pc_data)
 
     if args.debug:
         saver1 = mn.transforms.SaveImage(

@@ -1,7 +1,6 @@
 import glob
 import os
 import model
-import preprocess_2d
 import torch
 import wandb
 import logging
@@ -147,56 +146,62 @@ def run_model(args, device):
 
     ## Generate training data for the guys t1 modality
     # Load and prepare data
-    ixi_t1_img_list = glob.glob("/home/lchalcroft/Data/IXI/guys/t1/preprocessed/p_IXI*-T1.nii.gz")
+    # Guy's data
+    guys_img_list = glob.glob(f"/home/lchalcroft/Data/IXI/guys/{args.modality}/preprocessed/p_IXI*-{args.modality.upper()}.nii.gz")
     
     # Sort and split data from T1 to get hold-out test data
-    ixi_t1_img_list.sort()
-    total_samples = len(ixi_t1_img_list)
+    guys_img_list.sort()
+    total_samples = len(guys_img_list)
     train_size = int(0.7 * total_samples)
     val_size = int(0.1 * total_samples)
-    ixi_t1_img_list = ixi_t1_img_list[train_size+val_size:]
+    guys_img_list = guys_img_list[train_size+val_size:]
    
-    # Get the other two modalities for the hold-out test data
-    ixi_t2_img_list = glob.glob("/home/lchalcroft/Data/IXI/guys/t2/preprocessed/p_IXI*-T2.nii.gz")
-    ixi_t2_img_list.sort()
-    ixi_pd_img_list = glob.glob("/home/lchalcroft/Data/IXI/guys/pd/preprocessed/p_IXI*-PD.nii.gz")
-    ixi_pd_img_list.sort()
-
-    ixi_t1_test_dict = [
+    guys_img_dict = [
         {
             "image": f,
             "file": f,
             "seg": [f.replace("p_IXI", "c1p_IXI"), f.replace("p_IXI", "c2p_IXI"), f.replace("p_IXI", "c3p_IXI")],
             "dataset": "IXI",
-            "modality": "T1w",
+            "modality": args.modality,
+            "site": "guys",
             "IXI_ID": int(os.path.basename(f).split("-")[0][5:])
         }
-        for f in ixi_t1_img_list
+        for f in guys_img_list
     ]
-    ixi_t2_test_dict = [
+    
+    # HH data
+    hh_img_list = glob.glob(f"/home/lchalcroft/Data/IXI/hh/{args.modality}/preprocessed/p_IXI*-{args.modality.upper()}.nii.gz")
+    hh_img_list.sort()
+    hh_img_dict = [
         {
             "image": f,
             "file": f,
             "seg": [f.replace("p_IXI", "c1p_IXI"), f.replace("p_IXI", "c2p_IXI"), f.replace("p_IXI", "c3p_IXI")],
             "dataset": "IXI",
-            "modality": "T2w",
+            "modality": args.modality,
+            "site": "hh",
             "IXI_ID": int(os.path.basename(f).split("-")[0][5:])
         }
-        for f in ixi_t2_img_list
-    ]
-    ixi_pd_test_dict = [
-        {
-            "image": f,
-            "file": f,
-            "seg": [f.replace("p_IXI", "c1p_IXI"), f.replace("p_IXI", "c2p_IXI"), f.replace("p_IXI", "c3p_IXI")],
-            "dataset": "IXI",
-            "modality": "PDw",
-            "IXI_ID": int(os.path.basename(f).split("-")[0][5:])
-        }
-        for f in ixi_pd_img_list
+        for f in hh_img_list
     ]
 
-    test_dict = ixi_t1_test_dict + ixi_t2_test_dict + ixi_pd_test_dict
+    # IOP data
+    iop_img_list = glob.glob(f"/home/lchalcroft/Data/IXI/iop/{args.modality}/preprocessed/p_IXI*-{args.modality.upper()}.nii.gz")
+    iop_img_list.sort()
+    iop_img_dict = [
+        {
+            "image": f,
+            "file": f,
+            "seg": [f.replace("p_IXI", "c1p_IXI"), f.replace("p_IXI", "c2p_IXI"), f.replace("p_IXI", "c3p_IXI")],
+            "dataset": "IXI",
+            "modality": args.modality,
+            "site": "iop",
+            "IXI_ID": int(os.path.basename(f).split("-")[0][5:])
+        }
+        for f in iop_img_list
+    ]
+
+    test_dict = guys_img_dict + hh_img_dict + iop_img_dict
     test_loader = get_loaders(test_dict, lowres=args.lowres)
 
     net.eval()
@@ -204,64 +209,84 @@ def run_model(args, device):
     window = mn.inferers.SlidingWindowInferer(roi_size=(96, 96, 96), sw_batch_size=2, overlap=0.5, mode="gaussian")
 
     # Create figure for visualization
-    fig_dir = os.path.join(odir, 'debug_visualizations')
-    os.makedirs(fig_dir, exist_ok=True)
+    df_path = os.path.join(odir, 'predictions.csv')
+    df = pd.read_csv(df_path) if os.path.exists(df_path) else pd.DataFrame(columns=["Dataset", "Modality", "Site", "IXI ID", "Dice", "HD95", "NSD"])
 
-    datasets = ['IXI']
-    modalities = ['T1w', 'T2w', 'PDw']
+    pred_dir = os.path.join(odir, 'predictions')
+    os.makedirs(pred_dir, exist_ok=True)
+
+    img_saver = mn.transforms.SaveImage(
+        output_postfix="img",
+        output_dir=pred_dir,
+        output_ext=".nii.gz",
+        output_dtype=np.float32,
+        resample=False,
+    )
+    gt_saver = mn.transforms.SaveImage(
+        output_postfix="gt",
+        output_dir=pred_dir,
+        output_ext=".nii.gz",
+        output_dtype=np.int16,
+        resample=False,
+    )
+    pred_saver = mn.transforms.SaveImage(
+        output_postfix="pred",
+        output_dir=pred_dir,
+        output_ext=".nii.gz",
+        output_dtype=np.int16,
+        resample=False,
+    )
 
     with torch.no_grad():
-        for dataset in datasets:
-            for modality in modalities:
-                count = 0
-                fig, axes = plt.subplots(5, 3, figsize=(15, 25))
-                fig.suptitle(f'{dataset} - {modality}')
-                
-                for batch in test_loader:
-                    # Skip if not the current dataset/modality
-                    if batch["dataset"][0] != dataset or batch["modality"][0] != modality:
-                        continue
-                    
-                    if count >= 5:
-                        break
+        for ix, batch in tqdm(enumerate(test_loader), total=len(test_loader), desc="Processing batches"):
+            image = batch["image"].to(device)
+            seg = batch["seg"].to(device)
+            seg_argmax = seg.argmax(dim=1)
 
-                    image = batch["image"].to(device)
-                    seg = batch["seg"].to(device)
-                    seg_argmax = seg.argmax(dim=1)
-                    
-                    # Run inference
-                    with torch.cuda.amp.autocast() if args.amp else nullcontext():
-                        pred = window(image, net)
-                        pred = torch.softmax(pred, dim=1)
-                        pred_argmax = pred.argmax(dim=1)
+            # Metadata
+            dataset = batch["dataset"][0]
+            modality = batch["modality"][0]
+            site = batch["site"][0]
+            ixi_id = batch["IXI_ID"][0]
 
-                    # Get middle slices
-                    mid_slice = image.shape[-1] // 2
-                    image_slice = image[0, 0, :, :, mid_slice].cpu()
-                    seg_slice = seg_argmax[0, :, :, mid_slice].cpu()
-                    pred_slice = pred_argmax[0, :, :, mid_slice].cpu()
+            # If file already in dataframe, skip
+            if df.loc[(df["Dataset"] == dataset) & (df["Modality"] == modality) & (df["Site"] == site) & (df["IXI ID"] == ixi_id)].shape[0] > 0:
+                continue
+            
+            # Run inference
+            with torch.cuda.amp.autocast() if args.amp else nullcontext():
+                pred = window(image, net)
+                pred = torch.softmax(pred, dim=1)
+                pred_argmax = pred.argmax(dim=1)
 
-                    # Plot
-                    axes[count, 0].imshow(image_slice, cmap='gray')
-                    axes[count, 0].set_title('Input')
-                    axes[count, 0].axis('off')
-                    
-                    axes[count, 1].imshow(seg_slice, cmap='tab10', vmin=0, vmax=3)
-                    axes[count, 1].set_title('Ground Truth')
-                    axes[count, 1].axis('off')
-                    
-                    axes[count, 2].imshow(pred_slice, cmap='tab10', vmin=0, vmax=3)
-                    axes[count, 2].set_title('Prediction')
-                    axes[count, 2].axis('off')
+            # For first few batches, save images
+            if ix < 5:
+                img_saver(image[0].detach().cpu())
+                gt_saver(seg_argmax[0].detach().cpu())
+                pred_saver(pred_argmax[0].detach().cpu())
 
-                    count += 1
+            # Per channel: compute dice and hd95
+            for i in range(1, 4):
+                pred_i = pred_argmax == i
+                pred_i = torch.stack([1. - pred_i, pred_i], dim=1)
+                seg_i = seg_argmax == i
+                seg_i = torch.stack([1. - seg_i, seg_i], dim=1)
 
-                plt.tight_layout()
-                plt.savefig(os.path.join(fig_dir, f'debug_{dataset}_{modality}.png'))
-                plt.close()
+                dice = compute_dice(pred_i, seg_i).item()
+                hd95 = mn.metrics.compute_hausdorff_distance(pred_i, seg_i, include_background=False, percentile=95).item()
+                nsd = mn.metrics.compute_surface_dice(pred_i, seg_i, class_thresholds=0.5, include_background=False).item()
 
-    print(f"\nDebug visualizations saved to: {fig_dir}")
+                df = df.append({
+                    "Dataset": dataset,
+                    "Modality": modality,
+                    "Site": site,
+                    "IXI ID": ixi_id,
+                    "Dice": dice,
+                    "HD95": hd95,
+                    "NSD": nsd,
+                }, ignore_index=True)
 
+    df.to_csv(df_path, index=False)
 def set_up():
     parser = argparse.ArgumentParser(argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--weights", type=str, help="Path to model weights.")
@@ -274,6 +299,7 @@ def set_up():
     )
     parser.add_argument("--amp", default=False, action="store_true")
     parser.add_argument("--device", type=str, default=None, help="Device to use. If not specified then will check for CUDA.")
+    parser.add_argument("--modality", type=str, choices=["t1", "t2", "pd"], help="Modality to use.")
     parser.add_argument("--lowres", default=False, action="store_true", help="Train with 2mm resolution images.")
     args = parser.parse_args()
 

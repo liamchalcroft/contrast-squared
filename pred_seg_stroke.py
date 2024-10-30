@@ -1,7 +1,6 @@
 import glob
 import os
 import model
-import preprocess_2d
 import torch
 import wandb
 import logging

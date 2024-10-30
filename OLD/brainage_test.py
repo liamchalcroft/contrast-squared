@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
-from brainage_train import BrainAgeDataset, BrainAgeModel, EncoderModel
+from OLD.brainage_train import BrainAgeDataset, BrainAgeModel, EncoderModel
 
 def test_brain_age_model(model_path, test_data_dir):
     # Load the trained model
