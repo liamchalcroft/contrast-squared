@@ -188,21 +188,31 @@ def run_model(args, device):
     # Create plots
     fig_dir = os.path.join(os.path.dirname(args.weights), 'tsne_plots')
     os.makedirs(fig_dir, exist_ok=True)
-    
+
+    fname = os.path.dirname(args.weights).split('/')[-1]
+        
     # Plot by site
-    plt.figure(figsize=(10, 8))
-    sns.scatterplot(x=tsne_results[:, 0], y=tsne_results[:, 1], hue=site_labels, style=modality_labels)
-    plt.title(f't-SNE of {args.net.upper()} Features - Colored by Site')
+    plt.figure(figsize=(10, 10))  # Square figure
+    sns.scatterplot(x=tsne_results[:, 0], y=tsne_results[:, 1], 
+                    hue=site_labels, style=modality_labels, s=100)  # Larger points
+    plt.axis('off')  # Remove axes
+    plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0,
+              fontsize=12, title_fontsize=14)  # Larger, outside legend
     plt.tight_layout()
-    plt.savefig(os.path.join(fig_dir, 'tsne_by_site.png'))
+    plt.savefig(os.path.join(fig_dir, f'tsne_by_site_{fname}.png'),
+                bbox_inches='tight', dpi=300)
     plt.close()
     
     # Plot by modality
-    plt.figure(figsize=(10, 8))
-    sns.scatterplot(x=tsne_results[:, 0], y=tsne_results[:, 1], hue=modality_labels, style=site_labels)
-    plt.title(f't-SNE of {args.net.upper()} Features - Colored by Modality')
+    plt.figure(figsize=(10, 10))  # Square figure
+    sns.scatterplot(x=tsne_results[:, 0], y=tsne_results[:, 1], 
+                    hue=modality_labels, style=site_labels, s=100)  # Larger points
+    plt.axis('off')  # Remove axes
+    plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0,
+              fontsize=12, title_fontsize=14)  # Larger, outside legend
     plt.tight_layout()
-    plt.savefig(os.path.join(fig_dir, f'tsne_by_modality.png'))
+    plt.savefig(os.path.join(fig_dir, f'tsne_by_modality_{fname}.png'),
+                bbox_inches='tight', dpi=300)
     plt.close()
 
     print(f"\nTSNE plots saved to: {fig_dir}")
