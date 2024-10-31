@@ -481,7 +481,7 @@ def run_model(args, device, train_loader, val_loader):
 def set_up():
     parser = argparse.ArgumentParser(argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--name", type=str, help="Name of WandB run.")
-    parser.add_argument("--epochs", type=int, default=100, help="Number of epochs for training.")
+    parser.add_argument("--epochs", type=int, default=80, help="Number of epochs for training.")
     parser.add_argument("--epoch_length", type=int, default=200, help="Number of iterations per epoch.")
     parser.add_argument("--lr", type=float, default=5e-5, help="Learning rate.")
     parser.add_argument("--val_interval", type=int, default=2, help="Validation interval.")
