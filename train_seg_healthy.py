@@ -37,15 +37,16 @@ def get_loaders(
 
   if modality == "t1":
       data_list = glob.glob("/home/lchalcroft/Data/IXI/guys/t1/preprocessed/p_IXI*-T1.nii.gz")
+      data_list.sort()
       data_dict = [{"image": f, "file": f, "seg": [f.replace("p_IXI", "c1p_IXI"), f.replace("p_IXI", "c2p_IXI"), f.replace("p_IXI", "c3p_IXI")], "dataset": "IXI", "site": "guys", "modality": "T1w", "IXI_ID": int(os.path.basename(f).split("-")[0][5:])} for f in data_list]
   elif modality == "t2":
       data_list = glob.glob("/home/lchalcroft/Data/IXI/guys/t2/preprocessed/p_IXI*-T2.nii.gz")
+      data_list.sort()
       data_dict = [{"image": f, "file": f, "seg": [f.replace("p_IXI", "c1p_IXI"), f.replace("p_IXI", "c2p_IXI"), f.replace("p_IXI", "c3p_IXI")], "dataset": "IXI", "site": "guys", "modality": "T2w", "IXI_ID": int(os.path.basename(f).split("-")[0][5:])} for f in data_list]
   elif modality == "pd":
       data_list = glob.glob("/home/lchalcroft/Data/IXI/guys/pd/preprocessed/p_IXI*-PD.nii.gz")
+      data_list.sort()
       data_dict = [{"image": f, "file": f, "seg": [f.replace("p_IXI", "c1p_IXI"), f.replace("p_IXI", "c2p_IXI"), f.replace("p_IXI", "c3p_IXI")], "dataset": "IXI", "site": "guys", "modality": "PDw", "IXI_ID": int(os.path.basename(f).split("-")[0][5:])} for f in data_list]
-
-  data_dict.sort()
 
   total_samples = len(data_dict)
   train_size = int(0.7 * total_samples)

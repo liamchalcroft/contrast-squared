@@ -36,15 +36,16 @@ def get_loaders(
 
     if modality == "t1":
         data_list = glob.glob("/home/lchalcroft/Data/ARC/PREPROC/sub-*/ses-*/*_T1w_flirt.nii.gz")
+        data_list.sort()
         data_dict = [{"image": f, "file": f, "seg": glob.glob(os.path.join(os.path.dirname(f), "*_T2w_desc-lesion_mask.nii.gz"))[0], "dataset": "ARC", "modality": "T1w"} for f in data_list]
     elif modality == "t2":
         data_list = glob.glob("/home/lchalcroft/Data/ARC/PREPROC/sub-*/ses-*/*_T2w.nii.gz")
+        data_list.sort()
         data_dict = [{"image": f, "file": f, "seg": glob.glob(os.path.join(os.path.dirname(f), "*_T2w_desc-lesion_mask.nii.gz"))[0], "dataset": "ARC", "modality": "T2w"} for f in data_list]
     elif modality == "flair":
         data_list = glob.glob("/home/lchalcroft/Data/ARC/PREPROC/sub-*/ses-*/*_FLAIR_flirt.nii.gz")
+        data_list.sort()
         data_dict = [{"image": f, "file": f, "seg": glob.glob(os.path.join(os.path.dirname(f), "*_T2w_desc-lesion_mask.nii.gz"))[0], "dataset": "ARC", "modality": "FLAIR"} for f in data_list]
-
-    data_dict.sort()
 
     total_samples = len(data_dict)
     train_size = int(0.7 * total_samples)
