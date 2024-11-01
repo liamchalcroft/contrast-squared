@@ -25,9 +25,9 @@ python ../train_seg_healthy.py \
     --resume
 
 python ../train_seg_healthy.py \
-    --name spm-flair-cnn-simclr-mprage-pc10 \
+    --name spm-pd-cnn-simclr-mprage-pc10 \
     --net cnn \
-    --modality flair \
+    --modality pd \
     --amp \
     --logdir ../ \
     --backbone_weights ../3d-cnn-simclr-mprage/checkpoint.pt \
@@ -60,9 +60,9 @@ python ../train_seg_healthy.py \
     --resume
 
 python ../train_seg_healthy.py \
-    --name spm-flair-cnn-simclr-bloch-pc10 \
+    --name spm-pd-cnn-simclr-bloch-pc10 \
     --net cnn \
-    --modality flair \
+    --modality pd \
     --amp \
     --logdir ../ \
     --backbone_weights ../3d-cnn-simclr-bloch/checkpoint.pt \
@@ -95,9 +95,9 @@ python ../train_seg_healthy.py \
     --resume
 
 python ../train_seg_healthy.py \
-    --name spm-flair-cnn-simclr-bloch-paired-pc10 \
+    --name spm-pd-cnn-simclr-bloch-paired-pc10 \
     --net cnn \
-    --modality flair \
+    --modality pd \
     --amp \
     --logdir ../ \
     --backbone_weights ../3d-cnn-simclr-bloch-paired/checkpoint.pt \
