@@ -49,9 +49,10 @@ def run_model(args, device, train_loader, train_transform):
         in_features=768, hidden_size=512, out_features=128
     ).to(device)
 
-    reconstructor = model.Reconstructor(
-        in_features=768, out_channels=1
-    ).to(device)
+    if not args.no_recon:
+        reconstructor = model.Reconstructor(
+            in_features=768, out_channels=1
+        ).to(device)
 
     if args.resume or args.resume_best:
         ckpts = glob.glob(
@@ -112,7 +113,9 @@ def run_model(args, device, train_loader, train_transform):
         def state_dict(self):
             return self.metric
 
-    params = list(encoder.parameters()) + list(projector.parameters()) + list(reconstructor.parameters())
+    params = list(encoder.parameters()) + list(projector.parameters())
+    if not args.no_recon:
+        params += list(reconstructor.parameters())
     # try:
     #     opt = torch.optim.AdamW(params, args.lr, fused=torch.cuda.is_available(), foreach=False)
     # except:
@@ -124,7 +127,7 @@ def run_model(args, device, train_loader, train_transform):
         )  # strict False in case of switch between subpixel and transpose
         if "projector" in checkpoint:
             projector.load_state_dict(checkpoint["projector"], strict=False)
-        if "reconstructor" in checkpoint:
+        if not args.no_recon and "reconstructor" in checkpoint:
             reconstructor.load_state_dict(checkpoint["reconstructor"], strict=False)
         if "opt" in checkpoint:
             opt.load_state_dict(checkpoint["opt"])
@@ -184,8 +187,9 @@ def run_model(args, device, train_loader, train_transform):
                 batch = next(train_iter)
             img1 = batch["image1"].to(device)
             img2 = batch["image2"].to(device)
-            recon_target1 = batch["image1_recon"].to(device)
-            recon_target2 = batch["image2_recon"].to(device)
+            if not args.no_recon:
+                recon_target1 = batch["image1_recon"].to(device)
+                recon_target2 = batch["image2_recon"].to(device)
             opt.zero_grad(set_to_none=True)
 
             if args.debug and step < 5:
@@ -196,13 +200,15 @@ def run_model(args, device, train_loader, train_transform):
                 features1 = encoder(img1)
                 if len(features1.shape) == 3 and features1.shape[1] != 768 and features1.shape[2] == 768:
                     features1 = torch.movedim(features1, 2, 1)
-                recon1 = reconstructor(features1)
+                if not args.no_recon:
+                    recon1 = reconstructor(features1)
                 features1 = features1.view(img1.size(0), 768, -1).mean(dim=-1)
 
                 features2 = encoder(img2)
                 if len(features2.shape) == 3 and features2.shape[1] != 768 and features2.shape[2] == 768:
                     features2 = torch.movedim(features2, 2, 1)
-                recon2 = reconstructor(features2)
+                if not args.no_recon:
+                    recon2 = reconstructor(features2)
                 features2 = features2.view(img2.size(0), 768, -1).mean(dim=-1)
 
                 embeddings1 = projector(features1)
@@ -212,7 +218,9 @@ def run_model(args, device, train_loader, train_transform):
                 if args.loss == "barlow":
                     ssl_loss = ssl_loss / 128
 
-                recon_loss = torch.nn.functional.l1_loss(recon1, recon_target1) + torch.nn.functional.l1_loss(recon2, recon_target2)
+                recon_loss = 0
+                if not args.no_recon:
+                    recon_loss = torch.nn.functional.l1_loss(recon1, recon_target1) + torch.nn.functional.l1_loss(recon2, recon_target2)
                 loss = ssl_loss + recon_loss
 
             if type(loss) == float or loss.isnan().sum() != 0:
@@ -232,7 +240,10 @@ def run_model(args, device, train_loader, train_transform):
 
                 epoch_loss += loss.item()
 
-                wandb.log({"train/ssl_loss": ssl_loss.item(), "train/recon_loss": recon_loss.item()})
+                loss_update = {"train/ssl_loss": ssl_loss.item()}
+                if not args.no_recon:
+                    loss_update["train/recon_loss"] = recon_loss.item()
+                wandb.log(loss_update)
 
             progress_bar.set_postfix(
                 {"loss": epoch_loss / (step + 1 - step_deficit)}
@@ -241,32 +252,27 @@ def run_model(args, device, train_loader, train_transform):
         wandb.log({"train/lr": opt.param_groups[0]["lr"]})
         lr_scheduler.step()
 
+        state_dict = {
+            "encoder": encoder.state_dict(),
+            "projector": projector.state_dict(),
+            "opt": opt.state_dict(),
+            "lr": lr_scheduler.state_dict(),
+            "wandb": WandBID(wandb.run.id).state_dict(),
+            "epoch": Epoch(epoch).state_dict(),
+            "metric": Metric(metric_best).state_dict(),
+        }
+        if not args.no_recon:
+            state_dict["reconstructor"] = reconstructor.state_dict()
+
         if epoch_loss < metric_best:
             metric_best = epoch_loss
+            state_dict["metric"] = Metric(metric_best).state_dict()
             torch.save(
-                {
-                    "encoder": encoder.state_dict(),
-                    "projector": projector.state_dict(),
-                    "reconstructor": reconstructor.state_dict(),
-                    "opt": opt.state_dict(),
-                    "lr": lr_scheduler.state_dict(),
-                    "wandb": WandBID(wandb.run.id).state_dict(),
-                    "epoch": Epoch(epoch).state_dict(),
-                    "metric": Metric(metric_best).state_dict(),
-                },
+                state_dict,
                 os.path.join(args.logdir, args.name, "checkpoint_best.pt"),
             )
         torch.save(
-            {
-                "encoder": encoder.state_dict(),
-                "projector": projector.state_dict(),
-                "reconstructor": reconstructor.state_dict(),
-                "opt": opt.state_dict(),
-                "lr": lr_scheduler.state_dict(),
-                "wandb": WandBID(wandb.run.id).state_dict(),
-                "epoch": Epoch(epoch).state_dict(),
-                "metric": Metric(metric_best).state_dict(),
-            },
+            state_dict,
             os.path.join(args.logdir, args.name, "checkpoint.pt"),
         )
 
@@ -279,8 +285,9 @@ def run_model(args, device, train_loader, train_transform):
             for i in range(4):
                 img1_list.append(img1[i][..., img1.shape[-1]//2])
                 img2_list.append(img2[i][..., img2.shape[-1]//2])
-                recon1_list.append(recon1[i][..., recon1.shape[-1]//2])
-                recon2_list.append(recon2[i][..., recon2.shape[-1]//2])
+                if not args.no_recon:
+                    recon1_list.append(recon1[i][..., recon1.shape[-1]//2])
+                    recon2_list.append(recon2[i][..., recon2.shape[-1]//2])
             grid_image1 = make_grid(
                         img1_list,
                         nrow=int(2),
@@ -295,38 +302,41 @@ def run_model(args, device, train_loader, train_transform):
                         normalize=True,
                         scale_each=True,
                     )
-            grid_recon1 = make_grid(
-                        recon1_list,
-                        nrow=int(2),
-                        padding=5,
-                        normalize=True,
-                        scale_each=True,
-                    )
-            grid_recon2 = make_grid(
-                        recon2_list,
-                        nrow=int(2),
-                        padding=5,
-                        normalize=True,
-                        scale_each=True,
-                    )
-            wandb.log(
-                {
-                    "examples": [
-                        wandb.Image(
-                            grid_image1[0].cpu().numpy(), caption="Image view #1"
-                        ),
-                        wandb.Image(
-                            grid_image2[0].cpu().numpy(), caption="Image view #2"
-                        ),
-                        wandb.Image(
-                            grid_recon1[0].cpu().numpy(), caption="Recon view #1"
-                        ),
-                        wandb.Image(
-                            grid_recon2[0].cpu().numpy(), caption="Recon view #2"
-                        ),
-                    ]
-                }
-            )
+            if not args.no_recon:
+                grid_recon1 = make_grid(
+                            recon1_list,
+                            nrow=int(2),
+                            padding=5,
+                            normalize=True,
+                            scale_each=True,
+                        )
+                grid_recon2 = make_grid(
+                            recon2_list,
+                            nrow=int(2),
+                            padding=5,
+                            normalize=True,
+                            scale_each=True,
+                        )
+                
+            wandb_examples = [
+                wandb.Image(
+                    grid_image1[0].cpu().numpy(), caption="Image view #1"
+                ),
+                wandb.Image(
+                    grid_image2[0].cpu().numpy(), caption="Image view #2"
+                ),
+            ]
+            if not args.no_recon:
+                wandb_examples += [
+                    wandb.Image(
+                        grid_recon1[0].cpu().numpy(), caption="Recon view #1"
+                    ),
+                    wandb.Image(
+                        grid_recon2[0].cpu().numpy(), caption="Recon view #2"
+                    ),
+                ]
+
+            wandb.log({"examples": wandb_examples})
 
 
 def set_up():
@@ -363,6 +373,7 @@ def set_up():
     parser.add_argument("--device", type=str, default=None, help="Device to use. If not specified then will check for CUDA.")
     parser.add_argument("--lowres", default=False, action="store_true", help="Train with 2mm resolution images.")
     parser.add_argument("--debug", default=False, action="store_true", help="Save sample images before training.")
+    parser.add_argument("--no_recon", default=False, action="store_true", help="Don't use reconstruction loss.")
     args = parser.parse_args()
 
     os.makedirs(os.path.join(args.logdir, args.name), exist_ok=True)
