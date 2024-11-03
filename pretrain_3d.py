@@ -130,7 +130,10 @@ def run_model(args, device, train_loader, train_transform):
         if not args.no_recon and "reconstructor" in checkpoint:
             reconstructor.load_state_dict(checkpoint["reconstructor"], strict=False)
         if "opt" in checkpoint:
-            opt.load_state_dict(checkpoint["opt"])
+            try:
+                opt.load_state_dict(checkpoint["opt"])
+            except:
+                print("Warning: optimizer state dict not found. Continuing with existing optimizer state.")
         start_epoch = checkpoint["epoch"] + 1
         metric_best = checkpoint["metric"]
         # correct scheduler in cases where max epochs has changed
