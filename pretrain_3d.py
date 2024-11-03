@@ -80,8 +80,8 @@ def run_model(args, device, train_loader, train_transform):
         save_code=True,
         name=args.name,
         settings=wandb.Settings(start_method="fork"),
-        resume="must" if args.resume else None,
-        id=checkpoint["wandb"] if args.resume or args.resume_best else None,
+        resume="must" if args.resume and not args.reset_wandb else None,
+        id=checkpoint["wandb"] if (args.resume or args.resume_best) and not args.reset_wandb else None,
     )
     if not args.resume and not args.resume_best:
         wandb.config.update(args)
@@ -375,6 +375,7 @@ def set_up():
     parser.add_argument("--lowres", default=False, action="store_true", help="Train with 2mm resolution images.")
     parser.add_argument("--debug", default=False, action="store_true", help="Save sample images before training.")
     parser.add_argument("--no_recon", default=False, action="store_true", help="Don't use reconstruction loss.")
+    parser.add_argument("--reset_wandb", default=False, action="store_true", help="Reset WandB run.")
     args = parser.parse_args()
 
     os.makedirs(os.path.join(args.logdir, args.name), exist_ok=True)
