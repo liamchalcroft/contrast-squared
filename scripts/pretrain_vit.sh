@@ -21,7 +21,7 @@ python ../pretrain_3d.py \
     --epoch_length 200 \
     --lr 1e-3 \
     --loss simclr \
-    --data mprage \
+    --data bloch \
     --net vit \
     --amp \
     --logdir ../ \
@@ -35,7 +35,7 @@ python ../pretrain_3d.py \
     --epoch_length 200 \
     --lr 1e-3 \
     --loss simclr \
-    --data mprage-paired \
+    --data bloch-paired \
     --net vit \
     --amp \
     --logdir ../ \
