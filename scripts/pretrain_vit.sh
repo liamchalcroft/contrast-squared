@@ -15,7 +15,7 @@ python ../pretrain_3d.py \
     --resume
 
 python ../pretrain_3d.py \
-    --name 3d-vit-simclr-mprage \
+    --name 3d-vit-simclr-bloch \
     --batch_size 8 \
     --epochs 300 \
     --epoch_length 200 \
@@ -29,7 +29,7 @@ python ../pretrain_3d.py \
     --resume
 
 python ../pretrain_3d.py \
-    --name 3d-vit-simclr-mprage-paired \
+    --name 3d-vit-simclr-bloch-paired \
     --batch_size 8 \
     --epochs 300 \
     --epoch_length 200 \
