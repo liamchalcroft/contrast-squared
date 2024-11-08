@@ -127,7 +127,7 @@ def get_loaders(
             keys="image", nonzero=False, channel_wise=True
         ),
         mn.transforms.CopyItemsD(keys=["image"], names=["noisy_image"]),
-        mn.transforms.RandGaussianNoiseD(keys="noisy_image", prob=1.0, mean=0.0, std=0.1, sample_std=False),
+        mn.transforms.RandGaussianNoiseD(keys="noisy_image", prob=1.0, mean=0.0, std=0.2, sample_std=False),
         mn.transforms.RandCropByLabelClassesD(
             keys=["image", "label", "noisy_image"],
             spatial_size=(96, 96, 96) if not lowres else (48, 48, 48),
