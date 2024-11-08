@@ -40,7 +40,12 @@ def get_loaders(
     ixi_data = pd.read_excel('/home/lchalcroft/Data/IXI/IXI.xls')
 
     # Load and prepare data
-    all_imgs = glob.glob(f"/home/lchalcroft/Data/IXI/guys/{modality}/preprocessed/p_IXI*-{modality}.nii.gz")
+    if modality == "t1":
+        all_imgs = glob.glob("/home/lchalcroft/Data/IXI/guys/t1/preprocessed/p_IXI*-T1.nii.gz")
+    elif modality == "t2":
+        all_imgs = glob.glob("/home/lchalcroft/Data/IXI/guys/t2/preprocessed/p_IXI*-T2.nii.gz")
+    elif modality == "pd":
+        all_imgs = glob.glob("/home/lchalcroft/Data/IXI/guys/pd/preprocessed/p_IXI*-PD.nii.gz")
     
     # Sort and split data
     all_imgs.sort()
