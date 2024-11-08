@@ -26,19 +26,21 @@ def add_bg(x):
     return torch.cat([1-x.sum(dim=0, keepdim=True), x], dim=0)
 
 def get_loaders(
+        modality,
         batch_size=1,
         device="cpu",
         lowres=False,
         ptch=128,
         pc_data=100,
     ):
+    print(f"Modality: {modality}")
 
     ## Generate training data for the guys t1 modality
     # Load IXI spreadsheet
     ixi_data = pd.read_excel('/home/lchalcroft/Data/IXI/IXI.xls')
 
     # Load and prepare data
-    all_imgs = glob.glob("/home/lchalcroft/Data/IXI/guys/t1/preprocessed/p_IXI*-T1.nii.gz")
+    all_imgs = glob.glob(f"/home/lchalcroft/Data/IXI/guys/{modality}/preprocessed/p_IXI*-{modality}.nii.gz")
     
     # Sort and split data
     all_imgs.sort()
@@ -502,6 +504,7 @@ def set_up():
     parser.add_argument("--debug", default=False, action="store_true", help="Save sample images before training.")
     parser.add_argument("--backbone_weights", type=str, default=None, help="Path to encoder weights to load.")
     parser.add_argument("--pc_data", default=100, type=float, help="Percentage of data to use for training.")
+    parser.add_argument("--modality", type=str, default="t1", help="Modality to use. Options: [t1, t2, pd]. Defaults to t1.")
     args = parser.parse_args()
 
     os.makedirs(os.path.join(args.logdir, args.name), exist_ok=True)
@@ -518,7 +521,7 @@ def set_up():
         print("Memory Usage:")
         print("Allocated:", round(torch.cuda.memory_allocated(0) / 1024**3, 1), "GB")
         print("Cached:   ", round(torch.cuda.memory_reserved(0) / 1024**3, 1), "GB")
-    train_loader, val_loader = get_loaders(batch_size=args.batch_size, device=device, lowres=args.lowres, ptch=48 if args.lowres else 96, pc_data=args.pc_data)
+    train_loader, val_loader = get_loaders(args.modality, batch_size=args.batch_size, device=device, lowres=args.lowres, ptch=48 if args.lowres else 96, pc_data=args.pc_data)
 
     if args.debug:
         saver1 = mn.transforms.SaveImage(
