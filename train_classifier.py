@@ -28,28 +28,36 @@ def add_bg(x):
     return torch.cat([1-x.sum(dim=0, keepdim=True), x], dim=0)
 
 def get_loaders(
+        modality,
         batch_size=1,
         device="cpu",
         lowres=False,
         ptch=128,
         pc_data=100,
     ):
+    print(f"Modality: {modality}")
 
-    ## Generate training data for the guys t1 modality
+    if modality == "t1":
+        data_list = glob.glob("/home/lchalcroft/Data/IXI/guys/t1/preprocessed/p_IXI*-T1.nii.gz")
+    elif modality == "t2":
+        data_list = glob.glob("/home/lchalcroft/Data/IXI/guys/t2/preprocessed/p_IXI*-T2.nii.gz")
+    elif modality == "pd":
+        data_list = glob.glob("/home/lchalcroft/Data/IXI/guys/pd/preprocessed/p_IXI*-PD.nii.gz")
+
     # Load IXI spreadsheet
     ixi_data = pd.read_excel('/home/lchalcroft/Data/IXI/IXI.xls')
 
     # Load and prepare data
-    all_imgs = glob.glob("/home/lchalcroft/Data/IXI/guys/t1/preprocessed/p_IXI*-T1.nii.gz")
+    data_list.sort()
     
     # Sort and split data
-    all_imgs.sort()
-    total_samples = len(all_imgs)
+    total_samples = len(data_list)
     train_size = int(0.7 * total_samples)
     val_size = int(0.1 * total_samples)
 
-    train_imgs = all_imgs[:train_size]
-    val_imgs = all_imgs[train_size:train_size+val_size]
+    train_imgs = data_list[:train_size]
+    val_imgs = data_list[train_size:train_size+val_size]
+    
     train_ids = [int(os.path.basename(f).split("-")[0][5:]) for f in train_imgs]
     val_ids = [int(os.path.basename(f).split("-")[0][5:]) for f in val_imgs]
 
@@ -530,6 +538,7 @@ def set_up():
     parser.add_argument("--debug", default=False, action="store_true", help="Save sample images before training.")
     parser.add_argument("--backbone_weights", type=str, default=None, help="Path to encoder weights to load.")
     parser.add_argument("--pc_data", default=100, type=float, help="Percentage of data to use for training.")
+    parser.add_argument("--modality", type=str, choices=["t1", "t2", "pd"], help="Modality to train on.")
     args = parser.parse_args()
 
     os.makedirs(os.path.join(args.logdir, args.name), exist_ok=True)
@@ -546,7 +555,14 @@ def set_up():
         print("Memory Usage:")
         print("Allocated:", round(torch.cuda.memory_allocated(0) / 1024**3, 1), "GB")
         print("Cached:   ", round(torch.cuda.memory_reserved(0) / 1024**3, 1), "GB")
-    train_loader, val_loader = get_loaders(batch_size=args.batch_size, device=device, lowres=args.lowres, ptch=48 if args.lowres else 96, pc_data=args.pc_data)
+    train_loader, val_loader = get_loaders(
+        modality=args.modality,
+        batch_size=args.batch_size,
+        device=device,
+        lowres=args.lowres,
+        ptch=48 if args.lowres else 96,
+        pc_data=args.pc_data
+    )
 
     if args.debug:
         saver1 = mn.transforms.SaveImage(
