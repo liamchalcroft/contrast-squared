@@ -257,17 +257,21 @@ def run_model(args, device, train_loader, val_loader):
     class Regression(torch.nn.Module):
         def __init__(self, in_features, out_features):
             super().__init__()
-            self.bilinear = torch.nn.Bilinear(in_features, 1, out_features, bias=True)
-            # self.gelu = torch.nn.GELU()
-            # self.linear = torch.nn.Linear(512, 1, bias=True)
-            # self.scale = torch.nn.Parameter(torch.tensor(1.0))
+            # Replace simple bilinear layer with a more robust architecture
+            self.net = torch.nn.Sequential(
+                torch.nn.Linear(in_features + 1, 512),  # +1 for gender
+                torch.nn.GELU(),
+                torch.nn.Dropout(0.2),
+                torch.nn.Linear(512, 256),
+                torch.nn.GELU(),
+                torch.nn.Dropout(0.2),
+                torch.nn.Linear(256, out_features)
+            )
 
         def forward(self, x, gender):
-            x = self.bilinear(x, gender)
-            # x = self.gelu(x)
-            # x = self.linear(x)
-            # x = self.scale * x
-            return x
+            # Concatenate features with gender instead of using bilinear
+            x = torch.cat([x, gender], dim=1)
+            return self.net(x)
 
     regressor = Regression(768, 100).to(device) # 100 classes of age
 
@@ -387,6 +391,8 @@ def run_model(args, device, train_loader, val_loader):
                 batch = next(train_iter)
             img = batch[0]["image"].to(device).float()
             age = batch[0]["age"].to(device).long()
+            # Convert age to class index (0-99)
+            age = torch.clamp((age - 20) / 0.8, 0, 99).long()  # Assuming ages 20-100
             gender = batch[0]["gender"][:, None].to(device).float()
             opt.zero_grad(set_to_none=True)
 
@@ -434,12 +440,15 @@ def run_model(args, device, train_loader, val_loader):
                 for i, batch in enumerate(val_loader):
                     img = batch[0]["image"].to(device).float()
                     age = batch[0]["age"].to(device).long()
+                    # Convert age to class index (0-99)
+                    age = torch.clamp((age - 20) / 0.8, 0, 99).long()  # Assuming ages 20-100
                     gender = batch[0]["gender"][:, None].to(device).float()
                     features = encoder(img)
                     features = features.view(features.shape[0], features.shape[1], -1).mean(dim=-1)
                     pred_age = regressor(features, gender)
                     val_loss += crit(pred_age, age).item()
                     pred_age = pred_age.softmax(dim=1).argmax(dim=1)
+                    pred_age = pred_age * 0.8 + 20  # Convert back to actual age range
                     val_acc += (pred_age == age).float().mean().item()
 
                     if i < 16:
