@@ -132,57 +132,73 @@ def run_model(args, device):
     net.load_state_dict(checkpoint["encoder"], strict=False)
     net.eval()
 
-    # Prepare data
-    sites = ['guys', 'hh', 'iop']
-    modalities = ['t1', 't2', 'pd']
-    features_list = []
-    site_labels = []
-    modality_labels = []
+    # Check to see if features_list, site_labels, and modality_labels already exist
+    features_list_path = os.path.join(os.path.dirname(args.weights), 'features_list.npy')
+    site_labels_path = os.path.join(os.path.dirname(args.weights), 'site_labels.npy')
+    modality_labels_path = os.path.join(os.path.dirname(args.weights), 'modality_labels.npy')
+    if os.path.exists(features_list_path) and os.path.exists(site_labels_path) and os.path.exists(modality_labels_path):
+        print("\nLoading existing features, site labels, and modality labels.")
+        features_list = np.load(features_list_path)
+        site_labels = np.load(site_labels_path)
+        modality_labels = np.load(modality_labels_path)
+    else:
+        print("\nComputing features, site labels, and modality labels.")
+        # Prepare data
+        sites = ['guys', 'hh', 'iop']
+        modalities = ['t1', 't2', 'pd']
+        features_list = []
+        site_labels = []
+        modality_labels = []
 
-    window = mn.inferers.SlidingWindowInferer(roi_size=(96, 96, 96), sw_batch_size=2, overlap=0.5, mode="gaussian")
-    
-    for site in sites:
-        for modality in modalities:
-            # Skip if combination doesn't exist
-            data_path = f"/home/lchalcroft/Data/IXI/{site}/{modality}/preprocessed/p_IXI*-{modality.upper()}.nii.gz"
-            files = glob.glob(data_path)
-            if not files:
-                continue
+        window = mn.inferers.SlidingWindowInferer(roi_size=(96, 96, 96), sw_batch_size=2, overlap=0.5, mode="gaussian")
+        
+        for site in sites:
+            for modality in modalities:
+                # Skip if combination doesn't exist
+                data_path = f"/home/lchalcroft/Data/IXI/{site}/{modality}/preprocessed/p_IXI*-{modality.upper()}.nii.gz"
+                files = glob.glob(data_path)
+                if not files:
+                    continue
+                    
+                print(f"\nProcessing {site} - {modality}: {len(files)} files")
                 
-            print(f"\nProcessing {site} - {modality}: {len(files)} files")
-            
-            # Create data dictionary
-            data_dict = [{"image": f} for f in files]
-            
-            # Create data loader
-            loader = get_loaders(data_dict, lowres=args.lowres)
-            
-            # Extract features
-            with torch.no_grad():
-                with torch.cuda.amp.autocast() if args.amp else nullcontext():
-                    for batch in tqdm(loader, desc=f"{site}-{modality}"):
-                        image = batch["image"].to(device)
-                        
-                        # Get encoder features
-                        if args.net == "cnn":
-                            features = window(image, net)  # Get last encoder layer features
-                        else:  # ViT
-                            features = window(image, net)  # Get transformer features
-                        
-                        # Global average pooling for CNN features
-                        if args.net == "cnn":
-                            features = torch.mean(features, dim=(2, 3, 4))
-                        
-                        features_list.append(features.cpu().numpy())
-                        site_labels.extend([site] * features.shape[0])
-                        modality_labels.extend([modality] * features.shape[0])
+                # Create data dictionary
+                data_dict = [{"image": f} for f in files]
+                
+                # Create data loader
+                loader = get_loaders(data_dict, lowres=args.lowres)
+                
+                # Extract features
+                with torch.no_grad():
+                    with torch.cuda.amp.autocast() if args.amp else nullcontext():
+                        for batch in tqdm(loader, desc=f"{site}-{modality}"):
+                            image = batch["image"].to(device)
+                            
+                            # Get encoder features
+                            if args.net == "cnn":
+                                features = window(image, net)  # Get last encoder layer features
+                            else:  # ViT
+                                features = window(image, net)  # Get transformer features
+                            
+                            # Global average pooling for CNN features
+                            if args.net == "cnn":
+                                features = torch.mean(features, dim=(2, 3, 4))
+                            
+                            features_list.append(features.cpu().numpy())
+                            site_labels.extend([site] * features.shape[0])
+                            modality_labels.extend([modality] * features.shape[0])
+
+        # Save lists to disk
+        np.save(features_list_path, features_list)
+        np.save(site_labels_path, site_labels)
+        np.save(modality_labels_path, modality_labels)
 
     # Concatenate all features
     features_array = np.concatenate(features_list, axis=0)
-    
+
     # Compute t-SNE
     print("\nComputing t-SNE...")
-    tsne = TSNE(n_components=2, random_state=42, perplexity=30)
+    tsne = TSNE(n_components=2, random_state=42, perplexity=15)
     tsne_results = tsne.fit_transform(features_array)
     
     # Create plots
