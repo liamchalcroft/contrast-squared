@@ -198,7 +198,7 @@ def run_model(args, device):
 
     # Compute t-SNE
     print("\nComputing t-SNE...")
-    tsne = TSNE(n_components=2, random_state=42, perplexity=30)
+    tsne = TSNE(n_components=2, random_state=33, perplexity=30)
     tsne_results = tsne.fit_transform(features_array)
     
     # Create plots
