@@ -36,14 +36,6 @@ def spider_plot(results_df, metric="DSC"):
     angles = np.linspace(0, 2*np.pi, len(spider_data.index), endpoint=False)
     angles = np.concatenate((angles, [angles[0]]))  # Close the plot
     
-    # Calculate min and max values for smart limits
-    min_val = spider_data.values.min()
-    max_val = spider_data.values.max()
-    
-    # Set limits to 95% of min and 105% of max
-    ylim_min = min_val * 0.95
-    ylim_max = max_val * 1.05
-    
     # Create figure
     fig, ax = plt.subplots(figsize=(10, 10), subplot_kw=dict(projection='polar'))
     
@@ -58,8 +50,21 @@ def spider_plot(results_df, metric="DSC"):
     ax.set_theta_offset(np.pi / 2)
     ax.set_theta_direction(-1)
     
-    # Set the ylim
-    ax.set_ylim(ylim_min, ylim_max)
+    # Set individual limits for each axis
+    ax.set_rlabel_position(0)  # Move radial labels away from plotted line
+    
+    # Calculate individual axis limits
+    for idx in range(len(spider_data.index)):
+        column_values = spider_data.iloc[idx].values
+        min_val = np.min(column_values)
+        max_val = np.max(column_values)
+        
+        # Set limits for this specific axis
+        ax.set_rgrids(
+            radii=[min_val * 0.8, min_val, max_val, max_val * 1.2],
+            labels=[f'{v:.1f}' for v in [min_val * 0.8, min_val, max_val, max_val * 1.2]],
+            angle=angles[idx]
+        )
     
     # Draw axis lines for each angle and label
     ax.set_xticks(angles[:-1])
