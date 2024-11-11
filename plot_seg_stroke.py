@@ -29,7 +29,7 @@ def get_results_df(results_dir):
         return None
     
 def spider_plot(results_df, metric="DSC"):
-    # Calculate mean DSC for each modality dataset and method
+    # Calculate mean metric for each modality dataset and method
     spider_data = results_df.groupby(['Modality Dataset', 'Method'])[metric].mean().unstack()
     
     # Set up the angles for the spider plot

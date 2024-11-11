@@ -34,19 +34,21 @@ def get_results_df(results_dir):
         print(f"Results file not found: {results_file}")
         return None
     
-def spider_plot(results_df, metric="DSC", class_name=None):
-    # Filter by class if specified
-    if class_name is not None:
-        results_df = results_df[results_df['Class'] == class_name]
-        
-    # Calculate mean DSC for each modality dataset and method
+def spider_plot(results_df, metric="DSC"):
+    # Calculate mean metric for each modality dataset and method
     spider_data = results_df.groupby(['Modality Dataset', 'Method'])[metric].mean().unstack()
     
     # Set up the angles for the spider plot
     angles = np.linspace(0, 2*np.pi, len(spider_data.index), endpoint=False)
+    angles = np.concatenate((angles, [angles[0]]))  # Close the plot
     
-    # Close the plot by appending first value
-    angles = np.concatenate((angles, [angles[0]]))
+    # Calculate min and max values for smart limits
+    min_val = spider_data.values.min()
+    max_val = spider_data.values.max()
+    
+    # Set limits to 95% of min and 105% of max
+    ylim_min = min_val * 0.95
+    ylim_max = max_val * 1.05
     
     # Create figure
     fig, ax = plt.subplots(figsize=(10, 10), subplot_kw=dict(projection='polar'))
@@ -54,14 +56,16 @@ def spider_plot(results_df, metric="DSC", class_name=None):
     # Plot data
     for method in spider_data.columns:
         values = spider_data[method].values
-        # Close the plot by appending first value
-        values = np.concatenate((values, [values[0]]))
+        values = np.concatenate((values, [values[0]]))  # Close the plot
         ax.plot(angles, values, 'o-', linewidth=2, label=method)
         ax.fill(angles, values, alpha=0.25)
     
     # Fix axis to go in the right order and start at 12 o'clock
     ax.set_theta_offset(np.pi / 2)
     ax.set_theta_direction(-1)
+    
+    # Set the ylim
+    ax.set_ylim(ylim_min, ylim_max)
     
     # Draw axis lines for each angle and label
     ax.set_xticks(angles[:-1])
@@ -70,10 +74,7 @@ def spider_plot(results_df, metric="DSC", class_name=None):
     # Add legend
     plt.legend(loc='upper right', bbox_to_anchor=(0.1, 0.1))
     
-    title = f"Mean {metric} by Modality Dataset and Method"
-    if class_name:
-        title += f" for {class_name}"
-    plt.title(title)
+    plt.title(f"Mean {metric} by Modality Dataset and Method")
     return fig
 
 # Set style for fancy plots
