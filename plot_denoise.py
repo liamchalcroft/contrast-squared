@@ -156,7 +156,9 @@ for percentage in training_percentages:
         plt.figure(figsize=(15, 8))
         ax = sns.violinplot(data=class_data, x="Modality Dataset", y="MSE", hue="Method",
                             hue_order=[MODEL_NAMES[m] for m in MODEL_ORDER],
-                            density_norm='width', inner='quartile', alpha=0.5)
+                            density_norm='width', inner='quartile', alpha=0.5,
+                            cut=0,
+                            )
         plt.title(f"Mean Squared Error by Modality and Dataset ({percentage}% Training Data)", 
                  pad=20, fontsize=16, fontweight='bold')
         plt.xlabel("Modality Dataset", fontsize=14, labelpad=15)
@@ -192,7 +194,9 @@ for percentage in training_percentages:
         plt.figure(figsize=(15, 8))
         ax = sns.violinplot(data=class_data, x="Modality Dataset", y="PSNR", hue="Method",
                             hue_order=[MODEL_NAMES[m] for m in MODEL_ORDER],
-                            density_norm='width', inner='quartile', alpha=0.5)
+                            density_norm='width', inner='quartile', alpha=0.5,
+                            cut=0,
+                            )
         plt.title(f"Peak Signal-to-Noise Ratio by Modality and Dataset ({percentage}% Training Data)", 
                  pad=20, fontsize=16, fontweight='bold')
         plt.xlabel("Modality Dataset", fontsize=14, labelpad=15)
