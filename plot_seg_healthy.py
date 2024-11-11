@@ -140,7 +140,7 @@ for percentage in training_percentages:
         plt.figure(figsize=(15, 8))
         ax = sns.boxplot(data=class_data, x="Modality Dataset", y="DSC", hue="Method",
                          hue_order=[MODEL_NAMES[m] for m in MODEL_ORDER],
-                         boxprops={'alpha': 0.8, 'linewidth': 2},
+                        #  boxprops={'alpha': 0.8, 'linewidth': 2},
                          showfliers=False,
                          width=0.8)
         plt.title(f"Dice Similarity Coefficient by Modality and Dataset ({percentage}% Training Data)", 
@@ -178,7 +178,7 @@ for percentage in training_percentages:
         plt.figure(figsize=(15, 8))
         ax = sns.boxplot(data=class_data, x="Modality Dataset", y="HD95", hue="Method",
                          hue_order=[MODEL_NAMES[m] for m in MODEL_ORDER],
-                         boxprops={'alpha': 0.8, 'linewidth': 2},
+                        #  boxprops={'alpha': 0.8, 'linewidth': 2},
                          showfliers=False,
                          width=0.8)
         plt.title(f"95% Hausdorff Distance by Modality and Dataset ({percentage}% Training Data)", 
