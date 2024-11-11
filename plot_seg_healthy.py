@@ -117,7 +117,7 @@ results_df["Site"] = results_df["Site"].map(SITE_NAMES)
 results_df["Modality Dataset"] = results_df["Site"] + " [" + results_df["Modality"] + "]"
 
 # Get unique percentages
-training_percentages = sorted(results_df["% Training Data"].unique())
+training_percentages = sorted(results_df["% Training Data"].unique(), reverse=True)
 
 print(results_df.head())
 
