@@ -5,6 +5,13 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import numpy as np
 
+MODEL_ORDER = ['MPRAGE', 'BLOCH', 'BLOCH-PAIRED']
+MODEL_NAMES = {
+    'MPRAGE': 'Baseline',
+    'BLOCH': 'Bloch',
+    'BLOCH-PAIRED': 'Bloch (Paired)'
+}
+
 def get_results_df(results_dir):
     results_file = os.path.join(results_dir, "test_results.csv")
     if os.path.exists(results_file):
@@ -15,7 +22,7 @@ def get_results_df(results_dir):
         data_pc = int(run_name.split("pc")[1])
         df["% Training Data"] = data_pc
         method = run_name.split("simclr-")[1].split("-pc")[0]
-        df["Method"] = method.upper()
+        df["Method"] = MODEL_NAMES.get(method.upper(), method.upper())
         return df
     else:
         print(f"Results file not found: {results_file}")
@@ -107,6 +114,7 @@ for percentage in training_percentages:
     # 1. Boxplot of Dice scores by model and dataset
     plt.figure(figsize=(15, 8))
     ax = sns.boxplot(data=percentage_df, x="Modality Dataset", y="DSC", hue="Method",
+                     hue_order=[MODEL_NAMES[m] for m in MODEL_ORDER],
                      boxprops={'alpha': 0.8, 'linewidth': 2},
                      showfliers=False,
                      width=0.8)
@@ -124,6 +132,7 @@ for percentage in training_percentages:
     # 2. Boxplot of HD95 scores by model and dataset
     plt.figure(figsize=(15, 8))
     ax = sns.boxplot(data=percentage_df, x="Modality Dataset", y="HD95", hue="Method",
+                     hue_order=[MODEL_NAMES[m] for m in MODEL_ORDER],
                      boxprops={'alpha': 0.8, 'linewidth': 2},
                      showfliers=False,
                      width=0.8)

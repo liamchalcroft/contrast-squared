@@ -5,6 +5,13 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import numpy as np
 
+MODEL_ORDER = ['MPRAGE', 'BLOCH', 'BLOCH-PAIRED']
+MODEL_NAMES = {
+    'MPRAGE': 'Baseline',
+    'BLOCH': 'Bloch',
+    'BLOCH-PAIRED': 'Bloch (Paired)'
+}
+
 def get_results_df(results_dir):
     results_file = os.path.join(results_dir, "test_results.csv")
     if os.path.exists(results_file):
@@ -15,7 +22,7 @@ def get_results_df(results_dir):
         data_pc = int(run_name.split("pc")[1])
         df["% Training Data"] = data_pc
         method = run_name.split("simclr-")[1].split("-pc")[0]
-        df["Method"] = method.upper()
+        df["Method"] = MODEL_NAMES.get(method.upper(), method.upper())
         return df
     else:
         print(f"Results file not found: {results_file}")
@@ -111,27 +118,41 @@ for percentage in training_percentages:
         class_data = percentage_df[percentage_df['Class'] == class_name] if class_name else percentage_df
         
         # 1. Boxplot of Dice scores by model and dataset
-        plt.figure(figsize=(12, 6))
-        sns.boxplot(data=class_data, x="Modality Dataset", y="DSC", hue="Method")
-        title = f"Dice Scores by Model and Dataset ({percentage}% Training Data)"
-        if class_name:
-            title += f" for {class_name}"
-        plt.title(title)
-        plt.xticks(rotation=45)
+        plt.figure(figsize=(15, 8))
+        ax = sns.boxplot(data=percentage_df, x="Modality Dataset", y="DSC", hue="Method",
+                         hue_order=[MODEL_NAMES[m] for m in MODEL_ORDER],
+                         boxprops={'alpha': 0.8, 'linewidth': 2},
+                         showfliers=False,
+                         width=0.8)
+        plt.title(f"Dice Similarity Coefficient by Modality and Dataset ({percentage}% Training Data)", 
+                 pad=20, fontsize=16, fontweight='bold')
+        plt.xlabel("Modality Dataset", fontsize=14, labelpad=15)
+        plt.ylabel("DSC (%)", fontsize=14, labelpad=15)
+        plt.xticks(rotation=45, ha='right')
+        ax.grid(True, linestyle='--', alpha=0.7)
+        plt.legend(title="Method", title_fontsize=12, fontsize=11, bbox_to_anchor=(1.05, 1))
         plt.tight_layout()
-        plt.savefig(os.path.join(percentage_dir, f"dice_by_modality_dataset{class_suffix}.png"))
+        plt.savefig(os.path.join(percentage_dir, f"dice_by_modality_dataset{class_suffix}.png"), 
+                    dpi=300, bbox_inches='tight')
         plt.close()
 
         # 2. Boxplot of HD95 scores by model and dataset
-        plt.figure(figsize=(12, 6))
-        sns.boxplot(data=class_data, x="Modality Dataset", y="HD95", hue="Method")
-        title = f"HD95 Scores by Model and Dataset ({percentage}% Training Data)"
-        if class_name:
-            title += f" for {class_name}"
-        plt.title(title)
-        plt.xticks(rotation=45)
+        plt.figure(figsize=(15, 8))
+        ax = sns.boxplot(data=percentage_df, x="Modality Dataset", y="HD95", hue="Method",
+                         hue_order=[MODEL_NAMES[m] for m in MODEL_ORDER],
+                         boxprops={'alpha': 0.8, 'linewidth': 2},
+                         showfliers=False,
+                         width=0.8)
+        plt.title(f"95% Hausdorff Distance by Modality and Dataset ({percentage}% Training Data)", 
+                 pad=20, fontsize=16, fontweight='bold')
+        plt.xlabel("Modality Dataset", fontsize=14, labelpad=15)
+        plt.ylabel("HD95 (mm)", fontsize=14, labelpad=15)
+        plt.xticks(rotation=45, ha='right')
+        ax.grid(True, linestyle='--', alpha=0.7)
+        plt.legend(title="Method", title_fontsize=12, fontsize=11, bbox_to_anchor=(1.05, 1))
         plt.tight_layout()
-        plt.savefig(os.path.join(percentage_dir, f"hd95_by_modality_dataset{class_suffix}.png"))
+        plt.savefig(os.path.join(percentage_dir, f"hd95_by_modality_dataset{class_suffix}.png"), 
+                    dpi=300, bbox_inches='tight')
         plt.close()
 
         # 3. Spider plot of Dice scores by modality and dataset
@@ -147,7 +168,7 @@ for percentage in training_percentages:
         plt.close()
 
         # 5. Summary statistics table
-        summary_stats = class_data.groupby(['Modality Dataset', 'Method'])[['DSC', 'HD95']].agg(['mean', 'std', 'median', 'min', 'max', 'sem']).round(3)
+        summary_stats = class_data.groupby(['Modality Dataset', 'Method'])[['DSC', 'HD95']].agg(['mean', 'std', 'median', 'min', 'max', 'sem']).round(1)
         if class_name:
             summary_stats.to_csv(os.path.join(percentage_dir, f"summary_statistics_{class_name.lower()}.csv"))
         else:
