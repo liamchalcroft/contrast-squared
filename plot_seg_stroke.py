@@ -39,9 +39,25 @@ def spider_plot(results_df, metric="DSC"):
     # Create figure
     fig, ax = plt.subplots(figsize=(10, 10), subplot_kw=dict(projection='polar'))
     
-    # Plot data
-    for method in spider_data.columns:
-        values = spider_data[method].values
+    # Normalize each axis independently
+    normalized_data = spider_data.copy()
+    original_values = {}  # Store original min/max for labels
+    
+    for idx in spider_data.index:
+        min_val = spider_data.loc[idx].min()
+        max_val = spider_data.loc[idx].max()
+        # Store original values for labels
+        original_values[idx] = {
+            'min': min_val * 0.8,
+            'max': max_val * 1.2,
+            'range': (max_val * 1.2) - (min_val * 0.8)
+        }
+        # Normalize values to 0-1 range
+        normalized_data.loc[idx] = (spider_data.loc[idx] - min_val * 0.8) / (original_values[idx]['range'])
+    
+    # Plot normalized data
+    for method in normalized_data.columns:
+        values = normalized_data[method].values
         values = np.concatenate((values, [values[0]]))  # Close the plot
         ax.plot(angles, values, 'o-', linewidth=2, label=method)
         ax.fill(angles, values, alpha=0.25)
@@ -50,21 +66,24 @@ def spider_plot(results_df, metric="DSC"):
     ax.set_theta_offset(np.pi / 2)
     ax.set_theta_direction(-1)
     
-    # Set individual limits for each axis
-    ax.set_rlabel_position(0)  # Move radial labels away from plotted line
+    # Set up the grid with original value labels
+    ax.set_ylim(0, 1)
+    gridlines = [0, 0.33, 0.66, 1]
+    ax.set_rticks(gridlines)
     
-    # Calculate individual axis limits
-    for idx in range(len(spider_data.index)):
-        column_values = spider_data.iloc[idx].values
-        min_val = np.min(column_values)
-        max_val = np.max(column_values)
-        
-        # Set limits for this specific axis
-        ax.set_rgrids(
-            radii=[min_val * 0.8, min_val, max_val, max_val * 1.2],
-            labels=[f'{v:.1f}' for v in [min_val * 0.8, min_val, max_val, max_val * 1.2]],
-            angle=angles[idx]
-        )
+    # Create custom labels for each axis
+    labels = []
+    for gl in gridlines:
+        # Create empty list for this gridline's labels
+        axis_labels = []
+        for idx in spider_data.index:
+            # Convert normalized value back to original scale
+            original_val = gl * original_values[idx]['range'] + original_values[idx]['min']
+            axis_labels.append(f'{original_val:.1f}')
+        labels.append(axis_labels)
+    
+    # Set the labels for each axis
+    ax.set_rgrids(gridlines, labels=labels[0], angle=angles[0])
     
     # Draw axis lines for each angle and label
     ax.set_xticks(angles[:-1])
