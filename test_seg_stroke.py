@@ -206,7 +206,12 @@ def run_model(args, device):
     ]
 
     print(f"Test data: \nARC T1w: {len(arc_t1_test_dict)}\nARC T2w: {len(arc_t2_test_dict)}\nARC FLAIR: {len(arc_flair_test_dict)}")
-    test_dict = arc_t1_test_dict + arc_t2_test_dict + arc_flair_test_dict
+    if args.modality == "t1":
+        test_dict = arc_t1_test_dict
+    elif args.modality == "t2":
+        test_dict = arc_t2_test_dict
+    elif args.modality == "flair":
+        test_dict = arc_flair_test_dict
     test_loader = get_loaders(test_dict, lowres=args.lowres)
 
     net.eval()
@@ -275,6 +280,7 @@ def set_up():
         choices=["cnn", "vit"],
         default="cnn"
     )
+    parser.add_argument("--modality", type=str, help="Modality to test. Options: [t1, t2, flair]. Defaults to t1.")
     parser.add_argument("--amp", default=False, action="store_true")
     parser.add_argument("--device", type=str, default=None, help="Device to use. If not specified then will check for CUDA.")
     parser.add_argument("--lowres", default=False, action="store_true", help="Train with 2mm resolution images.")

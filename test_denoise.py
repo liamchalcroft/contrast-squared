@@ -256,7 +256,12 @@ def run_model(args, device):
         }
         for f in iop_pd_img_list
     ]
-    test_dict = guys_t1_test_dict + guys_t2_test_dict + guys_pd_test_dict + hh_t1_test_dict + hh_t2_test_dict + hh_pd_test_dict + iop_t1_test_dict + iop_t2_test_dict + iop_pd_test_dict
+    if args.modality == "t1":
+        test_dict = guys_t1_test_dict + hh_t1_test_dict + iop_t1_test_dict
+    elif args.modality == "t2":
+        test_dict = guys_t2_test_dict + hh_t2_test_dict + iop_t2_test_dict
+    elif args.modality == "pd":
+        test_dict = guys_pd_test_dict + hh_pd_test_dict + iop_pd_test_dict
     test_loader = get_loaders(test_dict, lowres=args.lowres)
     
     window = mn.inferers.SlidingWindowInferer(roi_size=(96, 96, 96), sw_batch_size=2, overlap=0.5, mode="gaussian")
@@ -303,6 +308,7 @@ def set_up():
         choices=["cnn", "vit"],
         default="cnn"
     )
+    parser.add_argument("--modality", type=str, help="Modality to test. Options: [t1, t2, pd]. Defaults to t1.")
     parser.add_argument("--amp", default=False, action="store_true")
     parser.add_argument("--device", type=str, default=None, help="Device to use. If not specified then will check for CUDA.")
     parser.add_argument("--lowres", default=False, action="store_true", help="Train with 2mm resolution images.")
