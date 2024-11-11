@@ -277,10 +277,19 @@ def run_model(args, device):
         for f in iop_pd_img_list
     ]
     if args.modality == "t1":
+        print(f"First subject in guys data: {guys_t1_test_dict[0]['file']}")
+        print(f"First subject in hh data: {hh_t1_test_dict[0]['file']}")
+        print(f"First subject in iop data: {iop_t1_test_dict[0]['file']}")
         test_dict = guys_t1_test_dict + hh_t1_test_dict + iop_t1_test_dict
     elif args.modality == "t2":
+        print(f"First subject in guys data: {guys_t2_test_dict[0]['file']}")
+        print(f"First subject in hh data: {hh_t2_test_dict[0]['file']}")
+        print(f"First subject in iop data: {iop_t2_test_dict[0]['file']}")
         test_dict = guys_t2_test_dict + hh_t2_test_dict + iop_t2_test_dict
     elif args.modality == "pd":
+        print(f"First subject in guys data: {guys_pd_test_dict[0]['file']}")
+        print(f"First subject in hh data: {hh_pd_test_dict[0]['file']}")
+        print(f"First subject in iop data: {iop_pd_test_dict[0]['file']}")
         test_dict = guys_pd_test_dict + hh_pd_test_dict + iop_pd_test_dict
     test_loader = get_loaders(test_dict, lowres=args.lowres)
 
