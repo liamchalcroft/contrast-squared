@@ -57,7 +57,7 @@ def spider_plot(results_df, metric="DSC"):
     return fig
 
 # Set style for fancy plots
-plt.style.use('seaborn-whitegrid')
+plt.style.use("seaborn-v0_8-whitegrid")
 sns.set_palette("husl")
 plt.rcParams['font.family'] = 'DejaVu Sans'
 plt.rcParams['font.size'] = 12

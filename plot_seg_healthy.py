@@ -63,6 +63,13 @@ def spider_plot(results_df, metric="DSC", class_name=None):
     plt.title(title)
     return fig
 
+# Set style for fancy plots
+plt.style.use("seaborn-v0_8-whitegrid")
+sns.set_palette("husl")
+plt.rcParams['font.family'] = 'DejaVu Sans'
+plt.rcParams['font.size'] = 12
+plt.rcParams['axes.linewidth'] = 2
+
 # List of model configurations to check
 results_dirs = glob.glob("spm-*-cnn-simclr-*/")
 
