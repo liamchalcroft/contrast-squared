@@ -167,12 +167,18 @@ def run_model(args, device):
     guys_pd_img_list = guys_pd_img_list[train_size+val_size:]
 
     # Other site data doesn't need to be split
-    hh_t1_img_list = glob.glob("/home/lchalcroft/Data/hh/t1/preprocessed/p_IXI*-T1.nii.gz")
-    hh_t2_img_list = glob.glob("/home/lchalcroft/Data/hh/t2/preprocessed/p_IXI*-T2.nii.gz")
-    hh_pd_img_list = glob.glob("/home/lchalcroft/Data/hh/pd/preprocessed/p_IXI*-PD.nii.gz")
-    iop_t1_img_list = glob.glob("/home/lchalcroft/Data/iop/t1/preprocessed/p_IXI*-T1.nii.gz")
-    iop_t2_img_list = glob.glob("/home/lchalcroft/Data/iop/t2/preprocessed/p_IXI*-T2.nii.gz")
-    iop_pd_img_list = glob.glob("/home/lchalcroft/Data/iop/pd/preprocessed/p_IXI*-PD.nii.gz")
+    hh_t1_img_list = glob.glob("/home/lchalcroft/Data/IXI/hh/t1/preprocessed/p_IXI*-T1.nii.gz")
+    hh_t1_img_list.sort()
+    hh_t2_img_list = glob.glob("/home/lchalcroft/Data/IXI/hh/t2/preprocessed/p_IXI*-T2.nii.gz")
+    hh_t2_img_list.sort()
+    hh_pd_img_list = glob.glob("/home/lchalcroft/Data/IXI/hh/pd/preprocessed/p_IXI*-PD.nii.gz")
+    hh_pd_img_list.sort()
+    iop_t1_img_list = glob.glob("/home/lchalcroft/Data/IXI/iop/t1/preprocessed/p_IXI*-T1.nii.gz")
+    iop_t1_img_list.sort()
+    iop_t2_img_list = glob.glob("/home/lchalcroft/Data/IXI/iop/t2/preprocessed/p_IXI*-T2.nii.gz")
+    iop_t2_img_list.sort()
+    iop_pd_img_list = glob.glob("/home/lchalcroft/Data/IXI/iop/pd/preprocessed/p_IXI*-PD.nii.gz")
+    iop_pd_img_list.sort()
 
     guys_t1_test_dict = [
         {
