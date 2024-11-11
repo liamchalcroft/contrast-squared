@@ -287,7 +287,8 @@ def run_model(args, device):
                 'dataset': batch["dataset"][0],
                 'modality': batch["modality"][0],
                 'mse': mse,
-                'psnr': psnr.item()
+                'psnr': psnr.item(),
+                'site': batch["site"][0]
             })
 
             # Convert results to DataFrame and save
@@ -296,7 +297,7 @@ def run_model(args, device):
     
     # Print summary statistics
     print("\nResults Summary:")
-    print(df.groupby(['dataset', 'modality'])[['mse', 'psnr']].mean())
+    print(df.groupby(['dataset', 'modality', 'site'])[['mse', 'psnr']].mean())
 
 def set_up():
     parser = argparse.ArgumentParser(argparse.ArgumentDefaultsHelpFormatter)
