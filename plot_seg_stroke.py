@@ -141,7 +141,7 @@ for percentage in training_percentages:
     plt.figure(figsize=(15, 8))
     ax = sns.violinplot(data=percentage_df, x="Modality Dataset", y="DSC", hue="Method",
                         hue_order=[MODEL_NAMES[m] for m in MODEL_ORDER],
-                        scale='width', inner='quartile', alpha=0.5)
+                        density_norm='width', inner='quartile', alpha=0.5)
     plt.title(f"Dice Similarity Coefficient by Modality and Dataset ({percentage}% Training Data)", 
              pad=20, fontsize=16, fontweight='bold')
     plt.xlabel("Modality Dataset", fontsize=14, labelpad=15)
@@ -175,7 +175,7 @@ for percentage in training_percentages:
     plt.figure(figsize=(15, 8))
     ax = sns.violinplot(data=percentage_df, x="Modality Dataset", y="HD95", hue="Method",
                         hue_order=[MODEL_NAMES[m] for m in MODEL_ORDER],
-                        scale='width', inner='quartile', alpha=0.5)
+                        density_norm='width', inner='quartile', alpha=0.5)
     plt.title(f"95% Hausdorff Distance by Modality and Dataset ({percentage}% Training Data)", 
              pad=20, fontsize=16, fontweight='bold')
     plt.xlabel("Modality Dataset", fontsize=14, labelpad=15)
