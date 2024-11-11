@@ -90,67 +90,71 @@ if not all_results:
 
 results_df = pd.concat(all_results, ignore_index=True)
 
-results_df = results_df[results_df["% Training Data"] == 100]
+# Instead of filtering for 100%, get unique percentages
+training_percentages = sorted(results_df["% Training Data"].unique())
 
-# Tidy up names of columns
-results_df.rename(columns={"dice": "DSC", "hd95": "HD95", "class": "Class", "modality": "Modality", "dataset": "Dataset", "site": "Site"}, inplace=True)
-
-# Create a merged column for modality and dataset
-results_df["Modality Dataset"] = results_df["Dataset"] + " " + results_df["Site"] + " [" + results_df["Modality"] + "]"
-
-# Get unique classes
-classes = results_df['Class'].unique()
-
-# Generate plots for all data and per-class
-for class_name in [None] + list(classes):
-    class_suffix = f"_{class_name.lower()}" if class_name else ""
-    class_data = results_df[results_df['Class'] == class_name] if class_name else results_df
+# Loop over percentages
+for percentage in training_percentages:
+    # Create subdirectory for this percentage
+    percentage_dir = os.path.join(plot_dir, f"{percentage}pc")
+    os.makedirs(percentage_dir, exist_ok=True)
     
-    # 1. Boxplot of Dice scores by model and dataset
-    plt.figure(figsize=(12, 6))
-    sns.boxplot(data=class_data, x="Modality Dataset", y="DSC", hue="Method")
-    title = "Dice Scores by Model and Dataset"
-    if class_name:
-        title += f" for {class_name}"
-    plt.title(title)
-    plt.xticks(rotation=45)
-    plt.tight_layout()
-    plt.savefig(os.path.join(plot_dir, f"dice_by_modality_dataset{class_suffix}.png"))
-    plt.close()
+    # Filter data for this percentage
+    percentage_df = results_df[results_df["% Training Data"] == percentage]
+    
+    # Get unique classes for this percentage
+    classes = percentage_df['Class'].unique()
+    
+    # Generate plots for all data and per-class
+    for class_name in [None] + list(classes):
+        class_suffix = f"_{class_name.lower()}" if class_name else ""
+        class_data = percentage_df[percentage_df['Class'] == class_name] if class_name else percentage_df
+        
+        # 1. Boxplot of Dice scores by model and dataset
+        plt.figure(figsize=(12, 6))
+        sns.boxplot(data=class_data, x="Modality Dataset", y="DSC", hue="Method")
+        title = f"Dice Scores by Model and Dataset ({percentage}% Training Data)"
+        if class_name:
+            title += f" for {class_name}"
+        plt.title(title)
+        plt.xticks(rotation=45)
+        plt.tight_layout()
+        plt.savefig(os.path.join(percentage_dir, f"dice_by_modality_dataset{class_suffix}.png"))
+        plt.close()
 
-    # 2. Boxplot of HD95 scores by model and dataset
-    plt.figure(figsize=(12, 6))
-    sns.boxplot(data=class_data, x="Modality Dataset", y="HD95", hue="Method")
-    title = "HD95 Scores by Model and Dataset"
-    if class_name:
-        title += f" for {class_name}"
-    plt.title(title)
-    plt.xticks(rotation=45)
-    plt.tight_layout()
-    plt.savefig(os.path.join(plot_dir, f"hd95_by_modality_dataset{class_suffix}.png"))
-    plt.close()
+        # 2. Boxplot of HD95 scores by model and dataset
+        plt.figure(figsize=(12, 6))
+        sns.boxplot(data=class_data, x="Modality Dataset", y="HD95", hue="Method")
+        title = f"HD95 Scores by Model and Dataset ({percentage}% Training Data)"
+        if class_name:
+            title += f" for {class_name}"
+        plt.title(title)
+        plt.xticks(rotation=45)
+        plt.tight_layout()
+        plt.savefig(os.path.join(percentage_dir, f"hd95_by_modality_dataset{class_suffix}.png"))
+        plt.close()
 
-    # 3. Spider plot of Dice scores by modality and dataset
-    plt.figure(figsize=(10, 10))
-    spider_plot(results_df, metric="DSC", class_name=class_name)
-    plt.savefig(os.path.join(plot_dir, f"dice_spider_plot{class_suffix}.png"))
-    plt.close()
+        # 3. Spider plot of Dice scores by modality and dataset
+        plt.figure(figsize=(10, 10))
+        spider_plot(results_df, metric="DSC", class_name=class_name)
+        plt.savefig(os.path.join(percentage_dir, f"dice_spider_plot{class_suffix}.png"))
+        plt.close()
 
-    # 4. Spider plot of HD95 scores by modality and dataset
-    plt.figure(figsize=(10, 10))
-    spider_plot(results_df, metric="HD95", class_name=class_name)
-    plt.savefig(os.path.join(plot_dir, f"hd95_spider_plot{class_suffix}.png"))
-    plt.close()
+        # 4. Spider plot of HD95 scores by modality and dataset
+        plt.figure(figsize=(10, 10))
+        spider_plot(results_df, metric="HD95", class_name=class_name)
+        plt.savefig(os.path.join(percentage_dir, f"hd95_spider_plot{class_suffix}.png"))
+        plt.close()
 
-    # 5. Summary statistics table
-    summary_stats = class_data.groupby(['Modality Dataset', 'Method'])[['DSC', 'HD95']].agg(['mean', 'std', 'median', 'min', 'max', 'sem']).round(3)
-    if class_name:
-        summary_stats.to_csv(os.path.join(plot_dir, f"summary_statistics_{class_name.lower()}.csv"))
-    else:
-        summary_stats.to_csv(os.path.join(plot_dir, "summary_statistics.csv"))
+        # 5. Summary statistics table
+        summary_stats = class_data.groupby(['Modality Dataset', 'Method'])[['DSC', 'HD95']].agg(['mean', 'std', 'median', 'min', 'max', 'sem']).round(3)
+        if class_name:
+            summary_stats.to_csv(os.path.join(percentage_dir, f"summary_statistics_{class_name.lower()}.csv"))
+        else:
+            summary_stats.to_csv(os.path.join(percentage_dir, "summary_statistics.csv"))
 
-    # Print summary for this class
-    print(f"\nResults Summary{' for ' + class_name if class_name else ''}:")
-    print(summary_stats)
+        # Print summary for this percentage and class
+        print(f"\nResults Summary for {percentage}% Training Data{' and ' + class_name if class_name else ''}:")
+        print(summary_stats)
 
 print(f"\nPlots saved in: {plot_dir}")

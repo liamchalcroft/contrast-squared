@@ -92,56 +92,70 @@ results_df["DSC"] = results_df["DSC"] * 100
 # Create a merged column for modality and dataset
 results_df["Modality Dataset"] = results_df["Dataset"] + " [" + results_df["Modality"] + "]"
 
-# Generate plots with enhanced styling
-# 1. Boxplot of Dice scores by model and dataset
-plt.figure(figsize=(15, 8))
-ax = sns.boxplot(data=results_df, x="Modality Dataset", y="DSC", hue="Method",
-                 boxprops={'alpha': 0.8, 'linewidth': 2},
-                 showfliers=False, # Hide outliers for cleaner look
-                 width=0.8)
-plt.title("Dice Similarity Coefficient by Modality and Dataset", pad=20, fontsize=16, fontweight='bold')
-plt.xlabel("Modality Dataset", fontsize=14, labelpad=15)
-plt.ylabel("DSC (%)", fontsize=14, labelpad=15)
-plt.xticks(rotation=45, ha='right')
-ax.grid(True, linestyle='--', alpha=0.7)
-plt.legend(title="Method", title_fontsize=12, fontsize=11, bbox_to_anchor=(1.05, 1))
-plt.tight_layout()
-plt.savefig(os.path.join(plot_dir, "dice_by_modality_dataset.png"), dpi=300, bbox_inches='tight')
-plt.close()
+# Get unique percentages
+training_percentages = sorted(results_df["% Training Data"].unique())
 
-# 2. Boxplot of HD95 scores by model and dataset
-plt.figure(figsize=(15, 8))
-ax = sns.boxplot(data=results_df, x="Modality Dataset", y="HD95", hue="Method",
-                 boxprops={'alpha': 0.8, 'linewidth': 2},
-                 showfliers=False,
-                 width=0.8)
-plt.title("95% Hausdorff Distance by Modality and Dataset", pad=20, fontsize=16, fontweight='bold')
-plt.xlabel("Modality Dataset", fontsize=14, labelpad=15)
-plt.ylabel("HD95 (mm)", fontsize=14, labelpad=15)
-plt.xticks(rotation=45, ha='right')
-ax.grid(True, linestyle='--', alpha=0.7)
-plt.legend(title="Method", title_fontsize=12, fontsize=11, bbox_to_anchor=(1.05, 1))
-plt.tight_layout()
-plt.savefig(os.path.join(plot_dir, "hd95_by_modality_dataset.png"), dpi=300, bbox_inches='tight')
-plt.close()
+# Loop over percentages
+for percentage in training_percentages:
+    # Create subdirectory for this percentage
+    percentage_dir = os.path.join(plot_dir, f"{percentage}pc")
+    os.makedirs(percentage_dir, exist_ok=True)
+    
+    # Filter data for this percentage
+    percentage_df = results_df[results_df["% Training Data"] == percentage]
+    
+    # 1. Boxplot of Dice scores by model and dataset
+    plt.figure(figsize=(15, 8))
+    ax = sns.boxplot(data=percentage_df, x="Modality Dataset", y="DSC", hue="Method",
+                     boxprops={'alpha': 0.8, 'linewidth': 2},
+                     showfliers=False,
+                     width=0.8)
+    plt.title(f"Dice Similarity Coefficient by Modality and Dataset ({percentage}% Training Data)", 
+             pad=20, fontsize=16, fontweight='bold')
+    plt.xlabel("Modality Dataset", fontsize=14, labelpad=15)
+    plt.ylabel("DSC (%)", fontsize=14, labelpad=15)
+    plt.xticks(rotation=45, ha='right')
+    ax.grid(True, linestyle='--', alpha=0.7)
+    plt.legend(title="Method", title_fontsize=12, fontsize=11, bbox_to_anchor=(1.05, 1))
+    plt.tight_layout()
+    plt.savefig(os.path.join(percentage_dir, "dice_by_modality_dataset.png"), dpi=300, bbox_inches='tight')
+    plt.close()
 
-# 3. Spider plot of Dice scores by modality and dataset
-plt.figure(figsize=(10, 10))
-spider_plot(results_df, metric="DSC")
-plt.savefig(os.path.join(plot_dir, "dice_spider_plot.png"), dpi=300, bbox_inches='tight')
-plt.close()
+    # 2. Boxplot of HD95 scores by model and dataset
+    plt.figure(figsize=(15, 8))
+    ax = sns.boxplot(data=percentage_df, x="Modality Dataset", y="HD95", hue="Method",
+                     boxprops={'alpha': 0.8, 'linewidth': 2},
+                     showfliers=False,
+                     width=0.8)
+    plt.title(f"95% Hausdorff Distance by Modality and Dataset ({percentage}% Training Data)", 
+             pad=20, fontsize=16, fontweight='bold')
+    plt.xlabel("Modality Dataset", fontsize=14, labelpad=15)
+    plt.ylabel("HD95 (mm)", fontsize=14, labelpad=15)
+    plt.xticks(rotation=45, ha='right')
+    ax.grid(True, linestyle='--', alpha=0.7)
+    plt.legend(title="Method", title_fontsize=12, fontsize=11, bbox_to_anchor=(1.05, 1))
+    plt.tight_layout()
+    plt.savefig(os.path.join(percentage_dir, "hd95_by_modality_dataset.png"), dpi=300, bbox_inches='tight')
+    plt.close()
 
-# 4. Spider plot of HD95 scores by modality and dataset
-plt.figure(figsize=(10, 10))
-spider_plot(results_df, metric="HD95")
-plt.savefig(os.path.join(plot_dir, "hd95_spider_plot.png"), dpi=300, bbox_inches='tight')
-plt.close()
+    # 3. Spider plot of Dice scores by modality and dataset
+    plt.figure(figsize=(10, 10))
+    spider_plot(percentage_df, metric="DSC")
+    plt.savefig(os.path.join(percentage_dir, "dice_spider_plot.png"), dpi=300, bbox_inches='tight')
+    plt.close()
 
-# 5. Summary statistics table
-summary_stats = results_df.groupby(['Modality Dataset', 'Method'])[['DSC', 'HD95']].agg(['mean', 'std', 'median', 'min', 'max', 'sem']).round(1)
-summary_stats.to_csv(os.path.join(plot_dir, "summary_statistics.csv"))
+    # 4. Spider plot of HD95 scores by modality and dataset
+    plt.figure(figsize=(10, 10))
+    spider_plot(percentage_df, metric="HD95")
+    plt.savefig(os.path.join(percentage_dir, "hd95_spider_plot.png"), dpi=300, bbox_inches='tight')
+    plt.close()
 
-# Print overall summary
-print("\nOverall Results Summary:")
-print(summary_stats)
+    # 5. Summary statistics table for this percentage
+    summary_stats = percentage_df.groupby(['Modality Dataset', 'Method'])[['DSC', 'HD95']].agg(['mean', 'std', 'median', 'min', 'max', 'sem']).round(1)
+    summary_stats.to_csv(os.path.join(percentage_dir, "summary_statistics.csv"))
+
+    # Print summary for this percentage
+    print(f"\nResults Summary for {percentage}% Training Data:")
+    print(summary_stats)
+
 print(f"\nPlots saved in: {plot_dir}")
