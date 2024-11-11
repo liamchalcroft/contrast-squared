@@ -34,9 +34,15 @@ def spider_plot(results_df, metric="DSC"):
     
     # Set up the angles for the spider plot
     angles = np.linspace(0, 2*np.pi, len(spider_data.index), endpoint=False)
+    angles = np.concatenate((angles, [angles[0]]))  # Close the plot
     
-    # Close the plot by appending first value
-    angles = np.concatenate((angles, [angles[0]]))
+    # Calculate min and max values for smart limits
+    min_val = spider_data.values.min()
+    max_val = spider_data.values.max()
+    
+    # Set limits to 80% of min and 120% of max
+    ylim_min = min_val * 0.8
+    ylim_max = max_val * 1.2
     
     # Create figure
     fig, ax = plt.subplots(figsize=(10, 10), subplot_kw=dict(projection='polar'))
@@ -44,14 +50,16 @@ def spider_plot(results_df, metric="DSC"):
     # Plot data
     for method in spider_data.columns:
         values = spider_data[method].values
-        # Close the plot by appending first value
-        values = np.concatenate((values, [values[0]]))
+        values = np.concatenate((values, [values[0]]))  # Close the plot
         ax.plot(angles, values, 'o-', linewidth=2, label=method)
         ax.fill(angles, values, alpha=0.25)
     
     # Fix axis to go in the right order and start at 12 o'clock
     ax.set_theta_offset(np.pi / 2)
     ax.set_theta_direction(-1)
+    
+    # Set the ylim
+    ax.set_ylim(ylim_min, ylim_max)
     
     # Draw axis lines for each angle and label
     ax.set_xticks(angles[:-1])
