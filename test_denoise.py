@@ -33,50 +33,42 @@ def get_loaders(
     test_transform = mn.transforms.Compose(
         transforms=[
             mn.transforms.LoadImageD(
-                keys=["image", "seg"], image_only=True, allow_missing_keys=True
+                keys=["image"], image_only=True
             ),
             mn.transforms.EnsureChannelFirstD(
-                keys=["image", "seg"], allow_missing_keys=True
+                keys=["image"]
             ),
-            mn.transforms.LambdaD(keys="seg", func=add_bg),
             mn.transforms.OrientationD(
-                keys=["image", "seg"], axcodes="RAS", allow_missing_keys=True
+                keys=["image"], axcodes="RAS"
             ),
             mn.transforms.SpacingD(
-                keys=["image", "seg"],
+                keys=["image"],
                 pixdim=1 if not lowres else 2,
-                allow_missing_keys=True,
             ),
-            # mn.transforms.ResizeWithPadOrCropD(
-            #     keys=["image", "seg"],
-            #     spatial_size=(256, 256, 256) if not lowres else (128, 128, 128),
-            #     allow_missing_keys=True,
-            # ),
             mn.transforms.CropForegroundD(
-                keys=["image", "seg"],
+                keys=["image"],
                 source_key="image",
-                allow_missing_keys=True,
             ),
             mn.transforms.ToTensorD(
                 dtype=float,
-                keys=["image", "seg"],
-                allow_missing_keys=True,
+                keys=["image"],
             ),
             mn.transforms.LambdaD(
-                keys=["image", "seg"],
+                keys=["image"],
                 func=mn.transforms.SignalFillEmpty(),
-                allow_missing_keys=True,
             ),
             mn.transforms.ScaleIntensityRangePercentilesD(
                 keys=["image"],
                 lower=0.5, upper=99.5, b_min=0, b_max=1,
                 clip=True, channel_wise=True,
             ),
-            mn.transforms.HistogramNormalizeD(keys="image", min=0, max=1, allow_missing_keys=True),
+            mn.transforms.HistogramNormalizeD(keys="image", min=0, max=1),
             mn.transforms.NormalizeIntensityD(
                 keys="image", nonzero=False, channel_wise=True
             ),
-            mn.transforms.ToTensorD(keys=["image", "seg"], dtype=torch.float32),
+            mn.transforms.CopyItemsD(keys=["image"], names=["noisy_image"]),
+            mn.transforms.RandGaussianNoiseD(keys="noisy_image", prob=1.0, mean=0.0, std=0.2, sample_std=False),
+            mn.transforms.ToTensorD(keys=["image", "noisy_image"], dtype=torch.float32),
         ]
     )
 
@@ -86,20 +78,9 @@ def get_loaders(
         data,
         batch_size=1,
         shuffle=False,
-        sampler=None,
-        batch_sampler=None,
         num_workers=8,
     )
     return loader
-
-
-def compute_dice(y_pred, y, eps=1e-8):
-    y_pred = torch.flatten(y_pred)
-    y = torch.flatten(y)
-    y = y.float()
-    intersect = (y_pred * y).sum(-1)
-    denominator = (y_pred * y_pred).sum(-1) + (y * y).sum(-1)
-    return 2 * (intersect / denominator.clamp(min=eps))
 
 def run_model(args, device):
     
@@ -107,7 +88,7 @@ def run_model(args, device):
         net = model.CNNUNet(
             spatial_dims=3, 
             in_channels=1,
-            out_channels=4,
+            out_channels=1,
             features=(64, 128, 256, 512, 768, 32),
             act="GELU", 
             norm="instance", 
@@ -119,7 +100,7 @@ def run_model(args, device):
         net = model.ViTUNet(
             spatial_dims=3,
             in_channels=1,
-            out_channels=4,
+            out_channels=1,
             img_size=(96 if args.lowres else 192),
             hidden_size=768,
             mlp_dim=3072,
@@ -137,13 +118,12 @@ def run_model(args, device):
     )
     print()
 
-    net.load_state_dict(
-        checkpoint["model"], strict=False
-    )
+    net.load_state_dict(checkpoint["model"], strict=False)
+    net.eval()
 
     odir = os.path.dirname(args.weights)
-
-    ## Generate training data for the guys t1 modality
+    
+    # Generate training data for the guys t1 modality
     # Load and prepare data
     guys_t1_img_list = glob.glob("/home/lchalcroft/Data/IXI/guys/t1/preprocessed/p_IXI*-T1.nii.gz")    
     guys_t1_img_list.sort()
@@ -278,57 +258,32 @@ def run_model(args, device):
     ]
     test_dict = guys_t1_test_dict + guys_t2_test_dict + guys_pd_test_dict + hh_t1_test_dict + hh_t2_test_dict + hh_pd_test_dict + iop_t1_test_dict + iop_t2_test_dict + iop_pd_test_dict
     test_loader = get_loaders(test_dict, lowres=args.lowres)
-
-    net.eval()
     
     window = mn.inferers.SlidingWindowInferer(roi_size=(96, 96, 96), sw_batch_size=2, overlap=0.5, mode="gaussian")
-
-    class_dict = {
-        0: "Background",
-        1: "Gray Matter",
-        2: "White Matter",
-        3: "CSF"
-    }
 
     results = []
     with torch.no_grad():
         for batch in tqdm(test_loader, desc="Testing", total=len(test_loader)):
             image = batch["image"].to(device)
-            seg = batch["seg"].to(device)
-            seg_argmax = seg.argmax(dim=1, keepdim=True)
+            noisy_image = batch["noisy_image"].to(device)
             
             # Run inference with sliding window
             with torch.cuda.amp.autocast() if args.amp else nullcontext():
-                pred = window(image, net)
-                pred = torch.softmax(pred, dim=1)
-                pred_argmax = pred.argmax(dim=1, keepdim=True)
-            # Calculate metrics for each class (excluding background)
-            for c in range(1, pred.shape[1]):
-                pred_c = (pred_argmax == c).float()
-                seg_c = (seg_argmax == c).float()
-                
-                if seg_c.sum() > 0:  # Only calculate metrics if class exists in ground truth
-                    # Dice score
-                    dice = compute_dice(pred_c, seg_c).item()
-                    
-                    # Hausdorff distance
-                    if pred_c.sum() > 0:  # Only calculate HD if prediction contains class
-                        hd95 = mn.metrics.compute_hausdorff_distance(
-                            pred_c, seg_c,
-                            percentile=95,
-                            spacing=1 if not args.lowres else 2
-                        ).item()
-                    else:
-                        hd95 = float('nan')
-                        
-                    results.append({
-                        'file': batch["file"][0],
-                        'dataset': batch["dataset"][0],
-                        'modality': batch["modality"][0],
-                        'class': class_dict[c],
-                        'dice': dice,
-                        'hd95': hd95
-                    })
+                pred_noise = window(noisy_image, net)
+                denoised_image = noisy_image - pred_noise
+            
+            # Calculate MSE
+            mse = torch.nn.functional.mse_loss(denoised_image, image).item()
+            # Calculate PSNR
+            psnr = 20 * torch.log10(1.0 / torch.sqrt(torch.tensor(mse)))
+            
+            results.append({
+                'file': batch["file"][0],
+                'dataset': batch["dataset"][0],
+                'modality': batch["modality"][0],
+                'mse': mse,
+                'psnr': psnr.item()
+            })
 
             # Convert results to DataFrame and save
             df = pd.DataFrame(results)
@@ -336,7 +291,7 @@ def run_model(args, device):
     
     # Print summary statistics
     print("\nResults Summary:")
-    print(df.groupby(['dataset', 'modality', 'class'])[['dice', 'hd95']].mean())
+    print(df.groupby(['dataset', 'modality'])[['mse', 'psnr']].mean())
 
 def set_up():
     parser = argparse.ArgumentParser(argparse.ArgumentDefaultsHelpFormatter)

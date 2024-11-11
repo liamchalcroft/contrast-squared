@@ -150,23 +150,30 @@ def run_model(args, device):
 
     odir = os.path.dirname(args.weights)
 
-    atlas_t1_test_list = np.loadtxt("/home/lchalcroft/git/lab-vae/atlas_test.txt", dtype=str)
     arc_t1_test_list = glob.glob("/home/lchalcroft/Data/ARC/PREPROC/sub-*/ses-*/*_T1w_flirt.nii.gz")
-    arc_t2_test_list = glob.glob("/home/lchalcroft/Data/ARC/PREPROC/sub-*/ses-*/*_T2w.nii.gz")
-    arc_flair_test_list = glob.glob("/home/lchalcroft/Data/ARC/PREPROC/sub-*/ses-*/*_FLAIR_flirt.nii.gz")
+    arc_t1_test_list.sort()
+    total_samples = len(arc_t1_test_list)
+    train_size = int(0.7 * total_samples)
+    val_size = int(0.1 * total_samples)
+    test_size = total_samples - train_size - val_size
+    arc_t1_test_list = arc_t1_test_list[:test_size]
 
-    atlas_t1_test_dict = [
-        {
-            "seg": f.replace("1mm_sub", "sub"),
-            "image": f.replace("_label-L_desc-T1lesion_mask", "_T1w").replace(
-                "1mm_sub", "sub"
-            ),
-            "file": f.replace("1mm_sub", "sub"),
-            "dataset": "ATLAS",
-            "modality": "T1w"
-        }
-        for f in atlas_t1_test_list
-    ]
+    arc_t2_test_list = glob.glob("/home/lchalcroft/Data/ARC/PREPROC/sub-*/ses-*/*_T2w.nii.gz")
+    arc_t2_test_list.sort()
+    total_samples = len(arc_t2_test_list)
+    train_size = int(0.7 * total_samples)
+    val_size = int(0.1 * total_samples)
+    test_size = total_samples - train_size - val_size
+    arc_t2_test_list = arc_t2_test_list[:test_size]
+
+    arc_flair_test_list = glob.glob("/home/lchalcroft/Data/ARC/PREPROC/sub-*/ses-*/*_FLAIR_flirt.nii.gz")
+    arc_flair_test_list.sort()
+    total_samples = len(arc_flair_test_list)
+    train_size = int(0.7 * total_samples)
+    val_size = int(0.1 * total_samples)
+    test_size = total_samples - train_size - val_size
+    arc_flair_test_list = arc_flair_test_list[:test_size]
+
     arc_t1_test_dict = [
         {
             "image": f,
@@ -197,9 +204,9 @@ def run_model(args, device):
         }
         for f in arc_flair_test_list
     ]
-    
-    print(f"Test data: \nATLAS T1w: {len(atlas_t1_test_dict)}\nARC T1w: {len(arc_t1_test_dict)}\nARC T2w: {len(arc_t2_test_dict)}\nARC FLAIR: {len(arc_flair_test_dict)}")
-    test_dict = atlas_t1_test_dict + arc_t1_test_dict + arc_t2_test_dict + arc_flair_test_dict
+
+    print(f"Test data: \nARC T1w: {len(arc_t1_test_dict)}\nARC T2w: {len(arc_t2_test_dict)}\nARC FLAIR: {len(arc_flair_test_dict)}")
+    test_dict = arc_t1_test_dict + arc_t2_test_dict + arc_flair_test_dict
     test_loader = get_loaders(test_dict, lowres=args.lowres)
 
     net.eval()
