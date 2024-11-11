@@ -332,7 +332,8 @@ def run_model(args, device):
                         'modality': batch["modality"][0],
                         'class': class_dict[c],
                         'dice': dice,
-                        'hd95': hd95
+                        'hd95': hd95,
+                        'site': batch["site"][0]
                     })
 
             # Convert results to DataFrame and save
@@ -341,7 +342,7 @@ def run_model(args, device):
     
     # Print summary statistics
     print("\nResults Summary:")
-    print(df.groupby(['dataset', 'modality', 'class'])[['dice', 'hd95']].mean())
+    print(df.groupby(['dataset', 'modality', 'class', 'site'])[['dice', 'hd95']].mean())
 
 def set_up():
     parser = argparse.ArgumentParser(argparse.ArgumentDefaultsHelpFormatter)
