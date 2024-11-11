@@ -12,6 +12,12 @@ MODEL_NAMES = {
     'BLOCH-PAIRED': 'Bloch (Paired)'
 }
 
+SITE_NAMES = {
+    'guys': 'GST',
+    'hh': 'HH',
+    'iop': 'IOP'
+}
+
 def get_results_df(results_dir):
     results_file = os.path.join(results_dir, "test_results.csv")
     if os.path.exists(results_file):
@@ -97,7 +103,19 @@ if not all_results:
 
 results_df = pd.concat(all_results, ignore_index=True)
 
-# Instead of filtering for 100%, get unique percentages
+# Tidy up names of columns
+results_df.rename(columns={"dice": "DSC", "hd95": "HD95", "class": "Class", "modality": "Modality", "dataset": "Dataset", "site": "Site"}, inplace=True)
+
+# Multiply DSC by 100 to get percentage
+results_df["DSC"] = results_df["DSC"] * 100
+
+# Map site names
+results_df["Site"] = results_df["Site"].map(SITE_NAMES)
+
+# Create a merged column for modality and dataset
+results_df["Modality Dataset"] = results_df["Site"] + " [" + results_df["Modality"] + "]"
+
+# Get unique percentages
 training_percentages = sorted(results_df["% Training Data"].unique())
 
 # Loop over percentages
