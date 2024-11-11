@@ -40,9 +40,9 @@ def spider_plot(results_df, metric="DSC"):
     min_val = spider_data.values.min()
     max_val = spider_data.values.max()
     
-    # Set limits to 80% of min and 120% of max
-    ylim_min = min_val * 0.8
-    ylim_max = max_val * 1.2
+    # Set limits to 95% of min and 105% of max
+    ylim_min = min_val * 0.95
+    ylim_max = max_val * 1.05
     
     # Create figure
     fig, ax = plt.subplots(figsize=(10, 10), subplot_kw=dict(projection='polar'))
