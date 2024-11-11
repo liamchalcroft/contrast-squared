@@ -72,18 +72,13 @@ def spider_plot(results_df, metric="DSC"):
     ax.set_rticks(gridlines)
     
     # Create custom labels for each axis
-    labels = []
-    for gl in gridlines:
-        # Create empty list for this gridline's labels
+    for idx, angle in enumerate(angles[:-1]):
         axis_labels = []
-        for idx in spider_data.index:
+        for gl in gridlines:
             # Convert normalized value back to original scale
-            original_val = gl * original_values[idx]['range'] + original_values[idx]['min']
+            original_val = gl * original_values[spider_data.index[idx]]['range'] + original_values[spider_data.index[idx]]['min']
             axis_labels.append(f'{original_val:.1f}')
-        labels.append(axis_labels)
-    
-    # Set the labels for each axis
-    ax.set_rgrids(gridlines, labels=labels[0], angle=angles[0])
+        ax.text(angle, 1.05, '\n'.join(axis_labels), horizontalalignment='center', verticalalignment='center')
     
     # Draw axis lines for each angle and label
     ax.set_xticks(angles[:-1])
