@@ -64,7 +64,7 @@ plt.rcParams['font.size'] = 12
 plt.rcParams['axes.linewidth'] = 2
 
 # List of model configurations to check
-results_dirs = glob.glob("stroke-cnn-simclr-*/")
+results_dirs = glob.glob("stroke-*-cnn-simclr-*/")
 
 # Create results directory
 plot_dir = "plots/stroke_segmentation"

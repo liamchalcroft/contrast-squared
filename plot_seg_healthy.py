@@ -64,7 +64,7 @@ def spider_plot(results_df, metric="DSC", class_name=None):
     return fig
 
 # List of model configurations to check
-results_dirs = glob.glob("spm-cnn-simclr-*/")
+results_dirs = glob.glob("spm-*-cnn-simclr-*/")
 
 # Create results directory
 plot_dir = "plots/healthy_segmentation"
@@ -86,10 +86,10 @@ results_df = pd.concat(all_results, ignore_index=True)
 results_df = results_df[results_df["% Training Data"] == 100]
 
 # Tidy up names of columns
-results_df.rename(columns={"dice": "DSC", "hd95": "HD95", "class": "Class", "modality": "Modality", "dataset": "Dataset"}, inplace=True)
+results_df.rename(columns={"dice": "DSC", "hd95": "HD95", "class": "Class", "modality": "Modality", "dataset": "Dataset", "site": "Site"}, inplace=True)
 
 # Create a merged column for modality and dataset
-results_df["Modality Dataset"] = results_df["Dataset"] + " [" + results_df["Modality"] + "]"
+results_df["Modality Dataset"] = results_df["Dataset"] + " " + results_df["Site"] + " [" + results_df["Modality"] + "]"
 
 # Get unique classes
 classes = results_df['Class'].unique()
