@@ -68,9 +68,10 @@ def spider_plot(results_df, metric="DSC"):
     ax.set_xticklabels(spider_data.index, rotation=45)
     
     # Add legend
-    plt.legend(loc='upper right', bbox_to_anchor=(0.1, 0.1))
+    plt.legend(loc='upper right', bbox_to_anchor=(1.1, 1.1))
     
     plt.title(f"Mean {metric} by Modality Dataset and Method")
+    plt.tight_layout()
     return fig
 
 # Set style for fancy plots
