@@ -42,9 +42,9 @@ def spider_plot(results_df, metric="MSE"):
     angles = np.linspace(0, 2*np.pi, len(spider_data.index), endpoint=False)
     angles = np.concatenate((angles, [angles[0]]))  # Close the plot
     
-    # Calculate min and max values for smart limits
-    min_val = spider_data.values.min()
-    max_val = spider_data.values.max()
+    # Calculate min and max values for smart limits, filtering out nans
+    min_val = spider_data.values[~np.isnan(spider_data.values)].min()
+    max_val = spider_data.values[~np.isnan(spider_data.values)].max()
     
     # Set limits to 95% of min and 105% of max
     ylim_min = min_val * 0.95
