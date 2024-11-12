@@ -8,8 +8,8 @@ import numpy as np
 MODEL_ORDER = ['MPRAGE', 'BLOCH', 'BLOCH-PAIRED']
 MODEL_NAMES = {
     'MPRAGE': 'Baseline',
-    'BLOCH': 'Bloch',
-    'BLOCH-PAIRED': 'Bloch (Paired)'
+    'BLOCH': 'Sequence-augmented',
+    'BLOCH-PAIRED': 'Sequence-invariant'
 }
 
 SITE_NAMES = {
