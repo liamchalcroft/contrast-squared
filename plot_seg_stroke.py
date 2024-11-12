@@ -109,6 +109,18 @@ results_df["DSC"] = results_df["DSC"] * 100
 # Create a merged column for modality and dataset
 results_df["Modality Dataset"] = results_df["Dataset"] + " [" + results_df["Modality"] + "]"
 
+# Set categorical order for 'Modality' and 'Site'
+modality_order = ['T1w', 'T2w', 'FLAIR']
+
+# Ensure 'Modality' and 'Site' columns are categorical with the specified order
+results_df['Modality'] = pd.Categorical(results_df['Modality'], categories=modality_order, ordered=True)
+
+# Recreate 'Modality Dataset' column to reflect the new order
+results_df["Modality Dataset"] = results_df["Site"].astype(str) + " [" + results_df["Modality"].astype(str) + "]"
+
+# Sort the DataFrame based on the new categorical order
+results_df.sort_values(by=['Modality'], inplace=True)
+
 # Get unique percentages
 training_percentages = sorted(results_df["% Training Data"].unique(), reverse=True)
 
