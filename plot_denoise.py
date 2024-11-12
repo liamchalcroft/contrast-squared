@@ -105,12 +105,12 @@ if not all_results:
 
 results_df = pd.concat(all_results, ignore_index=True)
 
-print(results_df.head())
+print(results_df.columns)
 
 # Tidy up names of columns
 results_df.rename(columns={"mse": "MSE", "psnr": "PSNR", "modality": "Modality", "dataset": "Dataset", "site": "Site"}, inplace=True)
 
-print(results_df.head())
+print(results_df.columns)
 
 # Map site names
 results_df["Site"] = results_df["Site"].map(SITE_NAMES)
