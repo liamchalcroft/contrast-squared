@@ -117,7 +117,7 @@ modality_order = ['T1w', 'T2w', 'FLAIR']
 results_df['Modality'] = pd.Categorical(results_df['Modality'], categories=modality_order, ordered=True)
 
 # Recreate 'Modality Dataset' column to reflect the new order
-results_df["Modality Dataset"] = results_df["Site"].astype(str) + " [" + results_df["Modality"].astype(str) + "]"
+results_df["Modality Dataset"] = results_df["Dataset"].astype(str) + " [" + results_df["Modality"].astype(str) + "]"
 
 # Sort the DataFrame based on the new categorical order
 results_df.sort_values(by=['Modality'], inplace=True)
