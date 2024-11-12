@@ -23,6 +23,8 @@ def get_results_df(results_dir):
         df["% Training Data"] = data_pc
         method = run_name.split("simclr-")[1].split("-pc")[0]
         df["Method"] = MODEL_NAMES.get(method.upper(), method.upper())
+        # Fill any nan hd95 values with 256 (max side length)
+        df["hd95"] = df["hd95"].fillna(256)
         return df
     else:
         print(f"Results file not found: {results_file}")
