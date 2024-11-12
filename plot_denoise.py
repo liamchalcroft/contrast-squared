@@ -89,7 +89,7 @@ plt.rcParams['axes.linewidth'] = 2
 results_dirs = glob.glob("noise-*-cnn-simclr-*/")
 
 # Create results directory
-plot_dir = "plots/healthy_segmentation"
+plot_dir = "plots/denoise"
 os.makedirs(plot_dir, exist_ok=True)
 
 # Collect all results into single dataframe
