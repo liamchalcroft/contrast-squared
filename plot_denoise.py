@@ -86,7 +86,7 @@ plt.rcParams['font.size'] = 12
 plt.rcParams['axes.linewidth'] = 2
 
 # List of model configurations to check
-results_dirs = glob.glob("spm-*-cnn-simclr-*/")
+results_dirs = glob.glob("noise-*-cnn-simclr-*/")
 
 # Create results directory
 plot_dir = "plots/healthy_segmentation"
@@ -105,12 +105,8 @@ if not all_results:
 
 results_df = pd.concat(all_results, ignore_index=True)
 
-print(results_df.columns)
-
 # Tidy up names of columns
 results_df.rename(columns={"mse": "MSE", "psnr": "PSNR", "modality": "Modality", "dataset": "Dataset", "site": "Site"}, inplace=True)
-
-print(results_df.columns)
 
 # Map site names
 results_df["Site"] = results_df["Site"].map(SITE_NAMES)
