@@ -140,111 +140,100 @@ for percentage in training_percentages:
     # Filter data for this percentage
     percentage_df = results_df[results_df["% Training Data"] == percentage]
     
-    # Get unique classes for this percentage
-    classes = percentage_df['Class'].unique()
-    
-    # Generate plots for all data and per-class
-    for class_name in [None] + list(classes):
-        class_suffix = f"_{class_name.lower()}" if class_name else ""
-        class_data = percentage_df[percentage_df['Class'] == class_name] if class_name else percentage_df
-        
-        # 1. Boxplot of MSE scores by model and dataset
-        plt.figure(figsize=(15, 8))
-        ax = sns.boxplot(data=class_data, x="Modality Dataset", y="MSE", hue="Method",
-                         hue_order=[MODEL_NAMES[m] for m in MODEL_ORDER],
-                         boxprops={'alpha': 0.8, 'linewidth': 2},
-                         showfliers=False,
-                         width=0.8)
-        plt.title(f"Mean Squared Error by Modality and Dataset ({percentage}% Training Data)", 
-                 pad=20, fontsize=16, fontweight='bold')
-        plt.xlabel("Modality Dataset", fontsize=14, labelpad=15)
-        plt.ylabel("MSE", fontsize=14, labelpad=15)
-        plt.xticks(rotation=45, ha='right')
-        ax.grid(True, linestyle='--', alpha=0.7)
-        plt.legend(title="Method", title_fontsize=12, fontsize=11, bbox_to_anchor=(1.05, 1))
-        plt.tight_layout()
-        plt.savefig(os.path.join(percentage_dir, f"mse_boxplot_by_modality_dataset{class_suffix}.png"), 
-                    dpi=300, bbox_inches='tight')
-        plt.close()
+    # 1. Boxplot of MSE scores by model and dataset
+    plt.figure(figsize=(15, 8))
+    ax = sns.boxplot(data=percentage_df, x="Modality Dataset", y="MSE", hue="Method",
+                     hue_order=[MODEL_NAMES[m] for m in MODEL_ORDER],
+                     boxprops={'alpha': 0.8, 'linewidth': 2},
+                     showfliers=False,
+                     width=0.8)
+    plt.title(f"Mean Squared Error by Modality and Dataset ({percentage}% Training Data)", 
+             pad=20, fontsize=16, fontweight='bold')
+    plt.xlabel("Modality Dataset", fontsize=14, labelpad=15)
+    plt.ylabel("MSE", fontsize=14, labelpad=15)
+    plt.xticks(rotation=45, ha='right')
+    ax.grid(True, linestyle='--', alpha=0.7)
+    plt.legend(title="Method", title_fontsize=12, fontsize=11, bbox_to_anchor=(1.05, 1))
+    plt.tight_layout()
+    plt.savefig(os.path.join(percentage_dir, "mse_boxplot_by_modality_dataset.png"), 
+                dpi=300, bbox_inches='tight')
+    plt.close()
 
-        # 2. Violin plot of MSE scores by model and dataset
-        plt.figure(figsize=(15, 8))
-        ax = sns.violinplot(data=class_data, x="Modality Dataset", y="MSE", hue="Method",
-                            hue_order=[MODEL_NAMES[m] for m in MODEL_ORDER],
-                            density_norm='width', inner='quartile', alpha=0.5,
-                            cut=0,
-                            )
-        plt.title(f"Mean Squared Error by Modality and Dataset ({percentage}% Training Data)", 
-                 pad=20, fontsize=16, fontweight='bold')
-        plt.xlabel("Modality Dataset", fontsize=14, labelpad=15)
-        plt.ylabel("MSE", fontsize=14, labelpad=15)
-        plt.xticks(rotation=45, ha='right')
-        ax.grid(True, linestyle='--', alpha=0.7)
-        plt.legend(title="Method", title_fontsize=12, fontsize=11, bbox_to_anchor=(1.05, 1))
-        plt.tight_layout()
-        plt.savefig(os.path.join(percentage_dir, f"mse_violinplot_by_modality_dataset{class_suffix}.png"), 
-                    dpi=300, bbox_inches='tight')
-        plt.close()
+    # 2. Violin plot of MSE scores by model and dataset
+    plt.figure(figsize=(15, 8))
+    ax = sns.violinplot(data=percentage_df, x="Modality Dataset", y="MSE", hue="Method",
+                        hue_order=[MODEL_NAMES[m] for m in MODEL_ORDER],
+                        density_norm='width', inner='quartile', alpha=0.5,
+                        cut=0,
+                        )
+    plt.title(f"Mean Squared Error by Modality and Dataset ({percentage}% Training Data)", 
+             pad=20, fontsize=16, fontweight='bold')
+    plt.xlabel("Modality Dataset", fontsize=14, labelpad=15)
+    plt.ylabel("MSE", fontsize=14, labelpad=15)
+    plt.xticks(rotation=45, ha='right')
+    ax.grid(True, linestyle='--', alpha=0.7)
+    plt.legend(title="Method", title_fontsize=12, fontsize=11, bbox_to_anchor=(1.05, 1))
+    plt.tight_layout()
+    plt.savefig(os.path.join(percentage_dir, "mse_violinplot_by_modality_dataset.png"), 
+                dpi=300, bbox_inches='tight')
+    plt.close()
 
-        # 3. Boxplot of PSNR scores by model and dataset
-        plt.figure(figsize=(15, 8))
-        ax = sns.boxplot(data=class_data, x="Modality Dataset", y="PSNR", hue="Method",
-                         hue_order=[MODEL_NAMES[m] for m in MODEL_ORDER],
-                         boxprops={'alpha': 0.8, 'linewidth': 2},
-                         showfliers=False,
-                         width=0.8)
-        plt.title(f"Peak Signal-to-Noise Ratio by Modality and Dataset ({percentage}% Training Data)", 
-                 pad=20, fontsize=16, fontweight='bold')
-        plt.xlabel("Modality Dataset", fontsize=14, labelpad=15)
-        plt.ylabel("PSNR", fontsize=14, labelpad=15)
-        plt.xticks(rotation=45, ha='right')
-        ax.grid(True, linestyle='--', alpha=0.7)
-        plt.legend(title="Method", title_fontsize=12, fontsize=11, bbox_to_anchor=(1.05, 1))
-        plt.tight_layout()
-        plt.savefig(os.path.join(percentage_dir, f"psnr_boxplot_by_modality_dataset{class_suffix}.png"), 
-                    dpi=300, bbox_inches='tight')
-        plt.close()
+    # 3. Boxplot of PSNR scores by model and dataset
+    plt.figure(figsize=(15, 8))
+    ax = sns.boxplot(data=percentage_df, x="Modality Dataset", y="PSNR", hue="Method",
+                     hue_order=[MODEL_NAMES[m] for m in MODEL_ORDER],
+                     boxprops={'alpha': 0.8, 'linewidth': 2},
+                     showfliers=False,
+                     width=0.8)
+    plt.title(f"Peak Signal-to-Noise Ratio by Modality and Dataset ({percentage}% Training Data)", 
+             pad=20, fontsize=16, fontweight='bold')
+    plt.xlabel("Modality Dataset", fontsize=14, labelpad=15)
+    plt.ylabel("PSNR", fontsize=14, labelpad=15)
+    plt.xticks(rotation=45, ha='right')
+    ax.grid(True, linestyle='--', alpha=0.7)
+    plt.legend(title="Method", title_fontsize=12, fontsize=11, bbox_to_anchor=(1.05, 1))
+    plt.tight_layout()
+    plt.savefig(os.path.join(percentage_dir, "psnr_boxplot_by_modality_dataset.png"), 
+                dpi=300, bbox_inches='tight')
+    plt.close()
 
-        # 4. Violin plot of PSNR scores by model and dataset
-        plt.figure(figsize=(15, 8))
-        ax = sns.violinplot(data=class_data, x="Modality Dataset", y="PSNR", hue="Method",
-                            hue_order=[MODEL_NAMES[m] for m in MODEL_ORDER],
-                            density_norm='width', inner='quartile', alpha=0.5,
-                            cut=0,
-                            )
-        plt.title(f"Peak Signal-to-Noise Ratio by Modality and Dataset ({percentage}% Training Data)", 
-                 pad=20, fontsize=16, fontweight='bold')
-        plt.xlabel("Modality Dataset", fontsize=14, labelpad=15)
-        plt.ylabel("PSNR", fontsize=14, labelpad=15)
-        plt.xticks(rotation=45, ha='right')
-        ax.grid(True, linestyle='--', alpha=0.7)
-        plt.legend(title="Method", title_fontsize=12, fontsize=11, bbox_to_anchor=(1.05, 1))
-        plt.tight_layout()
-        plt.savefig(os.path.join(percentage_dir, f"psnr_violinplot_by_modality_dataset{class_suffix}.png"), 
-                    dpi=300, bbox_inches='tight')
-        plt.close()
+    # 4. Violin plot of PSNR scores by model and dataset
+    plt.figure(figsize=(15, 8))
+    ax = sns.violinplot(data=percentage_df, x="Modality Dataset", y="PSNR", hue="Method",
+                        hue_order=[MODEL_NAMES[m] for m in MODEL_ORDER],
+                        density_norm='width', inner='quartile', alpha=0.5,
+                        cut=0,
+                        )
+    plt.title(f"Peak Signal-to-Noise Ratio by Modality and Dataset ({percentage}% Training Data)", 
+             pad=20, fontsize=16, fontweight='bold')
+    plt.xlabel("Modality Dataset", fontsize=14, labelpad=15)
+    plt.ylabel("PSNR", fontsize=14, labelpad=15)
+    plt.xticks(rotation=45, ha='right')
+    ax.grid(True, linestyle='--', alpha=0.7)
+    plt.legend(title="Method", title_fontsize=12, fontsize=11, bbox_to_anchor=(1.05, 1))
+    plt.tight_layout()
+    plt.savefig(os.path.join(percentage_dir, "psnr_violinplot_by_modality_dataset.png"), 
+                dpi=300, bbox_inches='tight')
+    plt.close()
 
-        # 5. Spider plot of MSE scores by modality and dataset
-        plt.figure(figsize=(10, 10))
-        spider_plot(class_data, metric="MSE")
-        plt.savefig(os.path.join(percentage_dir, f"mse_spider_plot{class_suffix}.png"))
-        plt.close()
+    # 5. Spider plot of MSE scores by modality and dataset
+    plt.figure(figsize=(10, 10))
+    spider_plot(percentage_df, metric="MSE")
+    plt.savefig(os.path.join(percentage_dir, "mse_spider_plot.png"))
+    plt.close()
 
-        # 6. Spider plot of PSNR scores by modality and dataset
-        plt.figure(figsize=(10, 10))
-        spider_plot(class_data, metric="PSNR")
-        plt.savefig(os.path.join(percentage_dir, f"psnr_spider_plot{class_suffix}.png"))
-        plt.close()
+    # 6. Spider plot of PSNR scores by modality and dataset
+    plt.figure(figsize=(10, 10))
+    spider_plot(percentage_df, metric="PSNR")
+    plt.savefig(os.path.join(percentage_dir, "psnr_spider_plot.png"))
+    plt.close()
 
-        # 7. Summary statistics table
-        summary_stats = class_data.groupby(['Modality Dataset', 'Method'])[['MSE', 'PSNR']].agg(['mean', 'std', 'median', 'min', 'max', 'sem']).round(1)
-        if class_name:
-            summary_stats.to_csv(os.path.join(percentage_dir, f"summary_statistics_{class_name.lower()}.csv"))
-        else:
-            summary_stats.to_csv(os.path.join(percentage_dir, "summary_statistics.csv"))
+    # 7. Summary statistics table
+    summary_stats = percentage_df.groupby(['Modality Dataset', 'Method'])[['MSE', 'PSNR']].agg(['mean', 'std', 'median', 'min', 'max', 'sem']).round(1)
+    summary_stats.to_csv(os.path.join(percentage_dir, "summary_statistics.csv"))
 
-        # Print summary for this percentage and class
-        print(f"\nResults Summary for {percentage}% Training Data{' and ' + class_name if class_name else ''}:")
-        print(summary_stats)
+    # Print summary for this percentage
+    print(f"\nResults Summary for {percentage}% Training Data:")
+    print(summary_stats)
 
 print(f"\nPlots saved in: {plot_dir}")
