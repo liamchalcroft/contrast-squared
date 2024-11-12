@@ -117,7 +117,7 @@ results_df["Site"] = results_df["Site"].map(SITE_NAMES)
 results_df["Modality Dataset"] = results_df["Site"] + " [" + results_df["Modality"] + "]"
 
 # Set categorical order for 'Modality' and 'Site'
-modality_order = ['T1w', 'T2w', 'PD']
+modality_order = ['T1w', 'T2w', 'PDw']
 site_order = ['GST', 'HH', 'IOP']
 
 # Ensure 'Modality' and 'Site' columns are categorical with the specified order
