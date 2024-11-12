@@ -108,7 +108,7 @@ results_df["DSC"] = results_df["DSC"] * 100
 results_df["Modality Dataset"] = results_df["Dataset"] + " [" + results_df["Modality"] + "]"
 
 # Get unique percentages
-training_percentages = sorted(results_df["% Training Data"].unique())
+training_percentages = sorted(results_df["% Training Data"].unique(), reverse=True)
 
 # Loop over percentages
 for percentage in training_percentages:
