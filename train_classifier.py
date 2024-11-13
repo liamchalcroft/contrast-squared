@@ -198,6 +198,7 @@ def get_loaders(
 
     # Ensure train_ages are integers and filter out any invalid entries
     train_ages = [int(age) for age in train_ages if not np.isnan(age)]
+    print("Processed train ages:", train_ages)  # Debug print
 
     # Calculate weights for each sample based on age
     min_age = min(train_ages)
@@ -206,6 +207,7 @@ def get_loaders(
     age_counts = np.bincount([age - min_age for age in train_ages], minlength=age_range)
     age_weights = 1.0 / (age_counts + 1e-6)  # Add a small value to avoid division by zero
     sample_weights = [age_weights[age - min_age] for age in train_ages]
+    print("Sample weights:", sample_weights)  # Debug print
 
     # Create a WeightedRandomSampler
     train_sampler = torch.utils.data.WeightedRandomSampler(
@@ -411,6 +413,7 @@ def run_model(args, device, train_loader, val_loader):
             age = batch[0]["age"].to(device).long()
             # Convert age to class index (0-99)
             age = torch.clamp((age - 20) / 0.8, 0, 99).long()  # Assuming ages 20-100
+            print(f"Step {step}: Ground truth age (class index):", age)  # Debug print
             gender = batch[0]["gender"][:, None].to(device).float()
             opt.zero_grad(set_to_none=True)
 
@@ -420,6 +423,7 @@ def run_model(args, device, train_loader, val_loader):
                 features = encoder(img)
                 features = features.view(features.shape[0], features.shape[1], -1).mean(dim=-1)
                 pred_age = regressor(features, gender)
+                print(f"Step {step}: Predicted age (logits):", pred_age)  # Debug print
                 loss = crit(pred_age, age)
 
             if type(loss) == float or loss.isnan().sum() != 0:
