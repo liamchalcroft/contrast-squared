@@ -275,9 +275,8 @@ def run_model(args, device, train_loader, val_loader):
     encoder.load_state_dict(checkpoint["encoder"], strict=True)
         
     class Regression(torch.nn.Module):
-        def __init__(self, in_features, out_features):
+        def __init__(self, in_features, out_features=256):
             super().__init__()
-            # Replace simple bilinear layer with a more robust architecture
             self.net = torch.nn.Sequential(
                 torch.nn.Linear(in_features + 1, 512),  # +1 for gender
                 torch.nn.GELU(),
@@ -289,11 +288,10 @@ def run_model(args, device, train_loader, val_loader):
             )
 
         def forward(self, x, gender):
-            # Concatenate features with gender instead of using bilinear
             x = torch.cat([x, gender], dim=1)
             return self.net(x)
 
-    regressor = Regression(768, 100).to(device) # 100 classes of age
+    regressor = Regression(768, 256).to(device)
 
     if args.resume or args.resume_best:
         ckpts = glob.glob(
@@ -410,10 +408,11 @@ def run_model(args, device, train_loader, val_loader):
                 train_iter = iter(train_loader)
                 batch = next(train_iter)
             img = batch[0]["image"].to(device).float()
-            age = batch[0]["age"].to(device).long()
-            # Convert age to class index (0-99)
-            age = torch.clamp((age - 20) / 0.8, 0, 99).long()  # Assuming ages 20-100
-            print(f"Step {step}: Ground truth age (class index):", age)  # Debug print
+            age = batch[0]["age"].to(device).float()
+            # Convert age to class index (0-255)
+            # Assuming age range is 20-100, map to 0-255
+            age_normalized = ((age - 20) / (100 - 20) * 255).long().clamp(0, 255)
+            print(f"Step {step}: Original age: {age.item():.1f}, Class index: {age_normalized.item()}")  # Debug print
             gender = batch[0]["gender"][:, None].to(device).float()
             opt.zero_grad(set_to_none=True)
 
@@ -423,8 +422,11 @@ def run_model(args, device, train_loader, val_loader):
                 features = encoder(img)
                 features = features.view(features.shape[0], features.shape[1], -1).mean(dim=-1)
                 pred_age = regressor(features, gender)
-                print(f"Step {step}: Predicted age:", pred_age.softmax(dim=1).argmax(dim=1))  # Debug print
-                loss = crit(pred_age, age)
+                pred_class = pred_age.softmax(dim=1).argmax(dim=1)
+                # Convert predicted class back to actual age
+                pred_actual = pred_class.float() / 255 * (100 - 20) + 20
+                print(f"Step {step}: Predicted class: {pred_class.item()}, Predicted age: {pred_actual.item():.1f}")
+                loss = crit(pred_age, age_normalized)
 
             if type(loss) == float or loss.isnan().sum() != 0:
                 print("NaN found in loss!")
@@ -458,66 +460,30 @@ def run_model(args, device, train_loader, val_loader):
             regressor.eval()
             with torch.no_grad():
                 val_loss = 0
-                val_acc = 0
+                val_mae = 0  # Mean Absolute Error for age prediction
                 for i, batch in enumerate(val_loader):
                     img = batch[0]["image"].to(device).float()
-                    age = batch[0]["age"].to(device).long()
-                    # Convert age to class index (0-99)
-                    age = torch.clamp((age - 20) / 0.8, 0, 99).long()  # Assuming ages 20-100
+                    age = batch[0]["age"].to(device).float()
+                    age_normalized = ((age - 20) / (100 - 20) * 255).long().clamp(0, 255)
                     gender = batch[0]["gender"][:, None].to(device).float()
+                    
                     features = encoder(img)
                     features = features.view(features.shape[0], features.shape[1], -1).mean(dim=-1)
                     pred_age = regressor(features, gender)
-                    val_loss += crit(pred_age, age).item()
-                    pred_age = pred_age.softmax(dim=1).argmax(dim=1)
-                    pred_age = pred_age * 0.8 + 20  # Convert back to actual age range
-                    val_acc += (pred_age == age).float().mean().item()
+                    val_loss += crit(pred_age, age_normalized).item()
+                    
+                    # Convert predictions back to actual ages for MAE calculation
+                    pred_class = pred_age.softmax(dim=1).argmax(dim=1)
+                    pred_actual = pred_class.float() / 255 * (100 - 20) + 20
+                    val_mae += (pred_actual - age).abs().mean().item()
 
-                    if i < 16:
-                        img_list.append(img[0,...,img.shape[-1]//2])
-                        age_list.append(age[0])
-                        pred_age_list.append(pred_age[0])
-                    elif i == 16:
-                        grid_image1 = make_grid(
-                            img_list,
-                            nrow=int(4),
-                            padding=5,
-                            normalize=True,
-                            scale_each=True,
-                        )
-                        
-                        # Create a list to store age information
-                        age_info = []
-                        for j in range(len(img_list)):
-                            age_info.append(f"True: {age_list[j].item():.1f}, Pred: {pred_age_list[j].item():.1f}")
-                        
-                        # Create a text image with age information
-                        text_img = Image.new('RGB', (400, 400), color='white')
-                        draw = ImageDraw.Draw(text_img)
-                        font = ImageFont.load_default()
-                        for k, info in enumerate(age_info):
-                            draw.text((10, 20*k), info, fill='black', font=font)
-                        
-                        # Convert PIL Image to tensor
-                        text_tensor = transforms.ToTensor()(text_img)
-                        wandb.log(
-                            {
-                                "examples": [
-                                    wandb.Image(
-                                        grid_image1[0].cpu().numpy(), caption="Images"
-                                    ),
-                                    wandb.Image(
-                                        text_tensor[0].cpu().numpy(), caption="Age Information"
-                                    ),
-                                ]
-                            }
-                        )
-            
-            val_loss /= len(val_loader)
-            val_acc /= len(val_loader)
-
-            wandb.log({"val/loss": val_loss, "val/acc": val_acc})
-
+                val_loss /= len(val_loader)
+                val_mae /= len(val_loader)
+                
+                wandb.log({
+                    "val/loss": val_loss, 
+                    "val/mae": val_mae
+                })
 
             if val_loss < metric_best:
                 metric_best = val_loss
