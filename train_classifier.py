@@ -423,7 +423,7 @@ def run_model(args, device, train_loader, val_loader):
                 features = encoder(img)
                 features = features.view(features.shape[0], features.shape[1], -1).mean(dim=-1)
                 pred_age = regressor(features, gender)
-                print(f"Step {step}: Predicted age (logits):", pred_age)  # Debug print
+                print(f"Step {step}: Predicted age:", pred_age.softmax(dim=1).argmax(dim=1))  # Debug print
                 loss = crit(pred_age, age)
 
             if type(loss) == float or loss.isnan().sum() != 0:
