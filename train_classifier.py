@@ -196,11 +196,23 @@ def get_loaders(
     train_data = mn.data.Dataset(train_dict, transform=data_transforms)
     val_data = mn.data.Dataset(val_dict, transform=data_transforms)
 
+    # Calculate weights for each sample based on age
+    age_counts = np.bincount(train_ages)
+    age_weights = 1.0 / age_counts
+    sample_weights = [age_weights[age] for age in train_ages]
+
+    # Create a WeightedRandomSampler
+    train_sampler = torch.utils.data.WeightedRandomSampler(
+        weights=sample_weights,
+        num_samples=len(sample_weights),
+        replacement=True
+    )
+
     train_loader = DataLoader(
         train_data,
         batch_size=batch_size,
-        shuffle=True,
-        sampler=None,
+        shuffle=False,  # Set shuffle to False when using a sampler
+        sampler=train_sampler,  # Use the weighted sampler
         batch_sampler=None,
         num_workers=8,
     )
