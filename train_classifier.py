@@ -197,7 +197,9 @@ def get_loaders(
     val_data = mn.data.Dataset(val_dict, transform=data_transforms)
 
     # Calculate weights for each sample based on age
+    print(train_ages)
     age_counts = np.bincount(train_ages)
+    print(age_counts)
     age_weights = 1.0 / age_counts
     sample_weights = [age_weights[age] for age in train_ages]
 
