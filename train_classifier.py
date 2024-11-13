@@ -412,7 +412,7 @@ def run_model(args, device, train_loader, val_loader):
             # Convert age to class index (0-255)
             # Assuming age range is 20-100, map to 0-255
             age_normalized = ((age - 20) / (100 - 20) * 255).long().clamp(0, 255)
-            print(f"Step {step}: Original age: {age.item():.1f}, Class index: {age_normalized.item()}")  # Debug print
+            print(f"Step {step}: Original ages: {age.cpu().numpy()}, Class indices: {age_normalized.cpu().numpy()}")  # Debug print
             gender = batch[0]["gender"][:, None].to(device).float()
             opt.zero_grad(set_to_none=True)
 
@@ -425,7 +425,7 @@ def run_model(args, device, train_loader, val_loader):
                 pred_class = pred_age.softmax(dim=1).argmax(dim=1)
                 # Convert predicted class back to actual age
                 pred_actual = pred_class.float() / 255 * (100 - 20) + 20
-                print(f"Step {step}: Predicted class: {pred_class.item()}, Predicted age: {pred_actual.item():.1f}")
+                print(f"Step {step}: Predicted classes: {pred_class.cpu().numpy()}, Predicted ages: {pred_actual.cpu().numpy()}")
                 loss = crit(pred_age, age_normalized)
 
             if type(loss) == float or loss.isnan().sum() != 0:
