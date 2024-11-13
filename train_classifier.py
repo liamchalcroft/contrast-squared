@@ -196,9 +196,12 @@ def get_loaders(
     train_data = mn.data.Dataset(train_dict, transform=data_transforms)
     val_data = mn.data.Dataset(val_dict, transform=data_transforms)
 
+    # Ensure train_ages are integers and filter out any invalid entries
+    train_ages = [int(age) for age in train_ages if not np.isnan(age)]
+
     # Calculate weights for each sample based on age
-    min_age = int(min(train_ages))
-    max_age = int(max(train_ages))
+    min_age = min(train_ages)
+    max_age = max(train_ages)
     age_range = max_age - min_age + 1
     age_counts = np.bincount([age - min_age for age in train_ages], minlength=age_range)
     age_weights = 1.0 / (age_counts + 1e-6)  # Add a small value to avoid division by zero
