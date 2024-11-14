@@ -411,7 +411,8 @@ def run_model(args, device, train_loader, val_loader):
             with ctx:
                 features = encoder(img)
                 features = features.view(features.shape[0], features.shape[1], -1)
-                pred_age = regressor(features, gender).mean(dim=-1)
+                features = features.moveaxis(-1, 1)
+                pred_age = regressor(features, gender).mean(dim=1)
                 loss = crit(pred_age, age)
 
             if type(loss) == float or loss.isnan().sum() != 0:
@@ -453,7 +454,8 @@ def run_model(args, device, train_loader, val_loader):
                     gender = batch[0]["gender"][:, None].to(device).float()
                     features = encoder(img)
                     features = features.view(features.shape[0], features.shape[1], -1)
-                    pred_age = regressor(features, gender).mean(dim=-1)
+                    features = features.moveaxis(-1, 1)
+                    pred_age = regressor(features, gender).mean(dim=1)
                     loss = torch.nn.functional.mse_loss(pred_age, age)
                     val_mse += loss.item()
                     loss = torch.nn.functional.l1_loss(pred_age, age)
