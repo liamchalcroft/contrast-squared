@@ -429,12 +429,12 @@ def run_model(args, device, train_loader, val_loader):
                 top3_values, top3_indices = pred_probs.topk(3, dim=1)
                 
                 print(f"Step {step} predictions:")
-                print(f"  Top-3 classes: {top3_indices.cpu().numpy()}")
-                print(f"  Top-3 probabilities: {top3_values.cpu().numpy()}")
+                print(f"  Top-3 classes: {top3_indices.detach().cpu().numpy()}")
+                print(f"  Top-3 probabilities: {top3_values.detach().cpu().numpy()}")
                 
                 # Convert predicted class back to actual age
                 pred_actual = pred_class.float() / (args.age_bins - 1) * (100 - 20) + 20
-                print(f"  Final predicted ages: {pred_actual.cpu().numpy()}\n")
+                print(f"  Final predicted ages: {pred_actual.detach().cpu().numpy()}\n")
                 
                 loss = crit(pred_age, age_normalized)
 
