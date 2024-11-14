@@ -273,15 +273,15 @@ def run_model(args, device, train_loader, val_loader):
     class Regression(torch.nn.Module):
         def __init__(self, in_features):
             super().__init__()
-            self.bilinear = torch.nn.Bilinear(in_features, 1, 512, bias=True)
+            self.linear1 = torch.nn.Linear(in_features, 512, bias=True)
             self.gelu = torch.nn.GELU()
-            self.linear = torch.nn.Linear(512, 1, bias=True)
+            self.linear2 = torch.nn.Linear(512, 1, bias=True)
             self.scale = torch.nn.Parameter(torch.tensor(1.0))
 
         def forward(self, x, gender):
-            x = self.bilinear(x, gender)
+            x = self.linear1(x)
             x = self.gelu(x)
-            x = self.linear(x)
+            x = self.linear2(x)
             x = self.scale * x
             return x
 
