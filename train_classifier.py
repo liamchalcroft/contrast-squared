@@ -143,14 +143,14 @@ def get_loaders(
             func=mn.transforms.SignalFillEmpty(),
             allow_missing_keys=True,
         ),
-        # mn.transforms.RandAffineD(
-        #     keys=["image", "label"],
-        #     rotate_range=15, shear_range=0.012, scale_range=0.15,
-        #     prob=0.8, 
-        #     # cache_grid=True, spatial_size=(256, 256, 256) if not lowres else (128, 128, 128),
-        #     allow_missing_keys=True,
-        # ),
-        # mn.transforms.RandBiasFieldD(keys="image", prob=0.8),
+        mn.transforms.RandAffineD(
+            keys=["image", "label"],
+            rotate_range=15, shear_range=0.012, scale_range=0.15,
+            prob=0.8, 
+            # cache_grid=True, spatial_size=(256, 256, 256) if not lowres else (128, 128, 128),
+            allow_missing_keys=True,
+        ),
+        mn.transforms.RandBiasFieldD(keys="image", prob=0.8),
         mn.transforms.RandAxisFlipd(
             keys=["image", "label"],
             prob=0.8,
@@ -410,7 +410,6 @@ def run_model(args, device, train_loader, val_loader):
             img = batch[0]["image"].to(device).float()
             age = batch[0]["age"].to(device).float()
             # Convert age to class index (0-255)
-            # Assuming age range is 20-100, map to 0-255
             age_normalized = ((age - 20) / (100 - 20) * (args.age_bins - 1)).long().clamp(0, args.age_bins - 1)
             print(f"Step {step}: Original ages: {age.cpu().numpy()}, Class indices: {age_normalized.cpu().numpy()}")  # Debug print
             gender = batch[0]["gender"][:, None].to(device).float()
@@ -422,10 +421,21 @@ def run_model(args, device, train_loader, val_loader):
                 features = encoder(img)
                 features = features.view(features.shape[0], features.shape[1], -1).mean(dim=-1)
                 pred_age = regressor(features, gender)
-                pred_class = pred_age.softmax(dim=1).argmax(dim=1)
+                
+                # Debug prints to see distribution
+                pred_probs = pred_age.softmax(dim=1)
+                pred_class = pred_probs.argmax(dim=1)
+                # Get top-3 predictions
+                top3_values, top3_indices = pred_probs.topk(3, dim=1)
+                
+                print(f"Step {step} predictions:")
+                print(f"  Top-3 classes: {top3_indices.cpu().numpy()}")
+                print(f"  Top-3 probabilities: {top3_values.cpu().numpy()}")
+                
                 # Convert predicted class back to actual age
                 pred_actual = pred_class.float() / (args.age_bins - 1) * (100 - 20) + 20
-                print(f"Step {step}: Predicted classes: {pred_class.cpu().numpy()}, Predicted ages: {pred_actual.cpu().numpy()}")
+                print(f"  Final predicted ages: {pred_actual.cpu().numpy()}\n")
+                
                 loss = crit(pred_age, age_normalized)
 
             if type(loss) == float or loss.isnan().sum() != 0:
