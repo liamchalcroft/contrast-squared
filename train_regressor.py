@@ -371,6 +371,15 @@ def run_model(args, device, train_loader, val_loader):
 
         lr_scheduler = torch.optim.lr_scheduler.LambdaLR(opt, lr_lambda=[lambda1])
 
+    # Set up sliding window inferer
+    sliding_window_inferer = mn.inferers.SlidingWindowInferer(
+        roi_size=(48 if args.lowres else 96,) * 3,
+        sw_batch_size=4,
+        overlap=0.5,
+        mode="gaussian",
+        padding_mode="replicate",
+    )
+
     os.makedirs(os.path.join(args.logdir, args.name), exist_ok=True)
 
     train_iter = None
@@ -409,7 +418,7 @@ def run_model(args, device, train_loader, val_loader):
             if args.debug and step < 5:
                 saver1(torch.Tensor(img[0].detach().cpu().float()))
             with ctx:
-                features = encoder(img)
+                features = sliding_window_inferer(img, encoder)
                 features = features.view(features.shape[0], features.shape[1], -1)
                 features = features.moveaxis(-1, 1)
                 pred_age = regressor(features, gender).mean(dim=1)
@@ -452,7 +461,7 @@ def run_model(args, device, train_loader, val_loader):
                     img = batch[0]["image"].to(device).float()
                     age = batch[0]["age"][:, None].to(device).float()
                     gender = batch[0]["gender"][:, None].to(device).float()
-                    features = encoder(img)
+                    features = sliding_window_inferer(img, encoder)
                     features = features.view(features.shape[0], features.shape[1], -1)
                     features = features.moveaxis(-1, 1)
                     pred_age = regressor(features, gender).mean(dim=1)
