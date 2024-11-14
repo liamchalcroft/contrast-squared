@@ -24,6 +24,108 @@ warnings.filterwarnings(
 )
 warnings.filterwarnings("ignore", category=FutureWarning, module="pandas")
 
+def compute_dlml_loss(
+    means,
+    log_scales,
+    mixture_logits,
+    y,
+    output_min_bound=0,
+    output_max_bound=1,
+    num_y_vals=256,
+    reduction="mean",
+):
+    """
+    Computes the Discretized Logistic Mixture Likelihood loss
+    """
+    inv_scales = torch.exp(-log_scales)
+
+    y_range = output_max_bound - output_min_bound
+    # explained in text
+    epsilon = (0.5 * y_range) / (num_y_vals - 1)
+    # convenience variable
+    centered_y = y.unsqueeze(-1).repeat(1, 1, means.shape[-1]) - means
+    # inputs to our sigmoid functions
+    upper_bound_in = inv_scales * (centered_y + epsilon)
+    lower_bound_in = inv_scales * (centered_y - epsilon)
+    # remember: cdf of logistic distr is sigmoid of above input format
+    upper_cdf = torch.sigmoid(upper_bound_in)
+    lower_cdf = torch.sigmoid(lower_bound_in)
+    # finally, the probability mass and equivalent log prob
+    prob_mass = upper_cdf - lower_cdf
+    vanilla_log_prob = torch.log(torch.clamp(prob_mass, min=1e-12))
+
+    # edges
+    low_bound_log_prob = upper_bound_in - torch.nn.functional.softplus(
+        upper_bound_in
+    )  # log probability for edge case of 0 (before scaling)
+    upp_bound_log_prob = -torch.nn.functional.softplus(
+        lower_bound_in
+    )  # log probability for edge case of 255 (before scaling)
+    # middle
+    mid_in = inv_scales * centered_y
+    log_pdf_mid = mid_in - log_scales - 2.0 * torch.nn.functional.softplus(mid_in)
+    log_prob_mid = log_pdf_mid - np.log((num_y_vals - 1) / 2)
+
+    # Create a tensor with the same shape as 'y', filled with zeros
+    log_probs = torch.zeros_like(y)
+    # conditions for filling in tensor
+    is_near_min = y < output_min_bound + 1e-3
+    is_near_max = y > output_max_bound - 1e-3
+    is_prob_mass_sufficient = prob_mass > 1e-5
+    # And then fill it in accordingly
+    # lower edge
+    log_probs[is_near_min] = low_bound_log_prob[is_near_min]
+    # upper edge
+    log_probs[is_near_max] = upp_bound_log_prob[is_near_max]
+    # vanilla case
+    log_probs[~is_near_min & ~is_near_max & is_prob_mass_sufficient] = vanilla_log_prob[
+        ~is_near_min & ~is_near_max & is_prob_mass_sufficient
+    ]
+    # extreme case where prob mass is too small
+    log_probs[~is_near_min & ~is_near_max & ~is_prob_mass_sufficient] = log_prob_mid[
+        ~is_near_min & ~is_near_max & ~is_prob_mass_sufficient
+    ]
+
+    # modeling which mixture to sample from
+    log_probs = log_probs + torch.nn.functional.log_softmax(mixture_logits, dim=-1)
+
+    # log likelihood
+    log_likelihood = torch.sum(torch.logsumexp(log_probs), dim=-1)
+
+    # loss is just negative log likelihood
+    loss = -log_likelihood
+
+    if reduction == "mean":
+        loss = torch.mean(loss)
+    elif reduction == "sum":
+        loss = torch.sum(loss)
+
+    return loss
+
+def sample_dlml(means, log_scales, mixture_logits):
+    r1, r2 = 1e-5, 1.0 - 1e-5
+    temp = (r1 - r2) * torch.rand(means.shape, device=means.device) + r2
+    temp = mixture_logits - torch.log(-torch.log(temp))
+    argmax = torch.argmax(temp, -1)
+
+    # number of distributions in mixture
+    k = means.shape[-1]
+    # (K dimensional vector, e.g. [0 0 0 1 0 0 0 0] for K=8, argmax=3
+    dist_one_hot = torch.eye(k)[argmax]
+
+    # use it to sample, and aggregate over the batch
+    sampled_log_scale = (dist_one_hot * log_scales).sum(dim=-1)
+    sampled_mean = (dist_one_hot * means).sum(dim=-1)
+
+    # scale the (0,1) uniform distribution and re-center it
+    y = (r1 - r2) * torch.rand(sampled_mean.shape, device=sampled_mean.device) + r2
+
+    sampled_output = sampled_mean + torch.exp(sampled_log_scale) * (
+        torch.log(y) - torch.log(1 - y)
+    )
+
+    return sampled_output
+
 def add_bg(x):
     return torch.cat([1-x.sum(dim=0, keepdim=True), x], dim=0)
 
@@ -291,7 +393,7 @@ def run_model(args, device, train_loader, val_loader):
             x = torch.cat([x, gender], dim=1)
             return self.net(x)
 
-    regressor = Regression(768, args.age_bins).to(device)
+    regressor = Regression(768, args.age_bins * args.k_mixtures * 3).to(device)
 
     if args.resume or args.resume_best:
         ckpts = glob.glob(
@@ -412,6 +514,7 @@ def run_model(args, device, train_loader, val_loader):
             # Convert age to class index (0-255)
             age_normalized = ((age - 20) / (100 - 20) * (args.age_bins - 1)).long().clamp(0, args.age_bins - 1)
             print(f"Step {step}: Original ages: {age.cpu().numpy()}, Class indices: {age_normalized.cpu().numpy()}")  # Debug print
+            age_onehot = torch.nn.functional.one_hot(age_normalized, num_classes=args.age_bins).float()
             gender = batch[0]["gender"][:, None].to(device).float()
             opt.zero_grad(set_to_none=True)
 
@@ -421,20 +524,16 @@ def run_model(args, device, train_loader, val_loader):
                 features = encoder(img)
                 features = features.view(features.shape[0], features.shape[1], -1).mean(dim=-1)
                 pred_age = regressor(features, gender)
-                
-                # Debug prints to see distribution
-                pred_probs = pred_age.softmax(dim=1)
-                pred_class = pred_probs.argmax(dim=1)
-                # Get top-3 predictions
-                top3_values, top3_indices = pred_probs.topk(3, dim=1)
-                
-                print(f"Step {step} predictions:")
-                print(f"  Top-3 classes: {top3_indices.detach().cpu().numpy()}")
-                print(f"  Top-3 probabilities: {top3_values.detach().cpu().numpy()}")
-                
+                pred_age = pred_age.view(pred_age.shape[0], args.age_bins, args.k_mixtures, 3)
+                pred_age_means, pred_age_log_scales, pred_age_mixture_logits = pred_age.unbind(dim=-1)
+
+                loss = compute_dlml_loss(pred_age_means, pred_age_log_scales, pred_age_mixture_logits, age_onehot, num_y_vals=args.age_bins)
+                                
                 # Convert predicted class back to actual age
-                pred_actual = pred_class.float() / (args.age_bins - 1) * (100 - 20) + 20
-                print(f"  Final predicted ages: {pred_actual.detach().cpu().numpy()}\n")
+                pred_probs = sample_dlml(pred_age_means, pred_age_log_scales, pred_age_mixture_logits)
+                pred_actual = pred_probs.argmax(dim=1)
+                pred_actual = pred_actual.float() / (args.age_bins - 1) * (100 - 20) + 20
+                print(f"Final predicted ages: {pred_actual.detach().cpu().numpy()}\n")
                 
                 loss = crit(pred_age, age_normalized)
 
@@ -475,16 +574,18 @@ def run_model(args, device, train_loader, val_loader):
                     img = batch[0]["image"].to(device).float()
                     age = batch[0]["age"].to(device).float()
                     age_normalized = ((age - 20) / (100 - 20) * (args.age_bins - 1)).long().clamp(0, args.age_bins - 1)
+                    age_onehot = torch.nn.functional.one_hot(age_normalized, num_classes=args.age_bins).float()
                     gender = batch[0]["gender"][:, None].to(device).float()
                     
                     features = encoder(img)
                     features = features.view(features.shape[0], features.shape[1], -1).mean(dim=-1)
                     pred_age = regressor(features, gender)
-                    val_loss += crit(pred_age, age_normalized).item()
+                    val_loss += compute_dlml_loss(pred_age_means, pred_age_log_scales, pred_age_mixture_logits, age_onehot, num_y_vals=args.age_bins).item()
                     
                     # Convert predictions back to actual ages for MAE calculation
-                    pred_class = pred_age.softmax(dim=1).argmax(dim=1)
-                    pred_actual = pred_class.float() / (args.age_bins - 1) * (100 - 20) + 20
+                    pred_probs = sample_dlml(pred_age_means, pred_age_log_scales, pred_age_mixture_logits)
+                    pred_actual = pred_probs.argmax(dim=1)
+                    pred_actual = pred_actual.float() / (args.age_bins - 1) * (100 - 20) + 20
                     val_mae += (pred_actual - age).abs().mean().item()
 
                 val_loss /= len(val_loader)
@@ -546,7 +647,8 @@ def set_up():
     parser.add_argument("--backbone_weights", type=str, default=None, help="Path to encoder weights to load.")
     parser.add_argument("--pc_data", default=100, type=float, help="Percentage of data to use for training.")
     parser.add_argument("--modality", type=str, choices=["t1", "t2", "pd"], help="Modality to train on.")
-    parser.add_argument("--age_bins", type=int, default=16, help="Number of bins for age classification. Will be in range of 20-100 years.")
+    parser.add_argument("--age_bins", type=int, default=256, help="Number of bins for age classification. Will be in range of 20-100 years.")
+    parser.add_argument("--k_mixtures", type=int, default=3, help="Number of mixtures for age classification.")
     args = parser.parse_args()
 
     os.makedirs(os.path.join(args.logdir, args.name), exist_ok=True)
