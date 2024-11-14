@@ -291,7 +291,7 @@ def run_model(args, device, train_loader, val_loader):
             x = torch.cat([x, gender], dim=1)
             return self.net(x)
 
-    regressor = Regression(768, 256).to(device)
+    regressor = Regression(768, args.age_bins).to(device)
 
     if args.resume or args.resume_best:
         ckpts = glob.glob(
@@ -411,7 +411,7 @@ def run_model(args, device, train_loader, val_loader):
             age = batch[0]["age"].to(device).float()
             # Convert age to class index (0-255)
             # Assuming age range is 20-100, map to 0-255
-            age_normalized = ((age - 20) / (100 - 20) * 255).long().clamp(0, 255)
+            age_normalized = ((age - 20) / (100 - 20) * (args.age_bins - 1)).long().clamp(0, args.age_bins - 1)
             print(f"Step {step}: Original ages: {age.cpu().numpy()}, Class indices: {age_normalized.cpu().numpy()}")  # Debug print
             gender = batch[0]["gender"][:, None].to(device).float()
             opt.zero_grad(set_to_none=True)
@@ -424,7 +424,7 @@ def run_model(args, device, train_loader, val_loader):
                 pred_age = regressor(features, gender)
                 pred_class = pred_age.softmax(dim=1).argmax(dim=1)
                 # Convert predicted class back to actual age
-                pred_actual = pred_class.float() / 255 * (100 - 20) + 20
+                pred_actual = pred_class.float() / (args.age_bins - 1) * (100 - 20) + 20
                 print(f"Step {step}: Predicted classes: {pred_class.cpu().numpy()}, Predicted ages: {pred_actual.cpu().numpy()}")
                 loss = crit(pred_age, age_normalized)
 
@@ -464,7 +464,7 @@ def run_model(args, device, train_loader, val_loader):
                 for i, batch in enumerate(val_loader):
                     img = batch[0]["image"].to(device).float()
                     age = batch[0]["age"].to(device).float()
-                    age_normalized = ((age - 20) / (100 - 20) * 255).long().clamp(0, 255)
+                    age_normalized = ((age - 20) / (100 - 20) * (args.age_bins - 1)).long().clamp(0, args.age_bins - 1)
                     gender = batch[0]["gender"][:, None].to(device).float()
                     
                     features = encoder(img)
@@ -474,7 +474,7 @@ def run_model(args, device, train_loader, val_loader):
                     
                     # Convert predictions back to actual ages for MAE calculation
                     pred_class = pred_age.softmax(dim=1).argmax(dim=1)
-                    pred_actual = pred_class.float() / 255 * (100 - 20) + 20
+                    pred_actual = pred_class.float() / (args.age_bins - 1) * (100 - 20) + 20
                     val_mae += (pred_actual - age).abs().mean().item()
 
                 val_loss /= len(val_loader)
@@ -536,6 +536,7 @@ def set_up():
     parser.add_argument("--backbone_weights", type=str, default=None, help="Path to encoder weights to load.")
     parser.add_argument("--pc_data", default=100, type=float, help="Percentage of data to use for training.")
     parser.add_argument("--modality", type=str, choices=["t1", "t2", "pd"], help="Modality to train on.")
+    parser.add_argument("--age_bins", type=int, default=256, help="Number of bins for age classification. Will be in range of 20-100 years.")
     args = parser.parse_args()
 
     os.makedirs(os.path.join(args.logdir, args.name), exist_ok=True)
