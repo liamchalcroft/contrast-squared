@@ -236,13 +236,23 @@ def get_loaders(
     return train_loader, val_loader
 
 
-def compute_dice(y_pred, y, eps=1e-8):
-    y_pred = torch.flatten(y_pred)
-    y = torch.flatten(y)
-    y = y.float()
-    intersect = (y_pred * y).sum(-1)
-    denominator = (y_pred * y_pred).sum(-1) + (y * y).sum(-1)
-    return 2 * (intersect / denominator.clamp(min=eps))
+class OrdinalRegressionLoss(torch.nn.Module):
+    def __init__(self, num_classes, sigma=2.0):
+        super().__init__()
+        self.num_classes = num_classes
+        self.sigma = sigma
+        self.base_loss = torch.nn.CrossEntropyLoss()
+
+    def forward(self, pred, target):
+        # Standard cross-entropy loss
+        ce_loss = self.base_loss(pred, target)
+        
+        # Add ordinal penalty
+        pred_probs = pred.softmax(dim=1)
+        pred_class = pred_probs.argmax(dim=1)
+        ordinal_penalty = torch.abs(pred_class.float() - target.float()).mean()
+        
+        return ce_loss + self.sigma * ordinal_penalty
 
 def run_model(args, device, train_loader, val_loader):
     
@@ -326,7 +336,7 @@ def run_model(args, device, train_loader, val_loader):
         wandb.config.update(args)
     wandb.watch(regressor)
 
-    crit = torch.nn.CrossEntropyLoss()
+    crit = OrdinalRegressionLoss(num_classes=args.age_bins).to(device)
 
     class WandBID:
         def __init__(self, wandb_id):
