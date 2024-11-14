@@ -28,28 +28,34 @@ def add_bg(x):
     return torch.cat([1-x.sum(dim=0, keepdim=True), x], dim=0)
 
 def get_loaders(
+        modality,
         batch_size=1,
         device="cpu",
         lowres=False,
         ptch=128,
         pc_data=100,
     ):
+    print(f"Modality: {modality}")
 
-    ## Generate training data for the guys t1 modality
+    # Load data based on modality
+    if modality == "t1":
+        data_list = glob.glob("/home/lchalcroft/Data/IXI/guys/t1/preprocessed/p_IXI*-T1.nii.gz")
+    elif modality == "t2":
+        data_list = glob.glob("/home/lchalcroft/Data/IXI/guys/t2/preprocessed/p_IXI*-T2.nii.gz")
+    elif modality == "pd":
+        data_list = glob.glob("/home/lchalcroft/Data/IXI/guys/pd/preprocessed/p_IXI*-PD.nii.gz")
+
     # Load IXI spreadsheet
     ixi_data = pd.read_excel('/home/lchalcroft/Data/IXI/IXI.xls')
 
-    # Load and prepare data
-    all_imgs = glob.glob("/home/lchalcroft/Data/IXI/guys/t1/preprocessed/p_IXI*-T1.nii.gz")
-    
     # Sort and split data
-    all_imgs.sort()
-    total_samples = len(all_imgs)
+    data_list.sort()
+    total_samples = len(data_list)
     train_size = int(0.7 * total_samples)
     val_size = int(0.1 * total_samples)
 
-    train_imgs = all_imgs[:train_size]
-    val_imgs = all_imgs[train_size:train_size+val_size]
+    train_imgs = data_list[:train_size]
+    val_imgs = data_list[train_size:train_size+val_size]
     train_ids = [int(os.path.basename(f).split("-")[0][5:]) for f in train_imgs]
     val_ids = [int(os.path.basename(f).split("-")[0][5:]) for f in val_imgs]
 
@@ -188,11 +194,30 @@ def get_loaders(
     train_data = mn.data.Dataset(train_dict, transform=data_transforms)
     val_data = mn.data.Dataset(val_dict, transform=data_transforms)
 
+    # Ensure train_ages are integers and filter out any invalid entries
+    train_ages = [int(age) for age in train_ages if not np.isnan(age)]
+    print("Processed train ages:", train_ages)  # Debug print
+
+    # Calculate weights for each sample based on age
+    min_age = min(train_ages)
+    max_age = max(train_ages)
+    age_range = max_age - min_age + 1
+    age_counts = np.bincount([age - min_age for age in train_ages], minlength=age_range)
+    age_weights = 1.0 / (age_counts + 1e-6)  # Add a small value to avoid division by zero
+    sample_weights = [age_weights[age - min_age] for age in train_ages]
+
+    # Create a WeightedRandomSampler
+    train_sampler = torch.utils.data.WeightedRandomSampler(
+        weights=sample_weights,
+        num_samples=len(sample_weights),
+        replacement=True
+    )
+
     train_loader = DataLoader(
         train_data,
         batch_size=batch_size,
-        shuffle=True,
-        sampler=None,
+        shuffle=False,  # Set shuffle to False when using a sampler
+        sampler=train_sampler,  # Use the weighted sampler
         batch_sampler=None,
         num_workers=8,
     )
@@ -206,7 +231,6 @@ def get_loaders(
     )
 
     return train_loader, val_loader
-
 
 def compute_dice(y_pred, y, eps=1e-8):
     y_pred = torch.flatten(y_pred)
@@ -386,8 +410,8 @@ def run_model(args, device, train_loader, val_loader):
                 saver1(torch.Tensor(img[0].detach().cpu().float()))
             with ctx:
                 features = encoder(img)
-                features = features.view(features.shape[0], features.shape[1], -1).mean(dim=-1)
-                pred_age = regressor(features, gender)
+                features = features.view(features.shape[0], features.shape[1], -1)
+                pred_age = regressor(features, gender).mean(dim=-1)
                 loss = crit(pred_age, age)
 
             if type(loss) == float or loss.isnan().sum() != 0:
@@ -428,8 +452,8 @@ def run_model(args, device, train_loader, val_loader):
                     age = batch[0]["age"][:, None].to(device).float()
                     gender = batch[0]["gender"][:, None].to(device).float()
                     features = encoder(img)
-                    features = features.view(features.shape[0], features.shape[1], -1).mean(dim=-1)
-                    pred_age = regressor(features, gender)
+                    features = features.view(features.shape[0], features.shape[1], -1)
+                    pred_age = regressor(features, gender).mean(dim=-1)
                     loss = torch.nn.functional.mse_loss(pred_age, age)
                     val_mse += loss.item()
                     loss = torch.nn.functional.l1_loss(pred_age, age)
@@ -531,6 +555,7 @@ def set_up():
     parser.add_argument("--debug", default=False, action="store_true", help="Save sample images before training.")
     parser.add_argument("--backbone_weights", type=str, default=None, help="Path to encoder weights to load.")
     parser.add_argument("--pc_data", default=100, type=float, help="Percentage of data to use for training.")
+    parser.add_argument("--modality", type=str, choices=["t1", "t2", "pd"], help="Modality to train on.")
     args = parser.parse_args()
 
     os.makedirs(os.path.join(args.logdir, args.name), exist_ok=True)
@@ -547,7 +572,14 @@ def set_up():
         print("Memory Usage:")
         print("Allocated:", round(torch.cuda.memory_allocated(0) / 1024**3, 1), "GB")
         print("Cached:   ", round(torch.cuda.memory_reserved(0) / 1024**3, 1), "GB")
-    train_loader, val_loader = get_loaders(batch_size=args.batch_size, device=device, lowres=args.lowres, ptch=48 if args.lowres else 96, pc_data=args.pc_data)
+    train_loader, val_loader = get_loaders(
+        modality=args.modality,
+        batch_size=args.batch_size,
+        device=device,
+        lowres=args.lowres,
+        ptch=48 if args.lowres else 96,
+        pc_data=args.pc_data
+    )
 
     if args.debug:
         saver1 = mn.transforms.SaveImage(
