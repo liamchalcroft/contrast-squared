@@ -250,7 +250,7 @@ class OrdinalRegressionLoss(torch.nn.Module):
         # Add ordinal penalty
         pred_probs = pred.softmax(dim=1)
         pred_class = pred_probs.argmax(dim=1)
-        ordinal_penalty = torch.abs(pred_class.float() - target.float()).mean()
+        ordinal_penalty = torch.abs(pred_class.float() - target.float()).mean() / (self.num_classes - 1)
         
         return ce_loss + self.sigma * ordinal_penalty
 
