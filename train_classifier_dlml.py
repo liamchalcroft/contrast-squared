@@ -305,7 +305,6 @@ def get_loaders(
 
     # Ensure train_ages are integers and filter out any invalid entries
     train_ages = [int(age) for age in train_ages if not np.isnan(age)]
-    print("Processed train ages:", train_ages)  # Debug print
 
     # Calculate weights for each sample based on age
     min_age = min(train_ages)
@@ -314,7 +313,6 @@ def get_loaders(
     age_counts = np.bincount([age - min_age for age in train_ages], minlength=age_range)
     age_weights = 1.0 / (age_counts + 1e-6)  # Add a small value to avoid division by zero
     sample_weights = [age_weights[age - min_age] for age in train_ages]
-    print("Sample weights:", sample_weights)  # Debug print
 
     # Create a WeightedRandomSampler
     train_sampler = torch.utils.data.WeightedRandomSampler(
