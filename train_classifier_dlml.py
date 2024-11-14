@@ -55,23 +55,26 @@ def compute_dlml_loss(
     vanilla_log_prob = torch.log(torch.clamp(prob_mass, min=1e-12))
 
     # edges
-    low_bound_log_prob = upper_bound_in - torch.nn.functional.softplus(
-        upper_bound_in
-    )  # log probability for edge case of 0 (before scaling)
-    upp_bound_log_prob = -torch.nn.functional.softplus(
-        lower_bound_in
-    )  # log probability for edge case of 255 (before scaling)
+    low_bound_log_prob = upper_bound_in - torch.nn.functional.softplus(upper_bound_in)
+    upp_bound_log_prob = -torch.nn.functional.softplus(lower_bound_in)
     # middle
     mid_in = inv_scales * centered_y
     log_pdf_mid = mid_in - log_scales - 2.0 * torch.nn.functional.softplus(mid_in)
     log_prob_mid = log_pdf_mid - np.log((num_y_vals - 1) / 2)
 
     # Create a tensor with the same shape as 'y', filled with zeros
-    log_probs = torch.zeros_like(y)
+    log_probs = torch.zeros_like(y).unsqueeze(-1).repeat(1, 1, means.shape[-1])
+    
     # conditions for filling in tensor
     is_near_min = y < output_min_bound + 1e-3
     is_near_max = y > output_max_bound - 1e-3
     is_prob_mass_sufficient = prob_mass > 1e-5
+    
+    # Expand the condition tensors to match log_probs shape
+    is_near_min = is_near_min.unsqueeze(-1).repeat(1, 1, means.shape[-1])
+    is_near_max = is_near_max.unsqueeze(-1).repeat(1, 1, means.shape[-1])
+    is_prob_mass_sufficient = is_prob_mass_sufficient
+
     # And then fill it in accordingly
     # lower edge
     log_probs[is_near_min] = low_bound_log_prob[is_near_min]
@@ -90,7 +93,7 @@ def compute_dlml_loss(
     log_probs = log_probs + torch.nn.functional.log_softmax(mixture_logits, dim=-1)
 
     # log likelihood
-    log_likelihood = torch.sum(torch.logsumexp(log_probs), dim=-1)
+    log_likelihood = torch.sum(torch.logsumexp(log_probs, dim=-1), dim=-1)
 
     # loss is just negative log likelihood
     loss = -log_likelihood
@@ -529,6 +532,7 @@ def run_model(args, device, train_loader, val_loader):
                 print(f"Predicted age means: {pred_age_means.shape}")
                 print(f"Predicted age log scales: {pred_age_log_scales.shape}")
                 print(f"Predicted age mixture logits: {pred_age_mixture_logits.shape}")
+                print(f"Age onehot: {age_onehot.shape}")
 
                 loss = compute_dlml_loss(pred_age_means, pred_age_log_scales, pred_age_mixture_logits, age_onehot, num_y_vals=args.age_bins)
                                 
