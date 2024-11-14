@@ -173,19 +173,19 @@ def get_loaders(
         mn.transforms.NormalizeIntensityD(
             keys="image", nonzero=False, channel_wise=True
         ),
-        mn.transforms.RandCropByLabelClassesD(
-            keys=["image", "label"],
-            spatial_size=(96, 96, 96) if not lowres else (48, 48, 48),
-            label_key="label",
-            num_samples=1,
-            ratios=[1, 5, 5, 5],
-            allow_missing_keys=True,
-        ),
-        mn.transforms.ResizeD(
-            keys=["image", "label"],
-            spatial_size=(ptch, ptch, ptch),
-            allow_missing_keys=True,
-        ),
+        # mn.transforms.RandCropByLabelClassesD(
+        #     keys=["image", "label"],
+        #     spatial_size=(96, 96, 96) if not lowres else (48, 48, 48),
+        #     label_key="label",
+        #     num_samples=1,
+        #     ratios=[1, 5, 5, 5],
+        #     allow_missing_keys=True,
+        # ),
+        # mn.transforms.ResizeD(
+        #     keys=["image", "label"],
+        #     spatial_size=(ptch, ptch, ptch),
+        #     allow_missing_keys=True,
+        # ),
         mn.transforms.ToTensorD(
             dtype=torch.float32, keys=["image", "label", "age", "gender"]
         ),
