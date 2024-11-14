@@ -544,8 +544,6 @@ def run_model(args, device, train_loader, val_loader):
                 pred_actual = pred_actual.float() / (args.age_bins - 1) * (100 - 20) + 20
                 print(f"Final predicted ages: {pred_actual.detach().cpu().numpy()}\n")
                 
-                loss = crit(pred_age, age_normalized)
-
             if type(loss) == float or loss.isnan().sum() != 0:
                 print("NaN found in loss!")
                 step_deficit += 1
