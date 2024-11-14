@@ -526,6 +526,9 @@ def run_model(args, device, train_loader, val_loader):
                 pred_age = regressor(features, gender)
                 pred_age = pred_age.view(pred_age.shape[0], args.age_bins, args.k_mixtures, 3)
                 pred_age_means, pred_age_log_scales, pred_age_mixture_logits = pred_age.unbind(dim=-1)
+                print(f"Predicted age means: {pred_age_means.shape}")
+                print(f"Predicted age log scales: {pred_age_log_scales.shape}")
+                print(f"Predicted age mixture logits: {pred_age_mixture_logits.shape}")
 
                 loss = compute_dlml_loss(pred_age_means, pred_age_log_scales, pred_age_mixture_logits, age_onehot, num_y_vals=args.age_bins)
                                 
