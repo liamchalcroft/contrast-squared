@@ -536,7 +536,7 @@ def set_up():
     parser.add_argument("--backbone_weights", type=str, default=None, help="Path to encoder weights to load.")
     parser.add_argument("--pc_data", default=100, type=float, help="Percentage of data to use for training.")
     parser.add_argument("--modality", type=str, choices=["t1", "t2", "pd"], help="Modality to train on.")
-    parser.add_argument("--age_bins", type=int, default=256, help="Number of bins for age classification. Will be in range of 20-100 years.")
+    parser.add_argument("--age_bins", type=int, default=16, help="Number of bins for age classification. Will be in range of 20-100 years.")
     args = parser.parse_args()
 
     os.makedirs(os.path.join(args.logdir, args.name), exist_ok=True)
