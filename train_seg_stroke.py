@@ -57,7 +57,8 @@ def get_loaders(
     test_dict = data_dict[train_size+val_size:]
 
     if pc_data < 100:
-        train_dict = train_dict[:int(len(train_dict) * pc_data / 100)]
+        n_samples = max(1, int(len(train_dict) * pc_data / 100))
+        train_dict = train_dict[:n_samples]
 
     print(f"Using {len(train_dict)} training samples, {len(val_dict)} validation samples, and {len(test_dict)} test samples")
 
