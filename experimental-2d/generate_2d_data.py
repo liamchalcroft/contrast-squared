@@ -26,7 +26,16 @@ def rescale_to_uint8(data):
         data = 255 * (data - data_min) / (data_max - data_min)
     return data.astype(np.uint8)
 
-def generate_qmri_slices(input_files, output_path, num_contrasts=100, slice_range=(50, 150)):
+def is_valid_slice(slice_data, min_percentage=0.05):
+    """
+    Check if slice contains enough non-zero pixels
+    min_percentage: minimum percentage of non-zero pixels required
+    """
+    total_pixels = slice_data.size
+    non_zero_pixels = np.count_nonzero(slice_data)
+    return (non_zero_pixels / total_pixels) > min_percentage
+
+def generate_qmri_slices(input_files, output_path, num_contrasts=100, slice_range=(100, 200)):
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     
     prepare_mpm = [
@@ -64,32 +73,42 @@ def generate_qmri_slices(input_files, output_path, num_contrasts=100, slice_rang
             data = transform(data_dict)
             volume = data["image"]  # Shape: [4, H, W, D]
             
+            # Find valid slices within the range
+            valid_slices = []
+            for slice_idx in range(slice_range[0], slice_range[1]):
+                slice_data = volume[0, :, :, slice_idx].numpy()  # Check PD contrast
+                if is_valid_slice(slice_data):
+                    valid_slices.append(slice_idx)
+            
+            if not valid_slices:
+                print(f"Warning: No valid slices found for subject {subject_id}")
+                continue
+                
+            print(f"Found {len(valid_slices)} valid slices for subject {subject_id}")
+            
             # Create subject group
             subj_group = f.create_group(subject_id)
             
-            # Pre-allocate space for all slices and contrasts
-            num_slices = slice_range[1] - slice_range[0]
+            # Pre-allocate space for all valid slices and contrasts
             contrasts_dataset = subj_group.create_dataset(
                 "contrasts", 
-                shape=(num_contrasts, num_slices, 224, 224),
-                chunks=(1, num_slices, 224, 224),
+                shape=(num_contrasts, len(valid_slices), 224, 224),
+                chunks=(1, len(valid_slices), 224, 224),
                 **compression_opts
             )
             
-            # Generate random contrasts first (more efficient)
+            # Generate random contrasts
             for i in tqdm(range(num_contrasts), leave=False):
-                # Generate random contrast for the whole volume
                 bloch_transform = MONAIBlochTransformD(keys=["image"], num_ch=1)
                 clip_transform = ClipPercentilesD(keys=["image"], lower=0.5, upper=99.5)
                 contrast_volume = clip_transform(bloch_transform({"image": volume}))["image"]
                 
-                # Extract and store all slices for this contrast
-                for slice_idx in range(slice_range[0], slice_range[1]):
-                    slice_pos = slice_idx - slice_range[0]
+                # Extract and store valid slices for this contrast
+                for slice_pos, slice_idx in enumerate(valid_slices):
                     slice_data = contrast_volume[0, :, :, slice_idx].numpy()
                     contrasts_dataset[i, slice_pos] = rescale_to_uint8(slice_data)
 
-def generate_mprage_slices(input_files, output_path, slice_range=(50, 150)):
+def generate_mprage_slices(input_files, output_path, slice_range=(100, 200)):
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     
     prepare_mprage = [
@@ -118,10 +137,22 @@ def generate_mprage_slices(input_files, output_path, slice_range=(50, 150)):
             data = transform(data_dict)
             volume = data["image"]  # Shape: [1, H, W, D]
             
-            # Create subject group and store slices
+            # Find valid slices within the range
+            valid_slices = []
+            for slice_idx in range(slice_range[0], slice_range[1]):
+                slice_data = volume[0, :, :, slice_idx].numpy()
+                if is_valid_slice(slice_data):
+                    valid_slices.append(slice_idx)
+            
+            if not valid_slices:
+                print(f"Warning: No valid slices found for subject {subject_id}")
+                continue
+                
+            print(f"Found {len(valid_slices)} valid slices for subject {subject_id}")
+            
+            # Create subject group and store valid slices
             subj_group = f.create_group(subject_id)
-            slices = volume[0, :, :, slice_range[0]:slice_range[1]].numpy()
-            slices = np.moveaxis(slices, -1, 0)  # Move slices to first dimension
+            slices = np.stack([volume[0, :, :, idx].numpy() for idx in valid_slices])
             subj_group.create_dataset(
                 "slices", 
                 data=rescale_to_uint8(slices),
