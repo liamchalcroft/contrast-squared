@@ -37,7 +37,6 @@ def generate_qmri_slices(input_files, output_path, num_contrasts=100, slice_rang
     compression_opts = {
         'compression': 'gzip',
         'compression_opts': 4,  # Level 4 offers good balance of speed/compression
-        'chunks': True,  # Enable chunking for better access patterns
         'dtype': np.float16  # Use half precision to save space
     }
     
@@ -98,7 +97,6 @@ def generate_mprage_slices(input_files, output_path, slice_range=(50, 150)):
     compression_opts = {
         'compression': 'gzip',
         'compression_opts': 4,
-        'chunks': (1, 224, 224),  # Chunk by slice for efficient access
         'dtype': np.float16
     }
     
@@ -114,7 +112,12 @@ def generate_mprage_slices(input_files, output_path, slice_range=(50, 150)):
             # Create subject group and store slices
             subj_group = f.create_group(subject_id)
             slices = volume[0, slice_range[0]:slice_range[1]].numpy()
-            subj_group.create_dataset("slices", data=slices.astype(np.float16), **compression_opts)
+            subj_group.create_dataset(
+                "slices", 
+                data=slices.astype(np.float16), 
+                chunks=(1, 224, 224),  # Chunk by slice for efficient access
+                **compression_opts
+            )
 
 if __name__ == "__main__":
     qmri_files = glob.glob(os.path.join("/home/lchalcroft/MPM_DATA/*/*/masked_pd.nii"))
