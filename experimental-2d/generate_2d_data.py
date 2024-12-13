@@ -64,7 +64,7 @@ def generate_qmri_slices(input_files, output_path, num_contrasts=100, slice_rang
             contrasts_dataset = subj_group.create_dataset(
                 "contrasts", 
                 shape=(num_contrasts, num_slices, 224, 224),
-                chunks=(1, num_slices, 224, 224),  # Chunk by contrast for efficient access
+                # chunks=(1, num_slices, 224, 224),  # Chunk by contrast for efficient access
                 **compression_opts
             )
             
@@ -115,7 +115,7 @@ def generate_mprage_slices(input_files, output_path, slice_range=(50, 150)):
             subj_group.create_dataset(
                 "slices", 
                 data=slices.astype(np.float16), 
-                chunks=(1, 224, 224),  # Chunk by slice for efficient access
+                # chunks=(1, 224, 224),  # Chunk by slice for efficient access
                 **compression_opts
             )
 
