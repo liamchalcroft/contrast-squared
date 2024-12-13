@@ -18,7 +18,7 @@ class H5SliceDataset(Dataset):
         self.index_map = []
         with h5py.File(h5_path, 'r') as f:
             for subject in f.keys():
-                if 'contrasts' in f[subject]:  # qMRI data
+                if 'contrasts' in f[subject].keys():  # qMRI data
                     num_slices = f[subject]['contrasts'].shape[1]  # [num_contrasts, num_slices, H, W]
                     for slice_idx in range(num_slices):
                         self.index_map.append((subject, slice_idx))
@@ -36,17 +36,22 @@ class H5SliceDataset(Dataset):
         subject, slice_idx = self.index_map[idx]
         
         with h5py.File(self.h5_path, 'r') as f:
-            if 'contrasts' in f[subject]:  # qMRI data
+            if 'contrasts' in f[subject].keys():  # qMRI data
                 all_contrasts = f[subject]['contrasts'][:, slice_idx]  # [num_contrasts, H, W]
                 if self.same_contrast:
                     contrast_idx = sample(range(len(all_contrasts)), 1)[0]
                     images = {f"image{i+1}": all_contrasts[contrast_idx] for i in range(self.num_views)}
+                    print(f"Contrast index: {contrast_idx}")
+                    print(f"Images shape: {images['image1'].shape}")
                 else:
                     contrast_indices = sample(range(len(all_contrasts)), self.num_views)
                     images = {f"image{i+1}": all_contrasts[idx] for i, idx in enumerate(contrast_indices)}
+                    print(f"Contrast indices: {contrast_indices}")
+                    print(f"Images shape: {images['image1'].shape}")
             else:  # MPRAGE data
                 slice_data = f[subject]['slices'][slice_idx]  # [H, W]
                 images = {f"image{i+1}": slice_data for i in range(self.num_views)}
+                print(f"Images shape: {images['image1'].shape}")
         
         # Apply transforms
         if self.transform:
