@@ -80,9 +80,9 @@ def generate_qmri_slices(input_files, output_path, num_contrasts=100, slice_rang
             for i in tqdm(range(num_contrasts), leave=False):
                 # Generate random contrast for the whole volume
                 bloch_transform = MONAIBlochTransformD(keys=["image"], num_ch=1)
-                # clip_transform = ClipPercentilesD(keys=["image"], lower=0.5, upper=99.5)
-                # contrast_volume = clip_transform(bloch_transform({"image": volume}))["image"]
-                contrast_volume = bloch_transform({"image": volume})["image"]
+                clip_transform = ClipPercentilesD(keys=["image"], lower=0.5, upper=99.5)
+                contrast_volume = clip_transform(bloch_transform({"image": volume}))["image"]
+                # contrast_volume = bloch_transform({"image": volume})["image"]
                 contrast_volume = rescale_to_uint8(contrast_volume.numpy())
                 
                 # Extract and store all slices for this contrast
