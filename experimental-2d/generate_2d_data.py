@@ -33,7 +33,7 @@ def generate_qmri_slices(input_files, output_dir, num_contrasts=100, slice_range
     prepare_mpm = [
         mn.transforms.LoadImageD(keys=["image"], image_only=True),
         mn.transforms.EnsureChannelFirstD(keys=["image"]),
-        # mn.transforms.OrientationD(keys=["image"], axcodes="RAS"),
+        mn.transforms.OrientationD(keys=["image"], axcodes="RAS"),
         mn.transforms.LambdaD(keys=["image"], func=mn.transforms.SignalFillEmpty()),
         mn.transforms.LambdaD(keys=["image"], func=rescale_mpm),
         ClipPercentilesD(keys=["image"], lower=0.5, upper=99.5),
@@ -61,7 +61,7 @@ def generate_qmri_slices(input_files, output_dir, num_contrasts=100, slice_range
         for i in range(num_contrasts):
             # For each slice in the specified range
             for slice_idx in range(slice_range[0], slice_range[1]):
-                slice_data = volume[:, slice_idx, :, :]
+                slice_data = volume[:, :, :, slice_idx]
                 
                 # Generate random contrast
                 bloch_transform = MONAIBlochTransformD(keys=["image"], num_ch=1)
@@ -81,7 +81,7 @@ def generate_mprage_slices(input_files, output_dir, slice_range=(50, 150)):
     prepare_mprage = [
         mn.transforms.LoadImageD(keys=["image"], image_only=True),
         mn.transforms.EnsureChannelFirstD(keys=["image"]),
-        # mn.transforms.OrientationD(keys=["image"], axcodes="RAS"),
+        mn.transforms.OrientationD(keys=["image"], axcodes="RAS"),
         ClipPercentilesD(keys=["image"], lower=0.5, upper=99.5),
         mn.transforms.ResizeWithPadOrCropD(keys=["image"], spatial_size=(224, 224, -1)),
     ]
@@ -98,7 +98,7 @@ def generate_mprage_slices(input_files, output_dir, slice_range=(50, 150)):
         
         # Save each slice in the specified range
         for slice_idx in range(slice_range[0], slice_range[1]):
-            slice_data = volume[:, slice_idx, :, :]
+            slice_data = volume[:, :, :, slice_idx]
             
             output_path = os.path.join(
                 output_dir,
