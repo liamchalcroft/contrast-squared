@@ -33,6 +33,14 @@ def generate_qmri_slices(input_files, output_path, num_contrasts=100, slice_rang
     
     transform = mn.transforms.Compose(prepare_mpm)
     
+    # Configure HDF5 for compression
+    compression_opts = {
+        'compression': 'gzip',
+        'compression_opts': 4,  # Level 4 offers good balance of speed/compression
+        'chunks': True,  # Enable chunking for better access patterns
+        'dtype': np.float16  # Use half precision to save space
+    }
+    
     with h5py.File(output_path, 'w') as f:
         for file_path in tqdm(input_files):
             subject_id = os.path.basename(os.path.dirname(file_path))
@@ -57,7 +65,8 @@ def generate_qmri_slices(input_files, output_path, num_contrasts=100, slice_rang
             contrasts_dataset = subj_group.create_dataset(
                 "contrasts", 
                 shape=(num_contrasts, num_slices, 224, 224),
-                dtype=np.float32
+                chunks=(1, num_slices, 224, 224),  # Chunk by contrast for efficient access
+                **compression_opts
             )
             
             # Generate random contrasts first (more efficient)
@@ -70,7 +79,7 @@ def generate_qmri_slices(input_files, output_path, num_contrasts=100, slice_rang
                 # Extract and store all slices for this contrast
                 for slice_idx in range(slice_range[0], slice_range[1]):
                     slice_pos = slice_idx - slice_range[0]
-                    contrasts_dataset[i, slice_pos] = contrast_volume[0, :, :, slice_idx].numpy()
+                    contrasts_dataset[i, slice_pos] = contrast_volume[0, slice_idx].numpy().astype(np.float16)
 
 def generate_mprage_slices(input_files, output_path, slice_range=(50, 150)):
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
@@ -85,6 +94,14 @@ def generate_mprage_slices(input_files, output_path, slice_range=(50, 150)):
     
     transform = mn.transforms.Compose(prepare_mprage)
     
+    # Configure HDF5 for compression
+    compression_opts = {
+        'compression': 'gzip',
+        'compression_opts': 4,
+        'chunks': (1, 224, 224),  # Chunk by slice for efficient access
+        'dtype': np.float16
+    }
+    
     with h5py.File(output_path, 'w') as f:
         for file_path in tqdm(input_files):
             subject_id = os.path.basename(os.path.dirname(file_path))
@@ -96,12 +113,12 @@ def generate_mprage_slices(input_files, output_path, slice_range=(50, 150)):
             
             # Create subject group and store slices
             subj_group = f.create_group(subject_id)
-            slices = volume[0, :, :, slice_range[0]:slice_range[1]].numpy()
-            subj_group.create_dataset("slices", data=slices)
+            slices = volume[0, slice_range[0]:slice_range[1]].numpy()
+            subj_group.create_dataset("slices", data=slices.astype(np.float16), **compression_opts)
 
 if __name__ == "__main__":
     qmri_files = glob.glob(os.path.join("/home/lchalcroft/MPM_DATA/*/*/masked_pd.nii"))
     mprage_files = glob.glob(os.path.join("/home/lchalcroft/MPM_DATA/*/*/sim_mprage.nii"))
     
-    generate_qmri_slices(qmri_files, "data/qmri_data.h5", num_contrasts=100, slice_range=(50, 150))
-    generate_mprage_slices(mprage_files, "data/mprage_data.h5", slice_range=(50, 150))
+    generate_qmri_slices(qmri_files, "output/qmri_data.h5", num_contrasts=100, slice_range=(50, 150))
+    generate_mprage_slices(mprage_files, "output/mprage_data.h5", slice_range=(50, 150))
