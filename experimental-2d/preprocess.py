@@ -18,8 +18,14 @@ class H5SliceDataset(Dataset):
         self.index_map = []
         with h5py.File(h5_path, 'r') as f:
             for subject in f.keys():
-                for slice_name in f[subject].keys():
-                    self.index_map.append((subject, slice_name))
+                if 'contrasts' in f[subject]:  # qMRI data
+                    num_slices = f[subject]['contrasts'].shape[1]  # [num_contrasts, num_slices, H, W]
+                    for slice_idx in range(num_slices):
+                        self.index_map.append((subject, slice_idx))
+                else:  # MPRAGE data
+                    num_slices = f[subject]['slices'].shape[0]  # [num_slices, H, W]
+                    for slice_idx in range(num_slices):
+                        self.index_map.append((subject, slice_idx))
         
         shuffle(self.index_map)
     
@@ -27,19 +33,19 @@ class H5SliceDataset(Dataset):
         return len(self.index_map)
     
     def __getitem__(self, idx):
-        subject, slice_name = self.index_map[idx]
+        subject, slice_idx = self.index_map[idx]
         
         with h5py.File(self.h5_path, 'r') as f:
-            if 'contrasts' in f[subject][slice_name]:  # qMRI data
-                contrasts = f[subject][slice_name]['contrasts'][:]
+            if 'contrasts' in f[subject]:  # qMRI data
+                all_contrasts = f[subject]['contrasts'][:, slice_idx]  # [num_contrasts, H, W]
                 if self.same_contrast:
-                    contrast_idx = sample(range(len(contrasts)), 1)[0]
-                    images = {f"image{i+1}": contrasts[contrast_idx] for i in range(self.num_views)}
+                    contrast_idx = sample(range(len(all_contrasts)), 1)[0]
+                    images = {f"image{i+1}": all_contrasts[contrast_idx] for i in range(self.num_views)}
                 else:
-                    contrast_indices = sample(range(len(contrasts)), self.num_views)
-                    images = {f"image{i+1}": contrasts[idx] for i, idx in enumerate(contrast_indices)}
+                    contrast_indices = sample(range(len(all_contrasts)), self.num_views)
+                    images = {f"image{i+1}": all_contrasts[idx] for i, idx in enumerate(contrast_indices)}
             else:  # MPRAGE data
-                slice_data = f[subject][slice_name][:]
+                slice_data = f[subject]['slices'][slice_idx]  # [H, W]
                 images = {f"image{i+1}": slice_data for i in range(self.num_views)}
         
         # Apply transforms
