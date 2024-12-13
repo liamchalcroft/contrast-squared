@@ -80,12 +80,13 @@ def get_transforms():
         #     scale=(0.85, 1.15),
         #     fill=0
         # ),
-        # T.RandomHorizontalFlip(p=0.5),
-        # T.RandomVerticalFlip(p=0.5),
-        # T.RandomRotation(15),
+        T.RandomHorizontalFlip(p=0.5),
+        T.RandomVerticalFlip(p=0.5),
+        T.RandomRotation(15),
         # T.GaussianBlur(kernel_size=3, sigma=(0.1, 2.0)),
         # T.RandomAdjustSharpness(sharpness_factor=2, p=0.5),
-        # T.Normalize(mean=[0.5], std=[0.5])
+        # T.Normalize(mean=[0.5], std=[0.5]),
+        # T.RandomNoise(mean=0, std=0.1),
     ])
 
 def get_bloch_loader(
