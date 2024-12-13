@@ -59,18 +59,18 @@ class H5SliceDataset(Dataset):
 
 def get_transforms():
     return T.Compose([
-        T.RandomAffine(
-            degrees=15,
-            translate=(0.1, 0.1),
-            scale=(0.85, 1.15),
-            fill=0
-        ),
-        T.RandomHorizontalFlip(p=0.5),
-        T.RandomVerticalFlip(p=0.5),
-        T.RandomRotation(15),
-        T.GaussianBlur(kernel_size=3, sigma=(0.1, 2.0)),
-        T.RandomAdjustSharpness(sharpness_factor=2, p=0.5),
-        T.Normalize(mean=[0.5], std=[0.5])
+        # T.RandomAffine(
+        #     degrees=15,
+        #     translate=(0.1, 0.1),
+        #     scale=(0.85, 1.15),
+        #     fill=0
+        # ),
+        # T.RandomHorizontalFlip(p=0.5),
+        # T.RandomVerticalFlip(p=0.5),
+        # T.RandomRotation(15),
+        # T.GaussianBlur(kernel_size=3, sigma=(0.1, 2.0)),
+        # T.RandomAdjustSharpness(sharpness_factor=2, p=0.5),
+        # T.Normalize(mean=[0.5], std=[0.5])
     ])
 
 def get_bloch_loader(
