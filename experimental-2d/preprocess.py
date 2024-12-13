@@ -1,55 +1,54 @@
-import monai as mn
+import torch
+from torch.utils.data import DataLoader, Dataset
+import torchvision.transforms as T
 import glob
 import os
-from torch.utils.data import DataLoader
-import torch
 from random import shuffle, seed, sample
 from PIL import Image
 import numpy as np
 
 seed(786)
 
-def load_png_as_tensor(path):
-    img = Image.open(path)
-    return torch.from_numpy(np.array(img)).float() / 255.0
+class SliceDataset(Dataset):
+    def __init__(self, file_dict, transform=None):
+        self.file_dict = file_dict
+        self.transform = transform
 
-def get_augmentations(keys, size):
-    return [
-        mn.transforms.RandAffineD(
-            keys=keys,
-            rotate_range=(-15, 15),
-            scale_range=(0.85, 1.15),
-            translate_range=(-0.1, 0.1),
-            padding_mode='zeros',
-            prob=0.8
-        ),
-        mn.transforms.RandAxisFlipd(keys=keys, prob=0.5),
-        mn.transforms.RandRotate90d(keys=keys, prob=0.5),
-        mn.transforms.ResizeWithPadOrCropD(
-            keys=keys, spatial_size=(size, size)
-        ),
-        # Lighter intensity augmentations
-        mn.transforms.RandGaussianNoiseD(keys=keys, prob=0.5, mean=0.0, std=0.02),
-        mn.transforms.RandAdjustContrastD(keys=keys, prob=0.5, gamma=(0.8, 1.2)),
-        mn.transforms.RandGaussianSmoothD(keys=keys, prob=0.5, sigma_x=(0.25, 1.5)),
-    ]
+    def __len__(self):
+        return len(self.file_dict)
 
-def get_prepare_data(keys, size):
-    prepare_data = [
-        mn.transforms.NormalizeIntensityD(keys=keys),
-        mn.transforms.ResizeD(
-            keys=keys, spatial_size=(size, size)
+    def __getitem__(self, idx):
+        item = self.file_dict[idx]
+        images = {}
+        
+        for key, filepath in item.items():
+            # Images are already grayscale, just load directly
+            image = Image.open(filepath)
+            if self.transform:
+                image = self.transform(image)
+            images[key] = image
+            
+        return images
+
+def get_transforms():
+    return T.Compose([
+        T.RandomAffine(
+            degrees=15,
+            translate=(0.1, 0.1),
+            scale=(0.85, 1.15),
+            fill=0
         ),
-        mn.transforms.ToTensorD(
-            dtype=torch.float32, keys=keys
-        ),
-    ]
-    return prepare_data
+        T.RandomHorizontalFlip(p=0.5),
+        T.RandomVerticalFlip(p=0.5),
+        T.RandomRotation(15),
+        T.GaussianBlur(kernel_size=3, sigma=(0.1, 2.0)),
+        T.RandomAdjustSharpness(sharpness_factor=2, p=0.5),
+        T.ToTensor(),
+        T.Normalize(mean=[0.5], std=[0.5])
+    ])
 
 def get_bloch_loader(
     batch_size=1,
-    device="cpu",
-    lowres=False,
     same_contrast=False,
     num_views=2,
 ):
@@ -62,7 +61,9 @@ def get_bloch_loader(
     # Group files by slice (removing contrast number)
     slice_groups = {}
     for f in slice_files:
-        base_name = "_".join(os.path.basename(f).split("_")[:2])  # subject_id + axis
+        # Parse filename to get subject and slice number
+        parts = os.path.basename(f).split('_')
+        base_name = f"{parts[0]}_slice{parts[1]}"  # subject_id + slice number
         if base_name not in slice_groups:
             slice_groups[base_name] = []
         slice_groups[base_name].append(f)
@@ -81,47 +82,21 @@ def get_bloch_loader(
 
     shuffle(train_dict)
 
-    size = 48 if lowres else 96
-    image_keys = [f"image{i+1}" for i in range(num_views)]
-
-    # Prepare transforms
-    prepare_images = [
-        mn.transforms.LoadImageD(keys=image_keys, reader="PILReader"),
-        mn.transforms.EnsureChannelFirstD(keys=image_keys),
-    ]
-
-    # Apply augmentations to each view
-    all_augmentations = []
-    for i in range(num_views):
-        aug = get_augmentations([f"image{i+1}"], size)
-        all_augmentations.extend(aug)
-
-    # Final preparation
-    prepare_all = get_prepare_data(image_keys, size)
-
-    train_transform = mn.transforms.Compose(
-        transforms=[
-            *prepare_images,
-            *all_augmentations,
-            *prepare_all,
-        ]
-    )
-
-    train_data = mn.data.Dataset(train_dict, transform=train_transform)
+    transform = get_transforms()
+    dataset = SliceDataset(train_dict, transform=transform)
 
     train_loader = DataLoader(
-        train_data,
+        dataset,
         batch_size=batch_size,
         shuffle=True,
-        num_workers=0,
+        num_workers=4,
+        pin_memory=True,
     )
 
-    return train_loader, train_transform
+    return train_loader, transform
 
 def get_mprage_loader(
     batch_size=1,
-    device="cpu",
-    lowres=False,
     num_views=2,
 ):
     if num_views < 2:
@@ -130,43 +105,24 @@ def get_mprage_loader(
     # Get all slice files
     slice_files = glob.glob(os.path.join("output/mprage_slices/*.png"))
     
+    # Group files by slice
+    slice_groups = {}
+    for f in slice_files:
+        slice_groups[f] = f
+
     # Create training dictionary - use the same slice for all views
-    train_dict = [{f"image{i+1}": f for i in range(num_views)} for f in slice_files]
+    train_dict = [{f"image{i+1}": f for i in range(num_views)} for f in slice_groups.keys()]
     shuffle(train_dict)
 
-    size = 48 if lowres else 96
-    image_keys = [f"image{i+1}" for i in range(num_views)]
-
-    # Prepare transforms
-    prepare_images = [
-        mn.transforms.LoadImageD(keys=image_keys, reader="PILReader"),
-        mn.transforms.EnsureChannelFirstD(keys=image_keys),
-    ]
-
-    # Apply augmentations to each view
-    all_augmentations = []
-    for i in range(num_views):
-        aug = get_augmentations([f"image{i+1}"], size)
-        all_augmentations.extend(aug)
-
-    # Final preparation
-    prepare_all = get_prepare_data(image_keys, size)
-
-    train_transform = mn.transforms.Compose(
-        transforms=[
-            *prepare_images,
-            *all_augmentations,
-            *prepare_all,
-        ]
-    )
-
-    train_data = mn.data.Dataset(train_dict, transform=train_transform)
+    transform = get_transforms()
+    dataset = SliceDataset(train_dict, transform=transform)
 
     train_loader = DataLoader(
-        train_data,
+        dataset,
         batch_size=batch_size,
         shuffle=True,
-        num_workers=0,
+        num_workers=4,
+        pin_memory=True,
     )
 
-    return train_loader, train_transform
+    return train_loader, transform

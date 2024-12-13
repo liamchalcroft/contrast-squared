@@ -27,7 +27,7 @@ def save_slice_as_png(slice_data, output_path):
     img = Image.fromarray(slice_data)
     img.save(output_path)
 
-def generate_qmri_slices(input_files, output_dir, num_contrasts=100):
+def generate_qmri_slices(input_files, output_dir, num_contrasts=100, slice_range=(50, 150)):
     os.makedirs(output_dir, exist_ok=True)
     
     prepare_mpm = [
@@ -57,30 +57,25 @@ def generate_qmri_slices(input_files, output_dir, num_contrasts=100):
         data = transform(data_dict)
         volume = data["image"]  # Shape: [4, D, H, W]
         
-        # Generate random contrasts and slices
+        # Generate random contrasts
         for i in range(num_contrasts):
-            # Random slice index for each axis
-            for axis in range(3):
-                slice_idx = randint(0, volume.shape[axis + 1] - 1)
-                if axis == 0:
-                    slice_data = volume[:, slice_idx, :, :]
-                elif axis == 1:
-                    slice_data = volume[:, :, slice_idx, :]
-                else:
-                    slice_data = volume[:, :, :, slice_idx]
+            # For each slice in the specified range
+            for slice_idx in range(slice_range[0], slice_range[1]):
+                slice_data = volume[:, slice_idx, :, :]
                 
                 # Generate random contrast
                 bloch_transform = MONAIBlochTransformD(keys=["image"], num_ch=1)
-                contrast = bloch_transform({"image": slice_data})["image"]
+                clip_transform = ClipPercentilesD(keys=["image"], lower=0.5, upper=99.5)
+                contrast = clip_transform(bloch_transform({"image": slice_data}))["image"]
                 
                 # Save the slice
                 output_path = os.path.join(
                     output_dir,
-                    f"{subject_id}_contrast{i}_axis{axis}.png"
+                    f"{subject_id}_slice{slice_idx:03d}_contrast{i:03d}.png"
                 )
                 save_slice_as_png(contrast[0].numpy(), output_path)
 
-def generate_mprage_slices(input_files, output_dir):
+def generate_mprage_slices(input_files, output_dir, slice_range=(50, 150)):
     os.makedirs(output_dir, exist_ok=True)
     
     prepare_mprage = [
@@ -101,26 +96,20 @@ def generate_mprage_slices(input_files, output_dir):
         data = transform(data_dict)
         volume = data["image"]  # Shape: [1, D, H, W]
         
-        # Generate slices for each axis
-        for axis in range(3):
-            for slice_idx in range(volume.shape[axis + 1]):
-                if axis == 0:
-                    slice_data = volume[:, slice_idx, :, :]
-                elif axis == 1:
-                    slice_data = volume[:, :, slice_idx, :]
-                else:
-                    slice_data = volume[:, :, :, slice_idx]
-                
-                output_path = os.path.join(
-                    output_dir,
-                    f"{subject_id}_axis{axis}_slice{slice_idx}.png"
-                )
-                save_slice_as_png(slice_data[0], output_path)
+        # Save each slice in the specified range
+        for slice_idx in range(slice_range[0], slice_range[1]):
+            slice_data = volume[:, slice_idx, :, :]
+            
+            output_path = os.path.join(
+                output_dir,
+                f"{subject_id}_slice{slice_idx:03d}.png"
+            )
+            save_slice_as_png(slice_data[0], output_path)
 
 # Add this at the bottom of the file to run the generation
 if __name__ == "__main__":
     qmri_files = glob.glob(os.path.join("/home/lchalcroft/MPM_DATA/*/*/masked_pd.nii"))
     mprage_files = glob.glob(os.path.join("/home/lchalcroft/MPM_DATA/*/*/sim_mprage.nii"))
     
-    generate_qmri_slices(qmri_files, "output/qmri_slices", num_contrasts=100)
-    generate_mprage_slices(mprage_files, "output/mprage_slices")
+    generate_qmri_slices(qmri_files, "output/qmri_slices", num_contrasts=100, slice_range=(50, 150))
+    generate_mprage_slices(mprage_files, "output/mprage_slices", slice_range=(50, 150))
