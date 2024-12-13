@@ -25,6 +25,7 @@ def save_batch_images(batch, save_path, title):
     # Plot each sample
     for i in range(batch_size):
         for j in range(num_views):
+            print(f"Image shape: {batch[f'image{j+1}'].shape}")
             img = batch[f'image{j+1}'][i, 0].numpy()  # Remove channel dim
             axes[i, j].imshow(img, cmap='gray')
             axes[i, j].axis('off')
