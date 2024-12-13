@@ -45,7 +45,7 @@ def generate_qmri_slices(input_files, output_path, num_contrasts=100, slice_rang
     compression_opts = {
         'compression': 'gzip',
         'compression_opts': 4,
-        'dtype': np.float32
+        'dtype': np.uint8
     }
     
     with h5py.File(output_path, 'w') as f:
@@ -80,14 +80,16 @@ def generate_qmri_slices(input_files, output_path, num_contrasts=100, slice_rang
             for i in tqdm(range(num_contrasts), leave=False):
                 # Generate random contrast for the whole volume
                 bloch_transform = MONAIBlochTransformD(keys=["image"], num_ch=1)
-                clip_transform = ClipPercentilesD(keys=["image"], lower=0.5, upper=99.5)
-                contrast_volume = clip_transform(bloch_transform({"image": volume}))["image"]
+                # clip_transform = ClipPercentilesD(keys=["image"], lower=0.5, upper=99.5)
+                # contrast_volume = clip_transform(bloch_transform({"image": volume}))["image"]
+                contrast_volume = bloch_transform({"image": volume})["image"]
+                contrast_volume = rescale_to_uint8(contrast_volume.numpy())
                 
                 # Extract and store all slices for this contrast
                 for slice_idx in range(slice_range[0], slice_range[1]):
                     slice_pos = slice_idx - slice_range[0]
-                    slice_data = contrast_volume[0, :, :, slice_idx].numpy()
-                    contrasts_dataset[i, slice_pos] = rescale_to_uint8(slice_data, dtype=np.float32)
+                    slice_data = contrast_volume[0, :, :, slice_idx]
+                    contrasts_dataset[i, slice_pos] = slice_data
 
 def generate_mprage_slices(input_files, output_path, slice_range=(50, 150)):
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
@@ -106,7 +108,7 @@ def generate_mprage_slices(input_files, output_path, slice_range=(50, 150)):
     compression_opts = {
         'compression': 'gzip',
         'compression_opts': 4,
-        'dtype': np.float32
+        'dtype': np.uint8
     }
     
     with h5py.File(output_path, 'w') as f:
@@ -122,9 +124,10 @@ def generate_mprage_slices(input_files, output_path, slice_range=(50, 150)):
             subj_group = f.create_group(subject_id)
             slices = volume[0, :, :, slice_range[0]:slice_range[1]].numpy()
             slices = np.moveaxis(slices, -1, 0)  # Move slices to first dimension
+            data = rescale_to_uint8(slices)
             subj_group.create_dataset(
                 "slices", 
-                data=rescale_to_uint8(slices, dtype=np.float32),
+                data=data,
                 chunks=(1, 224, 224),
                 **compression_opts
             )
@@ -134,4 +137,4 @@ if __name__ == "__main__":
     mprage_files = glob.glob(os.path.join("/home/lchalcroft/MPM_DATA/*/*/sim_mprage.nii"))
     
     generate_mprage_slices(mprage_files, "output/mprage_data.h5", slice_range=(100, 200))
-    generate_qmri_slices(qmri_files, "output/qmri_data.h5", num_contrasts=100, slice_range=(100, 200))
+    generate_qmri_slices(qmri_files, "output/qmri_data.h5", num_contrasts=10, slice_range=(100, 200))
