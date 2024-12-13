@@ -39,7 +39,7 @@ def save_batch_images(batch, save_path, title):
 def test_loaders():
     # Test Bloch loader with same contrast
     print("Testing Bloch loader with same contrast...")
-    loader, _ = get_bloch_loader(batch_size=4, same_contrast=True, num_views=2)
+    loader = get_bloch_loader(batch_size=4, same_contrast=True, num_views=2)
     batch = next(iter(loader))
     save_batch_images(
         batch, 
@@ -49,7 +49,7 @@ def test_loaders():
     
     # Test Bloch loader with different contrasts
     print("Testing Bloch loader with different contrasts...")
-    loader, _ = get_bloch_loader(batch_size=4, same_contrast=False, num_views=2)
+    loader = get_bloch_loader(batch_size=4, same_contrast=False, num_views=2)
     batch = next(iter(loader))
     save_batch_images(
         batch, 
@@ -59,7 +59,7 @@ def test_loaders():
     
     # Test Bloch loader with 3 views
     print("Testing Bloch loader with 3 views...")
-    loader, _ = get_bloch_loader(batch_size=4, same_contrast=False, num_views=3)
+    loader = get_bloch_loader(batch_size=4, same_contrast=False, num_views=3)
     batch = next(iter(loader))
     save_batch_images(
         batch, 
@@ -69,7 +69,7 @@ def test_loaders():
     
     # Test MPRAGE loader
     print("Testing MPRAGE loader...")
-    loader, _ = get_mprage_loader(batch_size=4, num_views=2)
+    loader = get_mprage_loader(batch_size=4, num_views=2)
     batch = next(iter(loader))
     save_batch_images(
         batch, 
