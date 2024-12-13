@@ -110,6 +110,6 @@ def generate_mprage_slices(input_files, output_dir, slice_range=(50, 150)):
 if __name__ == "__main__":
     qmri_files = glob.glob(os.path.join("/home/lchalcroft/MPM_DATA/*/*/masked_pd.nii"))
     mprage_files = glob.glob(os.path.join("/home/lchalcroft/MPM_DATA/*/*/sim_mprage.nii"))
-    
-    generate_mprage_slices(mprage_files, "data/mprage", slice_range=(50, 150))
-    generate_qmri_slices(qmri_files, "data/qmri", num_contrasts=100, slice_range=(50, 150))
+
+    generate_mprage_slices(mprage_files, "data/mprage", slice_range=(80, 200))
+    generate_qmri_slices(qmri_files, "data/qmri", num_contrasts=100, slice_range=(80, 200))
