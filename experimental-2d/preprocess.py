@@ -43,7 +43,7 @@ class H5SliceDataset(Dataset):
                     images = {f"image{i+1}": all_contrasts[contrast_idx] for i in range(self.num_views)}
                 else:
                     contrast_indices = sample(range(len(all_contrasts)), self.num_views)
-                    images = {f"image{i+1}": all_contrasts[idx] for i, idx in enumerate(contrast_indices)}
+                    images = {f"image{i+1}": all_contrasts[contrast_idx] for i, contrast_idx in enumerate(contrast_indices)}
             else:  # MPRAGE data
                 slice_data = f[subject]['slices'][slice_idx]  # [H, W]
                 images = {f"image{i+1}": slice_data for i in range(self.num_views)}
