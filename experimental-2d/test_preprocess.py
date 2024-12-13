@@ -25,7 +25,6 @@ def save_batch_images(batch, save_path, title):
     # Plot each sample
     for i in range(batch_size):
         for j in range(num_views):
-            print(f"Image shape: {batch[f'image{j+1}'].shape}")
             img = batch[f'image{j+1}'][i, 0].numpy()  # Remove channel dim
             axes[i, j].imshow(img, cmap='gray')
             axes[i, j].axis('off')
@@ -39,7 +38,6 @@ def save_batch_images(batch, save_path, title):
 
 def test_loaders():
     # Test Bloch loader with same contrast
-    print("Testing Bloch loader with same contrast...")
     loader = get_bloch_loader(batch_size=4, same_contrast=True, num_views=2)
     batch = next(iter(loader))
     save_batch_images(
@@ -49,7 +47,6 @@ def test_loaders():
     )
     
     # Test Bloch loader with different contrasts
-    print("Testing Bloch loader with different contrasts...")
     loader = get_bloch_loader(batch_size=4, same_contrast=False, num_views=2)
     batch = next(iter(loader))
     save_batch_images(
@@ -59,7 +56,6 @@ def test_loaders():
     )
     
     # Test Bloch loader with 3 views
-    print("Testing Bloch loader with 3 views...")
     loader = get_bloch_loader(batch_size=4, same_contrast=False, num_views=3)
     batch = next(iter(loader))
     save_batch_images(
@@ -69,7 +65,6 @@ def test_loaders():
     )
     
     # Test MPRAGE loader
-    print("Testing MPRAGE loader...")
     loader = get_mprage_loader(batch_size=4, num_views=2)
     batch = next(iter(loader))
     save_batch_images(

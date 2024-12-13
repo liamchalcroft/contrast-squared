@@ -38,7 +38,6 @@ class H5SliceDataset(Dataset):
         with h5py.File(self.h5_path, 'r') as f:
             if 'contrasts' in f[subject].keys():  # qMRI data
                 all_contrasts = f[subject]['contrasts'][:, slice_idx]  # [num_contrasts, H, W]
-                print(f"qMRI contrasts range: min={all_contrasts.min()}, mean={all_contrasts.mean()}, max={all_contrasts.max()}, dtype={all_contrasts.dtype}")
                 
                 if self.same_contrast:
                     contrast_idx = sample(range(len(all_contrasts)), 1)[0]
@@ -48,45 +47,32 @@ class H5SliceDataset(Dataset):
                     images = {f"image{i+1}": all_contrasts[contrast_idx] for i, contrast_idx in enumerate(contrast_indices)}
             else:  # MPRAGE data
                 slice_data = f[subject]['slices'][slice_idx]  # [H, W]
-                print(f"MPRAGE slice range: min={slice_data.min()}, mean={slice_data.mean()}, max={slice_data.max()}, dtype={slice_data.dtype}")
                 images = {f"image{i+1}": slice_data for i in range(self.num_views)}
-        
-        # Print ranges after loading
-        for k, v in images.items():
-            print(f"{k} range: min={v.min()}, mean={v.mean()}, max={v.max()}, dtype={v.dtype}")
         
         # Convert to tensor and add channel dimension
         images = {k: torch.from_numpy(v).float().unsqueeze(0) for k, v in images.items()}
         
-        # Print ranges after tensor conversion
-        for k, v in images.items():
-            print(f"{k} tensor range: min={v.min().item()}, mean={v.mean().item()}, max={v.max().item()}, dtype={v.dtype}")
-        
         # Apply transforms
         if self.transform:
             images = {k: self.transform(v) for k, v in images.items()}
-            
-            # Print ranges after transforms
-            for k, v in images.items():
-                print(f"{k} final range: min={v.min().item()}, mean={v.mean().item()}, max={v.max().item()}, dtype={v.dtype}")
         
         return images
 
 def get_transforms():
-    return T.Compose([
-        # T.RandomAffine(
-        #     degrees=15,
-        #     translate=(0.1, 0.1),
-        #     scale=(0.85, 1.15),
-        #     fill=0
-        # ),
-        T.RandomHorizontalFlip(p=0.5),
-        T.RandomVerticalFlip(p=0.5),
-        T.RandomRotation(15),
-        # T.GaussianBlur(kernel_size=3, sigma=(0.1, 2.0)),
-        # T.RandomAdjustSharpness(sharpness_factor=2, p=0.5),
-        T.Normalize(mean=[0.5], std=[0.5]),
-        T.GaussianNoise(mean=0, sigma=0.1),
+    return T.v2.Compose([
+        T.v2.RandomAffine(
+            degrees=15,
+            translate=(0.1, 0.1),
+            scale=(0.85, 1.15),
+            fill=0
+        ),
+        T.v2.RandomHorizontalFlip(p=0.5),
+        T.v2.RandomVerticalFlip(p=0.5),
+        T.v2.RandomRotation(15),
+        T.v2.GaussianBlur(kernel_size=3, sigma=(0.1, 2.0)),
+        T.v2.RandomAdjustSharpness(sharpness_factor=2, p=0.5),
+        T.v2.Normalize(mean=[0.5], std=[0.5]),
+        T.v2.GaussianNoise(mean=0, sigma=0.1),
     ])
 
 def get_bloch_loader(
