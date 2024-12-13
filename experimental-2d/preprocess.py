@@ -41,21 +41,19 @@ class H5SliceDataset(Dataset):
                 if self.same_contrast:
                     contrast_idx = sample(range(len(all_contrasts)), 1)[0]
                     images = {f"image{i+1}": all_contrasts[contrast_idx] for i in range(self.num_views)}
-                    print(f"Contrast index: {contrast_idx}")
-                    print(f"Images shape: {images['image1'].shape}")
                 else:
                     contrast_indices = sample(range(len(all_contrasts)), self.num_views)
                     images = {f"image{i+1}": all_contrasts[idx] for i, idx in enumerate(contrast_indices)}
-                    print(f"Contrast indices: {contrast_indices}")
-                    print(f"Images shape: {images['image1'].shape}")
             else:  # MPRAGE data
                 slice_data = f[subject]['slices'][slice_idx]  # [H, W]
                 images = {f"image{i+1}": slice_data for i in range(self.num_views)}
-                print(f"Images shape: {images['image1'].shape}")
+        
+        # Convert to tensor and add channel dimension
+        images = {k: torch.from_numpy(v).float().unsqueeze(0) for k, v in images.items()}
         
         # Apply transforms
         if self.transform:
-            images = {k: self.transform(torch.from_numpy(v).float()) for k, v in images.items()}
+            images = {k: self.transform(v) for k, v in images.items()}
         
         return images
 
