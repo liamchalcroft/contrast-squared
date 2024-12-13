@@ -70,7 +70,7 @@ def generate_qmri_slices(input_files, output_path, num_contrasts=100, slice_rang
                 # Extract and store all slices for this contrast
                 for slice_idx in range(slice_range[0], slice_range[1]):
                     slice_pos = slice_idx - slice_range[0]
-                    contrasts_dataset[i, slice_pos] = contrast_volume[0, slice_idx].numpy()
+                    contrasts_dataset[i, slice_pos] = contrast_volume[0, :, :, slice_idx].numpy()
 
 def generate_mprage_slices(input_files, output_path, slice_range=(50, 150)):
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
@@ -96,7 +96,7 @@ def generate_mprage_slices(input_files, output_path, slice_range=(50, 150)):
             
             # Create subject group and store slices
             subj_group = f.create_group(subject_id)
-            slices = volume[0, slice_range[0]:slice_range[1]].numpy()
+            slices = volume[0, :, :, slice_range[0]:slice_range[1]].numpy()
             subj_group.create_dataset("slices", data=slices)
 
 if __name__ == "__main__":
