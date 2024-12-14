@@ -2,7 +2,7 @@ import torch
 from torch.utils.data import DataLoader, Dataset
 import torchvision.transforms as T
 from torchvision.transforms import v2
-from torchvision import tv_tensors
+from torchvision.transforms.v2 import functional as F, Transform
 import h5py
 from random import shuffle, seed, sample
 import numpy as np
@@ -61,7 +61,7 @@ class H5SliceDataset(Dataset):
         
         return images
 
-class RandGaussianNoise(v2.Transform):
+class RandGaussianNoise(Transform):
     def __init__(self, sigma_range=(0.001, 0.2), mean=0.0, clip=True, p=0.5):
         super().__init__()
         self.sigma_range = sigma_range
@@ -76,10 +76,10 @@ class RandGaussianNoise(v2.Transform):
         return params
 
     def transform(self, inpt: Any, params: Dict[str, Any]) -> Any:
-        return self._call_kernel(v2.functional.gaussian_noise, inpt, mean=self.mean, sigma=params["sigma"], clip=self.clip)
+        return self._call_kernel(F.gaussian_noise, inpt, mean=self.mean, sigma=params["sigma"], clip=self.clip)
         
 
-class GaussianNoise(v2.Transform):
+class GaussianNoise(Transform):
     """Add gaussian noise to images or videos.
 
     The input tensor is expected to be in [..., 1 or 3, H, W] format,
@@ -103,7 +103,7 @@ class GaussianNoise(v2.Transform):
         self.clip = clip
 
     def transform(self, inpt: Any, params: Dict[str, Any]) -> Any:
-        return self._call_kernel(v2.functional.gaussian_noise, inpt, mean=self.mean, sigma=self.sigma, clip=self.clip)
+        return self._call_kernel(F.gaussian_noise, inpt, mean=self.mean, sigma=self.sigma, clip=self.clip)
 
 
 def get_transforms():
