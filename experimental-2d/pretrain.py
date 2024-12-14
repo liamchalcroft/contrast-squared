@@ -254,7 +254,9 @@ def train_epoch(model, loader, optimizer, device, epoch, scaler=None, ema=None, 
     pbar = tqdm(loader, desc=f'Epoch {epoch}')
     
     for batch in pbar:
-        views = [v.to(device, non_blocking=True) for v in batch.values()]
+        # Extract views from batch dictionary, excluding patient_id
+        views = [batch[f'image{i+1}'].to(device, non_blocking=True) 
+                for i in range(len(batch)-1)]  # -1 to exclude patient_id
         
         with torch.cuda.amp.autocast(enabled=scaler is not None):
             if loss_type == 'nt_xent':
