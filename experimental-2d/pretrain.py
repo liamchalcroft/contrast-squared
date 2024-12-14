@@ -251,9 +251,12 @@ def train_epoch(model, loader, optimizer, device, epoch, scaler=None, ema=None, 
     model.train()
     total_loss = 0
     num_batches = 0
-    pbar = tqdm(loader, desc=f'Epoch {epoch}')
     
-    for batch in pbar:
+    # Get total number of batches for tqdm
+    total_batches = len(loader.batch_sampler)
+    pbar = tqdm(enumerate(loader), total=total_batches, desc=f'Epoch {epoch}')
+    
+    for batch_idx, batch in pbar:
         # Extract views from batch dictionary, excluding patient_id
         views = [batch[f'image{i+1}'].to(device, non_blocking=True) 
                 for i in range(len(batch)-1)]  # -1 to exclude patient_id
@@ -263,10 +266,10 @@ def train_epoch(model, loader, optimizer, device, epoch, scaler=None, ema=None, 
                 zs = [model(view)[1] for view in views]
                 loss = nt_xent_loss_multi_view(zs)
             elif loss_type == 'vicreg':
-                z1, z2 = [model(view)[1] for view in views[:2]]  # Only use first two views
+                z1, z2 = [model(view)[1] for view in views[:2]]
                 loss = vicreg_loss(z1, z2)
             elif loss_type == 'barlow':
-                z1, z2 = [model(view)[1] for view in views[:2]]  # Only use first two views
+                z1, z2 = [model(view)[1] for view in views[:2]]
                 loss = barlow_twins_loss(z1, z2)
         
         # Check for NaN loss
@@ -292,20 +295,23 @@ def train_epoch(model, loader, optimizer, device, epoch, scaler=None, ema=None, 
         num_batches += 1
         
         # Update progress bar
-        pbar.set_postfix({'loss': total_loss / num_batches})
+        pbar.set_postfix({
+            'loss': f'{loss.item():.4f}',
+            'avg_loss': f'{total_loss / num_batches:.4f}'
+        })
         
-        # Log every batch since we have so few
+        # Log batch metrics
         wandb.log({
             'batch_loss': loss.item(),
             'epoch': epoch,
-            'batch': num_batches,
-            'global_step': epoch * len(loader) + num_batches
+            'batch': batch_idx,
+            'global_step': epoch * total_batches + batch_idx
         })
     
     # Clear CUDA cache at the end of epoch
     torch.cuda.empty_cache()
     
-    return total_loss / num_batches
+    return total_loss / num_batches if num_batches > 0 else float('inf')
 
 def main(args):
     # Set up checkpoint directory
