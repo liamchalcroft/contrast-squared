@@ -61,48 +61,10 @@ class H5SliceDataset(Dataset):
         
         return images
 
-class RandGaussianNoise(Transform):
-    def __init__(self, sigma_range=(0.001, 0.2), mean=0.0, clip=True):
-        super().__init__()
-        self.sigma_range = sigma_range
-        self.mean = mean
-        self.clip = clip
-
-    def make_params(self, flat_inputs: List[Any]) -> Dict[str, Any]:
-        sigma = torch.empty(1).uniform_(self.sigma_range[0], self.sigma_range[1]).item()
-        params = dict(sigma=sigma)
-        return params
-
-    def transform(self, inpt: Any, params: Dict[str, Any]) -> Any:
-        return self._call_kernel(F.gaussian_noise, inpt, mean=self.mean, sigma=params["sigma"], clip=self.clip)
-        
-
-class GaussianNoise(Transform):
-    """Add gaussian noise to images or videos.
-
-    The input tensor is expected to be in [..., 1 or 3, H, W] format,
-    where ... means it can have an arbitrary number of leading dimensions.
-    Each image or frame in a batch will be transformed independently i.e. the
-    noise added to each image will be different.
-
-    The input tensor is also expected to be of float dtype in ``[0, 1]``.
-    This transform does not support PIL images.
-
-    Args:
-        mean (float): Mean of the sampled normal distribution. Default is 0.
-        sigma (float): Standard deviation of the sampled normal distribution. Default is 0.1.
-        clip (bool, optional): Whether to clip the values in ``[0, 1]`` after adding noise. Default is True.
-    """
-
-    def __init__(self, mean: float = 0.0, sigma: float = 0.1, clip=True) -> None:
-        super().__init__()
-        self.mean = mean
-        self.sigma = sigma
-        self.clip = clip
-
-    def transform(self, inpt: Any, params: Dict[str, Any]) -> Any:
-        return self._call_kernel(F.gaussian_noise, inpt, mean=self.mean, sigma=self.sigma, clip=self.clip)
-
+def add_gaussian_noise(x, mean=0.0, std_range=(0.001, 0.2)):
+    std = torch.empty(1).uniform_(std_range[0], std_range[1]).item()
+    noise = torch.randn_like(x) * std + mean
+    return x + noise
 
 def get_transforms():
     """
@@ -156,19 +118,10 @@ def get_transforms():
             mean=[0.0],
             std=[1.0]
         ),
-        # RandGaussianNoise(
-        #     sigma_range=(0.001, 0.2),
-        #     mean=0.0,
-        #     clip=False,
-        #     p=1.0
-        # ),
-        GaussianNoise(
-            mean=0.0,
-            sigma=0.1,
-            clip=False
-        ),
+        # Replace the GaussianNoise with Lambda
+        v2.Lambda(lambda x: add_gaussian_noise(x, mean=0.0, std_range=(0.001, 0.2))),
         
-        # Normalization
+        # Final normalization
         v2.Normalize(
             mean=[0.5],
             std=[0.5]
