@@ -12,6 +12,7 @@ import wandb
 import argparse
 from pathlib import Path
 import logging
+from contextlib import nullcontext
 
 # Set up logging
 logging.basicConfig(
@@ -256,12 +257,15 @@ def train_epoch(model, loader, optimizer, device, epoch, scaler=None, ema=None, 
     total_batches = len(loader.batch_sampler)
     pbar = tqdm(enumerate(loader), total=total_batches, desc=f'Epoch {epoch}')
     
+    # Create autocast context or nullcontext based on scaler
+    amp_ctx = torch.amp.autocast(device_type='cuda', dtype=torch.float16) if scaler else nullcontext()
+    
     for batch_idx, batch in pbar:
         # Extract views from batch dictionary, excluding patient_id
         views = [batch[f'image{i+1}'].to(device, non_blocking=True) 
                 for i in range(len(batch)-1)]  # -1 to exclude patient_id
         
-        with torch.cuda.amp.autocast(enabled=scaler is not None):
+        with amp_ctx:
             if loss_type == 'nt_xent':
                 zs = [model(view)[1] for view in views]
                 loss = nt_xent_loss_multi_view(zs)

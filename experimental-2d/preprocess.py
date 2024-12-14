@@ -84,9 +84,20 @@ class PatientBatchSampler:
                 self.patient_indices[subject] = []
             self.patient_indices[subject].append(idx)
         
-        # Calculate total number of slices
-        self.total_slices = len(dataset.index_map)
-        self.batches_per_epoch = (self.total_slices + batch_size - 1) // batch_size
+        # Calculate exact number of valid batches
+        all_indices = [(idx, subject) for subject, indices in self.patient_indices.items() 
+                      for idx in indices]
+        self.num_samples = len(all_indices)
+        
+        # Calculate full batches
+        self.num_full_batches = self.num_samples // batch_size
+        
+        # Calculate if there's a valid partial batch (more than 1 item)
+        remaining_items = self.num_samples % batch_size
+        self.has_partial_batch = remaining_items > 1
+        
+        # Total number of valid batches
+        self.batches_per_epoch = self.num_full_batches + (1 if self.has_partial_batch else 0)
     
     def __iter__(self):
         # Create a list of all indices and their corresponding patients
@@ -110,8 +121,8 @@ class PatientBatchSampler:
                     current_batch = []
                     current_patients.clear()
             
-        # Yield the last batch if it's not empty
-        if current_batch:
+        # Only yield the last batch if it has more than one item
+        if len(current_batch) > 1:
             yield current_batch
     
     def __len__(self):
