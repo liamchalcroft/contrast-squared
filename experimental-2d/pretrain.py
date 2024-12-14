@@ -243,7 +243,7 @@ def train_epoch(model, loader, optimizer, device, epoch, scaler=None, ema=None, 
     for batch in pbar:
         views = [v.to(device, non_blocking=True) for v in batch.values()]
         
-        with torch.cuda.amp.autocast('cuda', enabled=scaler is not None):
+        with torch.cuda.amp.autocast(enabled=scaler is not None):
             if loss_type == 'nt_xent':
                 zs = [model(view)[1] for view in views]
                 loss = nt_xent_loss_multi_view(zs)
