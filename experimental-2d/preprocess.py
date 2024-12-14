@@ -78,7 +78,33 @@ class RandGaussianNoise(v2.Transform):
     def transform(self, inpt: Any, params: Dict[str, Any]) -> Any:
         return self._call_kernel(v2.functional.gaussian_noise, inpt, mean=self.mean, sigma=params["sigma"], clip=self.clip)
         
-        
+
+class GaussianNoise(v2.Transform):
+    """Add gaussian noise to images or videos.
+
+    The input tensor is expected to be in [..., 1 or 3, H, W] format,
+    where ... means it can have an arbitrary number of leading dimensions.
+    Each image or frame in a batch will be transformed independently i.e. the
+    noise added to each image will be different.
+
+    The input tensor is also expected to be of float dtype in ``[0, 1]``.
+    This transform does not support PIL images.
+
+    Args:
+        mean (float): Mean of the sampled normal distribution. Default is 0.
+        sigma (float): Standard deviation of the sampled normal distribution. Default is 0.1.
+        clip (bool, optional): Whether to clip the values in ``[0, 1]`` after adding noise. Default is True.
+    """
+
+    def __init__(self, mean: float = 0.0, sigma: float = 0.1, clip=True) -> None:
+        super().__init__()
+        self.mean = mean
+        self.sigma = sigma
+        self.clip = clip
+
+    def transform(self, inpt: Any, params: Dict[str, Any]) -> Any:
+        return self._call_kernel(v2.functional.gaussian_noise, inpt, mean=self.mean, sigma=self.sigma, clip=self.clip)
+
 
 def get_transforms():
     """
@@ -132,11 +158,16 @@ def get_transforms():
             mean=[0.0],
             std=[1.0]
         ),
-        RandGaussianNoise(
-            sigma_range=(0.001, 0.2),
+        # RandGaussianNoise(
+        #     sigma_range=(0.001, 0.2),
+        #     mean=0.0,
+        #     clip=False,
+        #     p=1.0
+        # ),
+        GaussianNoise(
             mean=0.0,
-            clip=False,
-            p=1.0
+            sigma=0.1,
+            clip=False
         ),
         
         # Normalization
