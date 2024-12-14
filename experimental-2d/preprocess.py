@@ -61,7 +61,7 @@ class H5SliceDataset(Dataset):
 
 def get_transforms():
     """
-    Returns a composition of augmentations for MRI slices:
+    Returns a composition of augmentations for MRI slices using v2 API:
     1. RandomResizedCrop: Maintains local structure while providing different views
     2. RandomRotation90: Valid anatomical orientations for axial slices
     3. RandomFlip: Valid due to approximate bilateral symmetry
@@ -71,47 +71,47 @@ def get_transforms():
     7. GaussianNoise: Simulates scanner noise
     8. Normalize: Standardizes the input
     """
-    return T.Compose([
+    return v2.Compose([
         # Geometric transformations
-        T.RandomResizedCrop(
+        v2.RandomResizedCrop(
             size=224,
             scale=(0.8, 1.0),  # Less aggressive scale variation for medical images
             ratio=(0.9, 1.1),  # Keep aspect ratio close to original
             antialias=True
         ),
         # 90-degree rotations and flips
-        T.RandomHorizontalFlip(p=0.5),  # Valid due to bilateral symmetry
-        T.RandomVerticalFlip(p=0.5),    # Valid for axial slices
-        T.RandomRotation(
+        v2.RandomHorizontalFlip(p=0.5),  # Valid due to bilateral symmetry
+        v2.RandomVerticalFlip(p=0.5),    # Valid for axial slices
+        v2.RandomRotation(
             degrees=[90, 90],  # Only 90-degree rotations
             p=0.5
         ),
         # Small affine transforms
-        T.RandomAffine(
+        v2.RandomAffine(
             degrees=15,  # Moderate rotation
             translate=(0.1, 0.1),  # Small translations
             scale=(0.9, 1.1),  # Moderate scaling
             fill=0,
-            interpolation=T.InterpolationMode.BILINEAR
+            interpolation=v2.InterpolationMode.BILINEAR
         ),
         
         # Intensity transformations
-        T.GaussianBlur(
+        v2.GaussianBlur(
             kernel_size=3,
             sigma=(0.1, 1.0)  # Moderate blur range
         ),
-        T.RandomAdjustSharpness(
+        v2.RandomAdjustSharpness(
             sharpness_factor=1.5,
             p=0.5
         ),
-        T.GaussianNoise(
+        v2.GaussianNoise(
             mean=0.0,
             sigma=0.01,  # Small noise amplitude
             clip=True  # Ensure values stay in valid range
         ),
         
         # Normalization
-        T.Normalize(
+        v2.Normalize(
             mean=[0.5],
             std=[0.5]
         )
