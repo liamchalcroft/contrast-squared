@@ -83,8 +83,7 @@ def get_transforms():
         v2.RandomHorizontalFlip(p=0.5),  # Valid due to bilateral symmetry
         v2.RandomVerticalFlip(p=0.5),    # Valid for axial slices
         v2.RandomRotation(
-            degrees=[90, 90],  # Only 90-degree rotations
-            p=0.5
+            degrees=180,  # Only 90-degree rotations
         ),
         # Small affine transforms
         v2.RandomAffine(
