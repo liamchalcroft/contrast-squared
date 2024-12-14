@@ -68,15 +68,17 @@ def add_gaussian_noise(x, mean=0.0, std_range=(0.001, 0.2)):
 
 def get_transforms():
     """
-    Returns a composition of augmentations for MRI slices using v2 API:
+    Returns a composition of augmentations for MRI slices using torchvision v2 API:
     1. RandomResizedCrop: Maintains local structure while providing different views
-    2. RandomRotation90: Valid anatomical orientations for axial slices
-    3. RandomFlip: Valid due to approximate bilateral symmetry
-    4. RandomAffine: Provides small rotation and scaling variations
-    5. GaussianBlur: Simulates resolution variations
-    6. RandomAdjustSharpness: Simulates focus variations
-    7. GaussianNoise: Simulates scanner noise
-    8. Normalize: Standardizes the input
+    2. RandomHorizontalFlip & RandomVerticalFlip: Valid due to bilateral symmetry
+    3. RandomRotation: Full rotation for axial slices
+    4. RandomAffine: Small geometric variations (rotation, translation, scale)
+    5. ToDtype: Convert to float32 for intensity transforms
+    6. GaussianBlur: Simulates resolution variations
+    7. RandomAdjustSharpness: Simulates focus variations
+    8. First Normalize: Standardizes to mean 0, std 1
+    9. Gaussian Noise: Simulates scanner noise
+    10. Final Normalize: Scales to [-1, 1] range
     """
     return v2.Compose([
         # Geometric transformations
@@ -86,11 +88,11 @@ def get_transforms():
             ratio=(0.9, 1.1),  # Keep aspect ratio close to original
             antialias=True
         ),
-        # 90-degree rotations and flips
+        # Rotations and flips
         v2.RandomHorizontalFlip(p=0.5),  # Valid due to bilateral symmetry
         v2.RandomVerticalFlip(p=0.5),    # Valid for axial slices
         v2.RandomRotation(
-            degrees=180,  # Only 90-degree rotations
+            degrees=180,  # Full rotation for axial slices
         ),
         # Small affine transforms
         v2.RandomAffine(
@@ -113,15 +115,15 @@ def get_transforms():
             sharpness_factor=1.5,
             p=0.5
         ),
-        # Normalization
+        # Initial normalization to standard normal
         v2.Normalize(
             mean=[0.0],
             std=[1.0]
         ),
-        # Replace the GaussianNoise with Lambda
+        # Add random Gaussian noise
         v2.Lambda(lambda x: add_gaussian_noise(x, mean=0.0, std_range=(0.001, 0.2))),
         
-        # Final normalization
+        # Final normalization to range centered around 0.5
         v2.Normalize(
             mean=[0.5],
             std=[0.5]
