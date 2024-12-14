@@ -2,10 +2,11 @@ import torch
 from torch.utils.data import DataLoader, Dataset
 import torchvision.transforms as T
 from torchvision.transforms import v2
+from torchvision import tv_tensors
 import h5py
 from random import shuffle, seed, sample
 import numpy as np
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 seed(786)
 
@@ -61,37 +62,42 @@ class H5SliceDataset(Dataset):
         return images
 
 class RandGaussianNoise(v2.Transform):
-    def __init__(self, sigma_range=(0.001, 0.2), mean=0.0, clip=True, p=1.0):
-        """
-        Random Gaussian Noise transform with variable sigma.
-        
-        Args:
-            sigma_range (tuple): Range of noise standard deviation (min, max)
-            mean (float): Mean of the Gaussian noise
-            clip (bool): Whether to clip values to [0, 1] after adding noise
-            p (float): Probability of applying the transform
-        """
+    """Add random gaussian noise to images or videos.
+    
+    Args:
+        sigma_range (tuple): Range for noise standard deviation (min, max)
+        mean (float): Mean of the Gaussian noise
+        clip (bool): Whether to clip values to [0, 1] after adding noise
+        p (float): Probability of applying the transform
+    """
+    
+    def __init__(self, sigma_range=(0.001, 0.2), mean: float = 0.0, clip=True, p=1.0):
         super().__init__()
+        if not 0.0 <= sigma_range[0] <= sigma_range[1]:
+            raise ValueError(f"sigma values should be positive and of the form (min, max). Got {sigma_range}")
         self.sigma_range = sigma_range
         self.mean = mean
         self.clip = clip
         self.p = p
 
-    def _get_params(self, flat_inputs):
+    def make_params(self, flat_inputs: List[Any]) -> Dict[str, Any]:
         # Generate random parameters
         apply_transform = torch.rand(1) < self.p
-        sigma = torch.empty(1).uniform_(*self.sigma_range)
-        return {"apply": apply_transform.item(), "sigma": sigma.item()}
+        sigma = torch.empty(1).uniform_(self.sigma_range[0], self.sigma_range[1]).item()
+        return dict(apply=apply_transform.item(), sigma=sigma)
 
     def transform(self, inpt: Any, params: Dict[str, Any]) -> Any:
         if not params["apply"]:
             return inpt
             
-        if isinstance(inpt, torch.Tensor):
+        if isinstance(inpt, (torch.Tensor, tv_tensors.Image, tv_tensors.Video)):
             noise = torch.randn_like(inpt) * params["sigma"] + self.mean
             noisy = inpt + noise
             if self.clip:
                 noisy = torch.clamp(noisy, 0.0, 1.0)
+            
+            if isinstance(inpt, (tv_tensors.Image, tv_tensors.Video)):
+                noisy = tv_tensors.wrap(noisy, like=inpt)
             return noisy
         return inpt
 
