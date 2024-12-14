@@ -50,8 +50,8 @@ class H5SliceDataset(Dataset):
                 slice_data = f[subject]['slices'][slice_idx]  # [H, W]
                 images = {f"image{i+1}": slice_data for i in range(self.num_views)}
         
-        # Convert to tensor and add channel dimension
-        images = {k: torch.from_numpy(v).float().unsqueeze(0) for k, v in images.items()}
+        # Convert to tensor and add channel dimension, keeping data in uint8
+        images = {k: torch.from_numpy(v).unsqueeze(0) for k, v in images.items()}
         
         # Apply transforms
         if self.transform:
@@ -60,20 +60,61 @@ class H5SliceDataset(Dataset):
         return images
 
 def get_transforms():
-    return v2.Compose([
-        v2.RandomAffine(
-            degrees=15,
-            translate=(0.1, 0.1),
-            scale=(0.85, 1.15),
-            fill=0
+    """
+    Returns a composition of augmentations for MRI slices:
+    1. RandomResizedCrop: Maintains local structure while providing different views
+    2. RandomRotation90: Valid anatomical orientations for axial slices
+    3. RandomFlip: Valid due to approximate bilateral symmetry
+    4. RandomAffine: Provides small rotation and scaling variations
+    5. GaussianBlur: Simulates resolution variations
+    6. RandomAdjustSharpness: Simulates focus variations
+    7. GaussianNoise: Simulates scanner noise
+    8. Normalize: Standardizes the input
+    """
+    return T.Compose([
+        # Geometric transformations
+        T.RandomResizedCrop(
+            size=224,
+            scale=(0.8, 1.0),  # Less aggressive scale variation for medical images
+            ratio=(0.9, 1.1),  # Keep aspect ratio close to original
+            antialias=True
         ),
-        v2.RandomHorizontalFlip(p=0.5),
-        v2.RandomVerticalFlip(p=0.5),
-        v2.RandomRotation(15),
-        # v2.GaussianBlur(kernel_size=3, sigma=(0.1, 2.0)),
-        # v2.RandomAdjustSharpness(sharpness_factor=2, p=0.5),
-        # v2.Normalize(mean=[0.], std=[1.0]),
-        # v2.GaussianNoise(mean=0, sigma=0.1),
+        # 90-degree rotations and flips
+        T.RandomHorizontalFlip(p=0.5),  # Valid due to bilateral symmetry
+        T.RandomVerticalFlip(p=0.5),    # Valid for axial slices
+        T.RandomRotation(
+            degrees=[90, 90],  # Only 90-degree rotations
+            p=0.5
+        ),
+        # Small affine transforms
+        T.RandomAffine(
+            degrees=15,  # Moderate rotation
+            translate=(0.1, 0.1),  # Small translations
+            scale=(0.9, 1.1),  # Moderate scaling
+            fill=0,
+            interpolation=T.InterpolationMode.BILINEAR
+        ),
+        
+        # Intensity transformations
+        T.GaussianBlur(
+            kernel_size=3,
+            sigma=(0.1, 1.0)  # Moderate blur range
+        ),
+        T.RandomAdjustSharpness(
+            sharpness_factor=1.5,
+            p=0.5
+        ),
+        T.GaussianNoise(
+            mean=0.0,
+            sigma=0.01,  # Small noise amplitude
+            clip=True  # Ensure values stay in valid range
+        ),
+        
+        # Normalization
+        T.Normalize(
+            mean=[0.5],
+            std=[0.5]
+        )
     ])
 
 def get_bloch_loader(
