@@ -134,6 +134,11 @@ def get_bloch_loader(
     batch_size=1,
     same_contrast=False,
     num_views=2,
+    num_workers=4,
+    pin_memory=True,
+    pin_memory_device=None,
+    persistent_workers=True,
+    prefetch_factor=2,
 ):
     if num_views < 2:
         raise ValueError("num_views must be at least 2")
@@ -150,13 +155,21 @@ def get_bloch_loader(
         dataset,
         batch_size=batch_size,
         shuffle=True,
-        num_workers=4,
-        pin_memory=True,
+        num_workers=num_workers,
+        pin_memory=pin_memory,
+        pin_memory_device=pin_memory_device,
+        persistent_workers=persistent_workers,
+        prefetch_factor=prefetch_factor,
     )
 
 def get_mprage_loader(
     batch_size=1,
     num_views=2,
+    num_workers=4,
+    pin_memory=True,
+    pin_memory_device=None,
+    persistent_workers=True,
+    prefetch_factor=2,
 ):
     if num_views < 2:
         raise ValueError("num_views must be at least 2")
@@ -172,6 +185,9 @@ def get_mprage_loader(
         dataset,
         batch_size=batch_size,
         shuffle=True,
-        num_workers=4,
-        pin_memory=True,
+        num_workers=num_workers,
+        pin_memory=pin_memory,
+        pin_memory_device=pin_memory_device,
+        persistent_workers=persistent_workers,
+        prefetch_factor=prefetch_factor,
     )
