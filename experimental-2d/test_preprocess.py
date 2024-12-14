@@ -55,13 +55,13 @@ def test_loaders():
         'Bloch Loader - Different Contrasts'
     )
     
-    # Test Bloch loader with 3 views
-    loader = get_bloch_loader(batch_size=4, same_contrast=False, num_views=3)
+    # Test Bloch loader with 5 views
+    loader = get_bloch_loader(batch_size=4, same_contrast=False, num_views=5)
     batch = next(iter(loader))
     save_batch_images(
         batch, 
-        'output/test/bloch_three_views.png',
-        'Bloch Loader - Three Views'
+        'output/test/bloch_five_views.png',
+        'Bloch Loader - Five Views'
     )
     
     # Test MPRAGE loader
