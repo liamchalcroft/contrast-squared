@@ -297,11 +297,24 @@ def main(args):
     checkpoint_dir = Path(args.checkpoint_dir)
     checkpoint_dir.mkdir(exist_ok=True)
     
+    # Initialize wandb with resume support
+    run_id = None
+    if args.resume:
+        # Try to get the run ID from the checkpoint
+        checkpoint_path = checkpoint_dir / ('latest_model.pt' if not args.best else 'best_model.pt')
+        if checkpoint_path.exists():
+            checkpoint = torch.load(checkpoint_path)
+            if 'wandb_run_id' in checkpoint:
+                run_id = checkpoint['wandb_run_id']
+                logging.info(f"Resuming wandb run: {run_id}")
+
     # Initialize wandb
     run = wandb.init(
         project="mri-ssl",
         config=args.__dict__,
-        resume=args.resume
+        resume="allow" if args.resume else None,
+        id=run_id,
+        settings=wandb.Settings(start_method="fork")
     )
     
     # Set device and enable benchmarking
@@ -412,7 +425,8 @@ def main(args):
                 'ema_shadow': ema.shadow if ema is not None else None,
                 'loss': loss,
                 'best_loss': best_loss,
-                'args': args.__dict__
+                'args': args.__dict__,
+                'wandb_run_id': run.id  # Save the run ID
             }, is_best, checkpoint_dir)
             
             if ema is not None:
@@ -465,6 +479,12 @@ if __name__ == '__main__':
     parser.add_argument('--loss_type', type=str, default='nt_xent',
                       choices=['nt_xent', 'vicreg', 'barlow'],
                       help='Type of loss function to use')
+    parser.add_argument('--wandb_project', type=str, default="mri-ssl",
+                      help='WandB project name')
+    parser.add_argument('--wandb_entity', type=str, default=None,
+                      help='WandB entity (username or team name)')
+    parser.add_argument('--wandb_name', type=str, default=None,
+                      help='WandB run name')
     
     args = parser.parse_args()
     main(args) 
