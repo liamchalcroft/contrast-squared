@@ -485,6 +485,8 @@ if __name__ == '__main__':
                       help='WandB entity (username or team name)')
     parser.add_argument('--wandb_name', type=str, default=None,
                       help='WandB run name')
+    parser.add_argument('--gpu_id', type=int, default=0,
+                      help='GPU ID to use for training')
     
     args = parser.parse_args()
     main(args) 
