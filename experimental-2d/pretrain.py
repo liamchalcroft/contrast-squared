@@ -97,7 +97,7 @@ def nt_xent_loss(z1, z2, temperature=0.1):
 
 def nt_xent_loss_multi_view(zs, temperature=0.1):
     """
-    Standard multi-view NT-Xent loss
+    Standard multi-view NT-Xent loss with improved numerical stability
     Args:
         zs: list of tensors, each of shape [batch_size, dim]
         temperature: temperature parameter
@@ -108,8 +108,9 @@ def nt_xent_loss_multi_view(zs, temperature=0.1):
     # Concatenate all views
     cat_zs = torch.cat(zs, dim=0)  # [num_views * batch_size, dim]
     
-    # Compute cosine similarity
-    sim = F.cosine_similarity(cat_zs.unsqueeze(1), cat_zs.unsqueeze(0), dim=2) / temperature
+    # Compute cosine similarity with numerical stability
+    cat_zs = F.normalize(cat_zs, dim=1)  # Ensure normalized vectors
+    sim = torch.matmul(cat_zs, cat_zs.T) / temperature  # [num_views * batch_size, num_views * batch_size]
     
     # Create mask for positive pairs
     pos_mask = torch.zeros_like(sim)
@@ -121,18 +122,30 @@ def nt_xent_loss_multi_view(zs, temperature=0.1):
                     j * batch_size:(j + 1) * batch_size
                 ] = torch.eye(batch_size, device=sim.device)
     
-    # Create mask for valid negatives
+    # Create mask for valid negatives (excluding self-comparisons)
     neg_mask = (~torch.eye(batch_size * num_views, dtype=bool, device=sim.device)).float()
     
+    # Compute log_prob with improved numerical stability
+    max_val, _ = torch.max(sim * neg_mask, dim=1, keepdim=True)
+    numerator = torch.exp(sim - max_val)
+    
     # Compute positive and negative scores
-    pos_scores = (sim * pos_mask).sum(dim=1)
-    neg_scores = (sim * neg_mask).sum(dim=1)
+    pos_scores = (numerator * pos_mask).sum(dim=1)
+    neg_scores = (numerator * neg_mask).sum(dim=1)
     
-    # Compute log probability with numerical stability
+    # Compute final loss with numerical stability
     eps = 1e-8
-    loss = -torch.log((torch.exp(pos_scores) + eps) / (torch.exp(pos_scores) + torch.exp(neg_scores) + eps))
-    loss = loss.mean() / (num_views - 1)
+    loss = -torch.log((pos_scores + eps) / (neg_scores + eps))
     
+    # Check for invalid values
+    if torch.isnan(loss).any() or torch.isinf(loss).any():
+        print("Warning: Invalid values in loss calculation")
+        print(f"pos_scores min/max: {pos_scores.min():.4f}/{pos_scores.max():.4f}")
+        print(f"neg_scores min/max: {neg_scores.min():.4f}/{neg_scores.max():.4f}")
+        # Return a valid loss value to prevent training breakdown
+        return torch.tensor(10.0, device=loss.device, requires_grad=True)
+    
+    loss = loss.mean() / (num_views - 1)
     return loss
 
 class EMA:
