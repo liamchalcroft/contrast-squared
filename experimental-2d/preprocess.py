@@ -70,8 +70,8 @@ def get_transforms():
         v2.RandomHorizontalFlip(p=0.5),
         v2.RandomVerticalFlip(p=0.5),
         v2.RandomRotation(15),
-        # v2.GaussianBlur(kernel_size=3, sigma=(0.1, 2.0)),
-        # v2.RandomAdjustSharpness(sharpness_factor=2, p=0.5),
+        v2.GaussianBlur(kernel_size=3, sigma=(0.1, 2.0)),
+        v2.RandomAdjustSharpness(sharpness_factor=2, p=0.5),
         # v2.Normalize(mean=[0.], std=[1.0]),
         # v2.GaussianNoise(mean=0, sigma=0.1),
     ])
