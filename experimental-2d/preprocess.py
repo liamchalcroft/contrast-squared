@@ -103,17 +103,17 @@ def get_transforms():
             sharpness_factor=1.5,
             p=0.5
         ),
-        v2.GaussianNoise(
-            mean=0.0,
-            sigma=0.01,  # Small noise amplitude
-            clip=True  # Ensure values stay in valid range
-        ),
+        # v2.GaussianNoise(
+        #     mean=0.0,
+        #     sigma=0.01,  # Small noise amplitude
+        #     clip=True  # Ensure values stay in valid range
+        # ),
         
-        # Normalization
-        v2.Normalize(
-            mean=[0.5],
-            std=[0.5]
-        )
+        # # Normalization
+        # v2.Normalize(
+        #     mean=[0.5],
+        #     std=[0.5]
+        # )
     ])
 
 def get_bloch_loader(
