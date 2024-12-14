@@ -1,6 +1,7 @@
 import torch
 from torch.utils.data import DataLoader, Dataset
 import torchvision.transforms as T
+from torchvision.transforms import v2
 import h5py
 from random import shuffle, seed, sample
 import numpy as np
@@ -59,20 +60,20 @@ class H5SliceDataset(Dataset):
         return images
 
 def get_transforms():
-    return T.v2.Compose([
-        T.v2.RandomAffine(
+    return v2.Compose([
+        v2.RandomAffine(
             degrees=15,
             translate=(0.1, 0.1),
             scale=(0.85, 1.15),
             fill=0
         ),
-        T.v2.RandomHorizontalFlip(p=0.5),
-        T.v2.RandomVerticalFlip(p=0.5),
-        T.v2.RandomRotation(15),
-        T.v2.GaussianBlur(kernel_size=3, sigma=(0.1, 2.0)),
-        T.v2.RandomAdjustSharpness(sharpness_factor=2, p=0.5),
-        T.v2.Normalize(mean=[0.5], std=[0.5]),
-        T.v2.GaussianNoise(mean=0, sigma=0.1),
+        v2.RandomHorizontalFlip(p=0.5),
+        v2.RandomVerticalFlip(p=0.5),
+        v2.RandomRotation(15),
+        v2.GaussianBlur(kernel_size=3, sigma=(0.1, 2.0)),
+        v2.RandomAdjustSharpness(sharpness_factor=2, p=0.5),
+        v2.Normalize(mean=[0.5], std=[0.5]),
+        v2.GaussianNoise(mean=0, sigma=0.1),
     ])
 
 def get_bloch_loader(
