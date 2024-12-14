@@ -137,4 +137,4 @@ if __name__ == "__main__":
     mprage_files = glob.glob(os.path.join("/home/lchalcroft/MPM_DATA/*/*/sim_mprage.nii"))
     
     generate_mprage_slices(mprage_files, "output/mprage_data.h5", slice_range=(100, 200))
-    generate_qmri_slices(qmri_files, "output/qmri_data.h5", num_contrasts=10, slice_range=(100, 200))
+    generate_qmri_slices(qmri_files, "output/qmri_data.h5", num_contrasts=100, slice_range=(100, 200))

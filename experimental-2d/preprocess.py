@@ -62,17 +62,15 @@ class H5SliceDataset(Dataset):
         return images
 
 class RandGaussianNoise(Transform):
-    def __init__(self, sigma_range=(0.001, 0.2), mean=0.0, clip=True, p=0.5):
+    def __init__(self, sigma_range=(0.001, 0.2), mean=0.0, clip=True):
         super().__init__()
         self.sigma_range = sigma_range
         self.mean = mean
         self.clip = clip
-        self.p = p
 
     def make_params(self, flat_inputs: List[Any]) -> Dict[str, Any]:
-        apply_transform = (torch.rand(size=(1,)) < self.p).item()
         sigma = torch.empty(1).uniform_(self.sigma_range[0], self.sigma_range[1]).item()
-        params = dict(apply_transform=apply_transform, sigma=sigma)
+        params = dict(sigma=sigma)
         return params
 
     def transform(self, inpt: Any, params: Dict[str, Any]) -> Any:
