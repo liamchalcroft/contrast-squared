@@ -5,6 +5,7 @@ from torchvision.transforms import v2
 import h5py
 from random import shuffle, seed, sample
 import numpy as np
+from typing import Any, Dict
 
 seed(786)
 
@@ -59,6 +60,41 @@ class H5SliceDataset(Dataset):
         
         return images
 
+class RandGaussianNoise(v2.Transform):
+    def __init__(self, sigma_range=(0.001, 0.2), mean=0.0, clip=True, p=1.0):
+        """
+        Random Gaussian Noise transform with variable sigma.
+        
+        Args:
+            sigma_range (tuple): Range of noise standard deviation (min, max)
+            mean (float): Mean of the Gaussian noise
+            clip (bool): Whether to clip values to [0, 1] after adding noise
+            p (float): Probability of applying the transform
+        """
+        super().__init__()
+        self.sigma_range = sigma_range
+        self.mean = mean
+        self.clip = clip
+        self.p = p
+
+    def _get_params(self, flat_inputs):
+        # Generate random parameters
+        apply_transform = torch.rand(1) < self.p
+        sigma = torch.empty(1).uniform_(*self.sigma_range)
+        return {"apply": apply_transform.item(), "sigma": sigma.item()}
+
+    def transform(self, inpt: Any, params: Dict[str, Any]) -> Any:
+        if not params["apply"]:
+            return inpt
+            
+        if isinstance(inpt, torch.Tensor):
+            noise = torch.randn_like(inpt) * params["sigma"] + self.mean
+            noisy = inpt + noise
+            if self.clip:
+                noisy = torch.clamp(noisy, 0.0, 1.0)
+            return noisy
+        return inpt
+
 def get_transforms():
     """
     Returns a composition of augmentations for MRI slices using v2 API:
@@ -106,17 +142,23 @@ def get_transforms():
             sharpness_factor=1.5,
             p=0.5
         ),
-        
         # Normalization
         v2.Normalize(
             mean=[0.0],
             std=[1.0]
         ),
-        v2.GaussianNoise(
+        RandGaussianNoise(
+            sigma_range=(0.001, 0.2),
             mean=0.0,
-            sigma=0.1,  # Small noise amplitude
-            clip=True  # Ensure values stay in valid range
+            clip=False,
+            p=1.0
         ),
+        
+        # Normalization
+        v2.Normalize(
+            mean=[0.5],
+            std=[0.5]
+        )
     ])
 
 def get_bloch_loader(
