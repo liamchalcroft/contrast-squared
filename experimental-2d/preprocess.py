@@ -84,31 +84,35 @@ class PatientBatchSampler:
                 self.patient_indices[subject] = []
             self.patient_indices[subject].append(idx)
         
-        # Get list of all patients
-        self.patients = list(self.patient_indices.keys())
-        
-        # Calculate number of batches per epoch
-        self.num_patients = len(self.patients)
-        self.batches_per_epoch = (self.num_patients + batch_size - 1) // batch_size
+        # Calculate total number of slices
+        self.total_slices = len(dataset.index_map)
+        self.batches_per_epoch = (self.total_slices + batch_size - 1) // batch_size
     
     def __iter__(self):
-        # Shuffle patients
-        patients = self.patients.copy()
-        shuffle(patients)
+        # Create a list of all indices and their corresponding patients
+        all_indices = [(idx, subject) for subject, indices in self.patient_indices.items() 
+                      for idx in indices]
         
-        # Create batches
-        for i in range(self.batches_per_epoch):
-            batch_patients = patients[i * self.batch_size:(i + 1) * self.batch_size]
-            batch_indices = []
+        # Shuffle all indices
+        shuffle(all_indices)
+        
+        # Create batches ensuring no patient appears twice in same batch
+        current_batch = []
+        current_patients = set()
+        
+        for idx, patient in all_indices:
+            if patient not in current_patients:
+                current_batch.append(idx)
+                current_patients.add(patient)
+                
+                if len(current_batch) == self.batch_size:
+                    yield current_batch
+                    current_batch = []
+                    current_patients.clear()
             
-            # For each patient in this batch, select a random slice
-            for patient in batch_patients:
-                if patient in self.patient_indices and self.patient_indices[patient]:
-                    idx = sample(self.patient_indices[patient], 1)[0]
-                    batch_indices.append(idx)
-            
-            if batch_indices:  # Only yield non-empty batches
-                yield batch_indices
+        # Yield the last batch if it's not empty
+        if current_batch:
+            yield current_batch
     
     def __len__(self):
         return self.batches_per_epoch
