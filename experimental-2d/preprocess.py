@@ -84,49 +84,34 @@ class PatientBatchSampler:
                 self.patient_indices[subject] = []
             self.patient_indices[subject].append(idx)
         
-        # Convert to list of lists for easier sampling
-        self.patient_groups = list(self.patient_indices.values())
+        # Get list of all patients
+        self.patients = list(self.patient_indices.keys())
         
+        # Calculate number of batches per epoch
+        self.num_patients = len(self.patients)
+        self.batches_per_epoch = (self.num_patients + batch_size - 1) // batch_size
+    
     def __iter__(self):
-        # Shuffle patient groups
-        patient_groups = self.patient_groups.copy()
-        shuffle(patient_groups)
+        # Shuffle patients
+        patients = self.patients.copy()
+        shuffle(patients)
         
-        current_batch = []
-        used_patients = set()
-        
-        while patient_groups:
-            # Try to fill the batch with slices from different patients
-            for group in patient_groups[:]:
-                if len(current_batch) >= self.batch_size:
-                    yield current_batch
-                    current_batch = []
-                    used_patients.clear()
-                
-                # Get a random slice from this patient
-                if group:
-                    idx = sample(group, 1)[0]
-                    patient = self.dataset.index_map[idx][0]
-                    
-                    if patient not in used_patients:
-                        current_batch.append(idx)
-                        used_patients.add(patient)
-                        group.remove(idx)
-                
-                # Remove empty groups
-                if not group:
-                    patient_groups.remove(group)
+        # Create batches
+        for i in range(self.batches_per_epoch):
+            batch_patients = patients[i * self.batch_size:(i + 1) * self.batch_size]
+            batch_indices = []
             
-            # Yield remaining batch if any
-            if current_batch:
-                yield current_batch
-                current_batch = []
-                used_patients.clear()
+            # For each patient in this batch, select a random slice
+            for patient in batch_patients:
+                if patient in self.patient_indices and self.patient_indices[patient]:
+                    idx = sample(self.patient_indices[patient], 1)[0]
+                    batch_indices.append(idx)
+            
+            if batch_indices:  # Only yield non-empty batches
+                yield batch_indices
     
     def __len__(self):
-        # Approximate number of batches
-        total_slices = sum(len(group) for group in self.patient_groups)
-        return total_slices // self.batch_size
+        return self.batches_per_epoch
 
 def add_gaussian_noise(x, mean=0.0, std_range=(0.001, 0.2)):
     std = torch.empty(1).uniform_(std_range[0], std_range[1]).item()
