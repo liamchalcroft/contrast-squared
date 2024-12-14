@@ -323,7 +323,9 @@ def main(args):
 
     # Initialize wandb
     run = wandb.init(
-        project="mri-ssl",
+        project=args.wandb_project,
+        entity=args.wandb_entity,
+        name=args.wandb_name,
         config=args.__dict__,
         resume="allow" if args.resume else None,
         id=run_id,
