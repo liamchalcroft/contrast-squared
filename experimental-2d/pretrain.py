@@ -470,9 +470,9 @@ def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--batch_size', type=int, default=32)
-    parser.add_argument('--epochs', type=int, default=500,
+    parser.add_argument('--epochs', type=int, default=100,
                       help='Number of epochs to train')
-    parser.add_argument('--warmup_epochs', type=int, default=5,
+    parser.add_argument('--warmup_epochs', type=int, default=10,
                       help='Number of epochs for learning rate warmup')
     parser.add_argument('--learning_rate', type=float, default=1e-3)
     parser.add_argument('--weight_decay', type=float, default=0.05)
