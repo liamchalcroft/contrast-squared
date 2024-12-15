@@ -88,69 +88,54 @@ class PatientBatchSampler:
     def __init__(self, dataset, batch_size):
         self.dataset = dataset
         self.batch_size = batch_size
-        
-        # Pre-compute patient groupings once during initialization
         self.patient_indices = {}
+        
+        # Group indices by patient
         for idx, (subject, _) in enumerate(dataset.index_map):
             if subject not in self.patient_indices:
                 self.patient_indices[subject] = []
             self.patient_indices[subject].append(idx)
         
-        # Pre-compute all valid patients and their slice counts
-        self.all_patients = list(self.patient_indices.keys())
-        self.patient_slice_counts = {p: len(indices) for p, indices in self.patient_indices.items()}
+        # Calculate exact number of valid batches
+        all_indices = [(idx, subject) for subject, indices in self.patient_indices.items() 
+                      for idx in indices]
+        self.num_samples = len(all_indices)
         
-        # Pre-calculate batch statistics
-        self.num_samples = sum(len(indices) for indices in self.patient_indices.values())
+        # Calculate full batches
         self.num_full_batches = self.num_samples // batch_size
+        
+        # Calculate if there's a valid partial batch (more than 1 item)
         remaining_items = self.num_samples % batch_size
         self.has_partial_batch = remaining_items > 1
+        
+        # Total number of valid batches
         self.batches_per_epoch = self.num_full_batches + (1 if self.has_partial_batch else 0)
     
     def __iter__(self):
-        # Create a shuffled list of patients
-        available_patients = self.all_patients.copy()
-        shuffle(available_patients)
+        # Create a list of all indices and their corresponding patients
+        all_indices = [(idx, subject) for subject, indices in self.patient_indices.items() 
+                      for idx in indices]
         
-        # Create a dict of available indices for each patient
-        available_indices = {
-            patient: self.patient_indices[patient].copy()
-            for patient in available_patients
-        }
+        # Shuffle all indices
+        shuffle(all_indices)
         
-        # Shuffle individual patient indices
-        for indices in available_indices.values():
-            shuffle(indices)
-        
+        # Create batches ensuring no patient appears twice in same batch
         current_batch = []
-        while available_patients:
-            # Try to fill a batch
-            current_patients = []
-            for patient in available_patients[:]:
-                if len(available_indices[patient]) > 0:
-                    # Get next index for this patient
-                    idx = available_indices[patient].pop()
-                    current_batch.append(idx)
-                    current_patients.append(patient)
-                    
-                    if len(current_batch) == self.batch_size:
-                        yield current_batch
-                        current_batch = []
-                        break
+        current_patients = set()
+        
+        for idx, patient in all_indices:
+            if patient not in current_patients:
+                current_batch.append(idx)
+                current_patients.add(patient)
                 
-                # If no more slices for this patient, remove from available patients
-                if len(available_indices[patient]) == 0:
-                    available_patients.remove(patient)
+                if len(current_batch) == self.batch_size:
+                    yield current_batch
+                    current_batch = []
+                    current_patients.clear()
             
-            # Remove used patients from the available list
-            for patient in current_patients:
-                if patient in available_patients:
-                    available_patients.remove(patient)
-            
-            # If we can't fill more complete batches, yield remaining valid batch
-            if len(current_batch) > 1 and len(available_patients) < (self.batch_size - len(current_batch)):
-                yield current_batch
-                break
+        # Only yield the last batch if it has more than one item
+        if len(current_batch) > 1:
+            yield current_batch
     
     def __len__(self):
         return self.batches_per_epoch
@@ -174,7 +159,7 @@ def get_transforms():
     9. Gaussian Noise: Simulates scanner noise
     10. Final Normalize: Scales to [-1, 1] range
     """
-    transforms = v2.Compose([
+    return v2.Compose([
         # Geometric transformations
         v2.RandomResizedCrop(
             size=224,
@@ -221,7 +206,6 @@ def get_transforms():
             std=[0.5]
         )
     ])
-    return transforms
 
 def get_bloch_loader(
     batch_size=1,
