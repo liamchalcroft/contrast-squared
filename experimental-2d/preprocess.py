@@ -221,11 +221,7 @@ def get_transforms():
             std=[0.5]
         )
     ])
-    try:
-        return torch.jit.script(transforms)
-    except Exception as e:
-        print(f"Failed to script transforms: {e}")
-        return transforms
+    return transforms
 
 def get_bloch_loader(
     batch_size=1,
