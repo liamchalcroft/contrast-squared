@@ -62,10 +62,15 @@ def create_model(model_name: str, weights_path: str = None, pretrained: bool = T
 
     # Load weights
     if weights_path:
+        model = torch.compile(model)
+        # Weights are for compiled model
         state_dict = torch.load(weights_path)['model_state_dict']
         model.load_state_dict(state_dict, strict=False)
     elif pretrained:
         state_dict = timm.create_model(model_name, pretrained=True).state_dict()
         model.load_state_dict(state_dict, strict=False)
+        model = torch.compile(model)
+    else:
+        model = torch.compile(model)
 
     return model
