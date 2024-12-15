@@ -13,27 +13,34 @@ import multiprocessing as mp
 seed(786)
 
 class H5SliceDataset(Dataset):
-    def __init__(self, h5_path, transform=None, same_contrast=False, num_views=2):
+    def __init__(self, h5_path, transform=None, same_contrast=False, num_views=2, cache_data=True):
         self.transform = transform
         self.same_contrast = same_contrast
         self.num_views = num_views
+        self.h5_path = h5_path
         
-        # Open the file and preload all data
-        with h5py.File(h5_path, 'r', libver='latest', swmr=True) as h5_file:
+        # Open the file
+        self.h5_file = h5py.File(h5_path, 'r', libver='latest', swmr=True)
+        
+        if cache_data:
             # Pre-load all data into memory
             self.data_chunks = {}
-            for subject in h5_file.keys():
-                if 'contrasts' in h5_file[subject].keys():  # qMRI data
-                    self.data_chunks[subject] = h5_file[subject]['contrasts'][:]
+            for subject in self.h5_file.keys():
+                if 'contrasts' in self.h5_file[subject].keys():  # qMRI data
+                    self.data_chunks[subject] = self.h5_file[subject]['contrasts'][:]
                 else:  # MPRAGE data
-                    # Add channel dimension for MPRAGE data
-                    data = h5_file[subject]['slices'][:]
+                    data = self.h5_file[subject]['slices'][:]
                     self.data_chunks[subject] = np.expand_dims(data, axis=1)  # [slices, 1, H, W]
+        else:
+            self.data_chunks = None
         
         # Create patient-wise index mapping
         self.patient_slices = {}
-        for subject, data in self.data_chunks.items():
-            num_slices = data.shape[0]  # First dimension is always slices
+        for subject in self.h5_file.keys():
+            if 'contrasts' in self.h5_file[subject].keys():  # qMRI data
+                num_slices = self.h5_file[subject]['contrasts'].shape[1]
+            else:  # MPRAGE data
+                num_slices = len(self.h5_file[subject]['slices'])
             self.patient_slices[subject] = list(range(num_slices))
         
         # Create index mapping that groups by patient
@@ -47,10 +54,18 @@ class H5SliceDataset(Dataset):
 
     def __getitem__(self, idx):
         subject, slice_idx = self.index_map[idx]
-        data = self.data_chunks[subject]
+        
+        if self.data_chunks is not None:
+            data = self.data_chunks[subject]
+        else:
+            if 'contrasts' in self.h5_file[subject].keys():  # qMRI data
+                data = self.h5_file[subject]['contrasts'][:]
+            else:  # MPRAGE data
+                data = self.h5_file[subject]['slices'][:]
+                data = np.expand_dims(data, axis=1)  # [slices, 1, H, W]
         
         if data.shape[1] > 1:  # qMRI data with multiple contrasts
-            all_contrasts = data[slice_idx]  # [num_contrasts, H, W]
+            all_contrasts = data[:, slice_idx]  # [num_contrasts, H, W]
             
             if self.same_contrast:
                 contrast_idx = sample(range(len(all_contrasts)), 1)[0]
@@ -79,6 +94,10 @@ class H5SliceDataset(Dataset):
 
     def __len__(self):
         return len(self.index_map)
+    
+    def __del__(self):
+        if hasattr(self, 'h5_file'):
+            self.h5_file.close()
 
 class PatientBatchSampler:
     """Ensures each batch contains only one slice per patient"""
@@ -213,6 +232,7 @@ def get_bloch_loader(
     pin_memory_device=None,
     persistent_workers=True,
     prefetch_factor=3,
+    cache_data=True,
 ):
     if num_views < 2:
         raise ValueError("num_views must be at least 2")
@@ -222,7 +242,8 @@ def get_bloch_loader(
         "output/qmri_data.h5",
         transform=transform,
         same_contrast=same_contrast,
-        num_views=num_views
+        num_views=num_views,
+        cache_data=cache_data
     )
     
     # Use custom sampler instead of shuffle
@@ -253,6 +274,7 @@ def get_mprage_loader(
     pin_memory_device=None,
     persistent_workers=True,
     prefetch_factor=3,
+    cache_data=True,
 ):
     if num_views < 2:
         raise ValueError("num_views must be at least 2")
@@ -261,7 +283,8 @@ def get_mprage_loader(
     dataset = H5SliceDataset(
         "output/mprage_data.h5",
         transform=transform,
-        num_views=num_views
+        num_views=num_views,
+        cache_data=cache_data
     )
     
     # Use custom sampler instead of shuffle

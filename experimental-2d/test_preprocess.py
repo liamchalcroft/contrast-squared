@@ -38,7 +38,7 @@ def save_batch_images(batch, save_path, title):
 
 def test_loaders():
     # Test Bloch loader with same contrast
-    loader = get_bloch_loader(batch_size=4, same_contrast=True, num_views=2)
+    loader = get_bloch_loader(batch_size=4, same_contrast=True, num_views=2, cache_data=False)
     batch = next(iter(loader))
     save_batch_images(
         batch, 
@@ -47,7 +47,7 @@ def test_loaders():
     )
     
     # Test Bloch loader with different contrasts
-    loader = get_bloch_loader(batch_size=4, same_contrast=False, num_views=2)
+    loader = get_bloch_loader(batch_size=4, same_contrast=False, num_views=2, cache_data=False)
     batch = next(iter(loader))
     save_batch_images(
         batch, 
@@ -56,7 +56,7 @@ def test_loaders():
     )
     
     # Test Bloch loader with 5 views
-    loader = get_bloch_loader(batch_size=4, same_contrast=False, num_views=5)
+    loader = get_bloch_loader(batch_size=4, same_contrast=False, num_views=5, cache_data=False)
     batch = next(iter(loader))
     save_batch_images(
         batch, 
@@ -65,7 +65,7 @@ def test_loaders():
     )
     
     # Test MPRAGE loader
-    loader = get_mprage_loader(batch_size=4, num_views=2)
+    loader = get_mprage_loader(batch_size=4, num_views=2, cache_data=False)
     batch = next(iter(loader))
     save_batch_images(
         batch, 
