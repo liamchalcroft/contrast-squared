@@ -65,16 +65,18 @@ class H5SliceDataset(Dataset):
                 data = np.expand_dims(data, axis=1)  # [slices, 1, H, W]
         
         if data.shape[1] > 1:  # qMRI data with multiple contrasts
-            all_contrasts = data[:, slice_idx]  # [num_contrasts, H, W]
+            all_contrasts = data[slice_idx]  # [num_contrasts, H, W]
             
             if self.same_contrast:
                 contrast_idx = sample(range(len(all_contrasts)), 1)[0]
-                images = {f"image{i+1}": all_contrasts[contrast_idx] for i in range(self.num_views)}
+                images = {f"image{i+1}": all_contrasts[contrast_idx][None, ...] for i in range(self.num_views)}  # Add channel dim
             else:
                 contrast_indices = sample(range(len(all_contrasts)), self.num_views)
-                images = {f"image{i+1}": all_contrasts[contrast_idx] for i, contrast_idx in enumerate(contrast_indices)}
+                images = {f"image{i+1}": all_contrasts[contrast_idx][None, ...] for i, contrast_idx in enumerate(contrast_indices)}  # Add channel dim
         else:  # MPRAGE data
             slice_data = data[slice_idx]  # [1, H, W]
+            if len(slice_data.shape) == 2:  # If somehow we lost the channel dimension
+                slice_data = slice_data[None, ...]  # Add it back
             images = {f"image{i+1}": slice_data for i in range(self.num_views)}
         
         # Convert to tensor (data already has channel dimension)
