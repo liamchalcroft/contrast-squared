@@ -18,16 +18,23 @@ class H5SliceDataset(Dataset):
         self.same_contrast = same_contrast
         self.num_views = num_views
         
-        # Open the file once with optimized settings
-        self.h5_file = h5py.File(h5_path, 'r', libver='latest', swmr=True)
+        # Open the file and preload all data
+        with h5py.File(h5_path, 'r', libver='latest', swmr=True) as h5_file:
+            # Pre-load all data into memory
+            self.data_chunks = {}
+            for subject in h5_file.keys():
+                if 'contrasts' in h5_file[subject].keys():  # qMRI data
+                    self.data_chunks[subject] = h5_file[subject]['contrasts'][:]
+                else:  # MPRAGE data
+                    self.data_chunks[subject] = h5_file[subject]['slices'][:]
         
         # Create patient-wise index mapping
         self.patient_slices = {}
-        for subject in self.h5_file.keys():
-            if 'contrasts' in self.h5_file[subject].keys():  # qMRI data
-                num_slices = self.h5_file[subject]['contrasts'].shape[1]
+        for subject, data in self.data_chunks.items():
+            if len(data.shape) > 2:  # qMRI data
+                num_slices = data.shape[1]
             else:  # MPRAGE data
-                num_slices = self.h5_file[subject]['slices'].shape[0]
+                num_slices = len(data)
             self.patient_slices[subject] = list(range(num_slices))
         
         # Create index mapping that groups by patient
@@ -39,18 +46,12 @@ class H5SliceDataset(Dataset):
         # Sort by patient ID to ensure grouping
         self.index_map.sort(key=lambda x: x[0])
 
-    @lru_cache(maxsize=128)
-    def _get_slice_data(self, subject, slice_idx):
-        """Cache frequently accessed slice data"""
-        if 'contrasts' in self.h5_file[subject].keys():
-            return self.h5_file[subject]['contrasts'][:, slice_idx]
-        return self.h5_file[subject]['slices'][slice_idx]
-
     def __getitem__(self, idx):
         subject, slice_idx = self.index_map[idx]
+        data = self.data_chunks[subject]
         
-        if 'contrasts' in self.h5_file[subject].keys():  # qMRI data
-            all_contrasts = self._get_slice_data(subject, slice_idx)
+        if len(data.shape) > 2:  # qMRI data
+            all_contrasts = data[:, slice_idx]  # [num_contrasts, H, W]
             
             if self.same_contrast:
                 contrast_idx = sample(range(len(all_contrasts)), 1)[0]
@@ -59,7 +60,7 @@ class H5SliceDataset(Dataset):
                 contrast_indices = sample(range(len(all_contrasts)), self.num_views)
                 images = {f"image{i+1}": all_contrasts[contrast_idx] for i, contrast_idx in enumerate(contrast_indices)}
         else:  # MPRAGE data
-            slice_data = self._get_slice_data(subject, slice_idx)
+            slice_data = data[slice_idx]  # [H, W]
             images = {f"image{i+1}": slice_data for i in range(self.num_views)}
         
         # Convert to tensor and add channel dimension
@@ -79,9 +80,6 @@ class H5SliceDataset(Dataset):
 
     def __len__(self):
         return len(self.index_map)
-    
-    def __del__(self):
-        self.h5_file.close()
 
 class PatientBatchSampler:
     """Ensures each batch contains only one slice per patient"""
