@@ -548,10 +548,10 @@ if __name__ == '__main__':
     # Training hyperparameters
     parser.add_argument('--batch_size', type=int, default=16,
                       help='Batch size for training (default: 16). Will be used to scale learning rate.')
-    parser.add_argument('--epochs', type=int, default=150,
-                      help='Number of epochs to train (default: 150)')
-    parser.add_argument('--warmup_epochs', type=int, default=20,
-                      help='Number of epochs for learning rate warmup (default: 20)')
+    parser.add_argument('--epochs', type=int, default=500,
+                      help='Number of epochs to train (default: 500)')
+    parser.add_argument('--warmup_epochs', type=int, default=50,
+                      help='Number of epochs for learning rate warmup (default: 50)')
     parser.add_argument('--base_lr', type=float, default=5e-4,
                       help='Base learning rate for batch_size=256. Will be scaled by batch_size/256 (default: 5e-4)')
     parser.add_argument('--weight_decay_start', type=float, default=0.04,
