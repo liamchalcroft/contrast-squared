@@ -43,7 +43,7 @@ class ProjectionHead(nn.Module):
 
 class ContrastiveModel(nn.Module):
     """Encoder + projection head for contrastive learning"""
-    def __init__(self, model_name='resnet18', pretrained=False):
+    def __init__(self, model_name='resnet18', pretrained=False, loss_type='nt_xent'):
         super().__init__()
         
         # Initialize encoder from timm
@@ -60,13 +60,64 @@ class ContrastiveModel(nn.Module):
             output = self.encoder(dummy_input)
             self.encoder_dim = output.shape[1]
         
-        # Projection head
-        self.projector = ProjectionHead(self.encoder_dim)
+        # Initialize projection head based on loss type
+        if loss_type == 'nt_xent':
+            self.projector = ProjectionHead(
+                in_dim=self.encoder_dim,
+                hidden_dim=2048,
+                out_dim=128
+            )
+        elif loss_type == 'vicreg':
+            self.projector = VICRegProjectionHead(
+                in_dim=self.encoder_dim,
+                hidden_dim=2048,
+                out_dim=2048  # VICReg typically uses larger output dim
+            )
+        elif loss_type == 'barlow':
+            self.projector = BarlowProjectionHead(
+                in_dim=self.encoder_dim,
+                hidden_dim=8192,  # Barlow Twins uses larger hidden dim
+                out_dim=8192     # and output dim
+            )
+        else:
+            raise ValueError(f"Unknown loss type: {loss_type}")
         
     def forward(self, x):
         h = self.encoder(x)
         z = self.projector(h)
         return h, z
+
+class VICRegProjectionHead(nn.Module):
+    """Projection head for VICReg"""
+    def __init__(self, in_dim, hidden_dim=2048, out_dim=2048):
+        super().__init__()
+        self.layer1 = nn.Linear(in_dim, hidden_dim)
+        self.layer2 = nn.Linear(hidden_dim, hidden_dim)
+        self.layer3 = nn.Linear(hidden_dim, out_dim)
+        self.bn1 = nn.BatchNorm1d(hidden_dim)
+        self.bn2 = nn.BatchNorm1d(hidden_dim)
+        
+    def forward(self, x):
+        x = F.relu(self.bn1(self.layer1(x)))
+        x = F.relu(self.bn2(self.layer2(x)))
+        x = self.layer3(x)
+        return x  # No normalization for VICReg
+
+class BarlowProjectionHead(nn.Module):
+    """Projection head for Barlow Twins"""
+    def __init__(self, in_dim, hidden_dim=8192, out_dim=8192):
+        super().__init__()
+        self.layer1 = nn.Linear(in_dim, hidden_dim)
+        self.layer2 = nn.Linear(hidden_dim, hidden_dim)
+        self.layer3 = nn.Linear(hidden_dim, out_dim)
+        self.bn1 = nn.BatchNorm1d(hidden_dim)
+        self.bn2 = nn.BatchNorm1d(hidden_dim)
+        
+    def forward(self, x):
+        x = F.relu(self.bn1(self.layer1(x)))
+        x = F.relu(self.bn2(self.layer2(x)))
+        x = self.layer3(x)
+        return x  # No normalization for Barlow Twins
 
 def nt_xent_loss(z1, z2, temperature=0.1):
     """
@@ -356,7 +407,8 @@ def main(args):
     # Create model
     model = ContrastiveModel(
         model_name=args.model_name,
-        pretrained=args.pretrained
+        pretrained=args.pretrained,
+        loss_type=args.loss_type
     ).to(device)
     
     # Wrap model in DistributedDataParallel if using multiple GPUs
