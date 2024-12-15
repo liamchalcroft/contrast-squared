@@ -26,15 +26,14 @@ class H5SliceDataset(Dataset):
                 if 'contrasts' in h5_file[subject].keys():  # qMRI data
                     self.data_chunks[subject] = h5_file[subject]['contrasts'][:]
                 else:  # MPRAGE data
-                    self.data_chunks[subject] = h5_file[subject]['slices'][:]
+                    # Add channel dimension for MPRAGE data
+                    data = h5_file[subject]['slices'][:]
+                    self.data_chunks[subject] = np.expand_dims(data, axis=1)  # [slices, 1, H, W]
         
         # Create patient-wise index mapping
         self.patient_slices = {}
         for subject, data in self.data_chunks.items():
-            if len(data.shape) > 2:  # qMRI data
-                num_slices = data.shape[1]
-            else:  # MPRAGE data
-                num_slices = len(data)
+            num_slices = data.shape[0]  # First dimension is always slices
             self.patient_slices[subject] = list(range(num_slices))
         
         # Create index mapping that groups by patient
@@ -50,8 +49,8 @@ class H5SliceDataset(Dataset):
         subject, slice_idx = self.index_map[idx]
         data = self.data_chunks[subject]
         
-        if len(data.shape) > 2:  # qMRI data
-            all_contrasts = data[:, slice_idx]  # [num_contrasts, H, W]
+        if data.shape[1] > 1:  # qMRI data with multiple contrasts
+            all_contrasts = data[slice_idx]  # [num_contrasts, H, W]
             
             if self.same_contrast:
                 contrast_idx = sample(range(len(all_contrasts)), 1)[0]
@@ -60,11 +59,11 @@ class H5SliceDataset(Dataset):
                 contrast_indices = sample(range(len(all_contrasts)), self.num_views)
                 images = {f"image{i+1}": all_contrasts[contrast_idx] for i, contrast_idx in enumerate(contrast_indices)}
         else:  # MPRAGE data
-            slice_data = data[slice_idx]  # [H, W]
+            slice_data = data[slice_idx]  # [1, H, W]
             images = {f"image{i+1}": slice_data for i in range(self.num_views)}
         
-        # Convert to tensor and add channel dimension
-        images = {k: torch.from_numpy(v).unsqueeze(0) for k, v in images.items()}
+        # Convert to tensor (data already has channel dimension)
+        images = {k: torch.from_numpy(v.copy()) for k, v in images.items()}
         
         # Add metadata for batch sampling
         images['patient_id'] = subject
