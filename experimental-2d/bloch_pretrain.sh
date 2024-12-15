@@ -7,6 +7,10 @@ python pretrain.py --dataset bloch --model_name timm/resnet50.a1_in1k --pretrain
 python pretrain.py --dataset bloch --model_name timm/resnet50.a1_in1k --pretrained --wandb_entity atlas-ploras --checkpoint_dir checkpoints/bloch-resnet50-view4 --wandb_name bloch-resnet50-view4
 # 5 views
 python pretrain.py --dataset bloch --model_name timm/resnet50.a1_in1k --pretrained --wandb_entity atlas-ploras --checkpoint_dir checkpoints/bloch-resnet50-view5 --wandb_name bloch-resnet50-view5
+# Barlow Twins
+python pretrain.py --dataset bloch --model_name timm/resnet50.a1_in1k --pretrained --wandb_entity atlas-ploras --checkpoint_dir checkpoints/bloch-resnet50-barlow --wandb_name bloch-resnet50-barlow --loss_type barlow
+# VICReg
+python pretrain.py --dataset bloch --model_name timm/resnet50.a1_in1k --pretrained --wandb_entity atlas-ploras --checkpoint_dir checkpoints/bloch-resnet50-vicreg --wandb_name bloch-resnet50-vicreg --loss_type vicreg
 
 # CLIP ViT-B/16
 # 2 views
