@@ -225,14 +225,21 @@ def get_bloch_loader(
     # Use custom sampler instead of shuffle
     sampler = PatientBatchSampler(dataset, batch_size)
 
+    # Only include pin_memory_device if it's specified
+    dataloader_kwargs = {
+        'batch_sampler': sampler,
+        'num_workers': num_workers,
+        'pin_memory': pin_memory,
+        'persistent_workers': persistent_workers,
+        'prefetch_factor': prefetch_factor,
+    }
+    
+    if pin_memory_device is not None:
+        dataloader_kwargs['pin_memory_device'] = pin_memory_device
+
     return DataLoader(
         dataset,
-        batch_sampler=sampler,  # Use batch_sampler instead of batch_size and shuffle
-        num_workers=num_workers,
-        pin_memory=pin_memory,
-        pin_memory_device=pin_memory_device,
-        persistent_workers=persistent_workers,
-        prefetch_factor=prefetch_factor,
+        **dataloader_kwargs
     )
 
 def get_mprage_loader(
@@ -257,12 +264,19 @@ def get_mprage_loader(
     # Use custom sampler instead of shuffle
     sampler = PatientBatchSampler(dataset, batch_size)
 
+    # Only include pin_memory_device if it's specified
+    dataloader_kwargs = {
+        'batch_sampler': sampler,
+        'num_workers': num_workers,
+        'pin_memory': pin_memory,
+        'persistent_workers': persistent_workers,
+        'prefetch_factor': prefetch_factor,
+    }
+    
+    if pin_memory_device is not None:
+        dataloader_kwargs['pin_memory_device'] = pin_memory_device
+
     return DataLoader(
         dataset,
-        batch_sampler=sampler,  # Use batch_sampler instead of batch_size and shuffle
-        num_workers=num_workers,
-        pin_memory=pin_memory,
-        pin_memory_device=pin_memory_device,
-        persistent_workers=persistent_workers,
-        prefetch_factor=prefetch_factor,
+        **dataloader_kwargs
     )
