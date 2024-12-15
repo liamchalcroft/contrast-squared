@@ -13,6 +13,7 @@ import argparse
 from pathlib import Path
 import logging
 from contextlib import nullcontext
+import math
 
 # Set up logging
 logging.basicConfig(
@@ -362,10 +363,14 @@ def main(args):
     if torch.cuda.device_count() > 1:
         model = nn.DataParallel(model)
     
-    # Create optimizer with weight decay
+    # Scale learning rate based on batch size
+    args.learning_rate = args.base_lr * (args.batch_size / 256)
+    logging.info(f"Scaled learning rate: {args.learning_rate:.6f}")
+
+    # Create optimizer with initial weight decay
     param_groups = [
         {'params': [], 'weight_decay': 0.0},  # no weight decay for biases and norm layers
-        {'params': [], 'weight_decay': args.weight_decay}  # weight decay for other params
+        {'params': [], 'weight_decay': args.weight_decay_start}  # initial weight decay for other params
     ]
     
     for name, param in model.named_parameters():
@@ -376,12 +381,27 @@ def main(args):
     
     optimizer = AdamW(param_groups, lr=args.learning_rate)
     
-    # Create warmup + cosine scheduler
-    warmup_scheduler = LinearLR(optimizer, start_factor=0.1, total_iters=args.warmup_epochs)
+    # Create warmup + cosine scheduler for learning rate
+    warmup_scheduler = LinearLR(optimizer, start_factor=0.01, total_iters=args.warmup_epochs)
     cosine_scheduler = CosineAnnealingLR(optimizer, T_max=args.epochs - args.warmup_epochs)
-    scheduler = SequentialLR(optimizer, 
-                           schedulers=[warmup_scheduler, cosine_scheduler],
-                           milestones=[args.warmup_epochs])
+    lr_scheduler = SequentialLR(optimizer, 
+                              schedulers=[warmup_scheduler, cosine_scheduler],
+                              milestones=[args.warmup_epochs])
+    
+    # Create cosine scheduler for weight decay
+    def weight_decay_cosine_schedule(epoch):
+        if epoch < args.warmup_epochs:
+            return args.weight_decay_start
+        cosine_factor = 0.5 * (1 + math.cos(math.pi * (epoch - args.warmup_epochs) / (args.epochs - args.warmup_epochs)))
+        return args.weight_decay_end + (args.weight_decay_start - args.weight_decay_end) * cosine_factor
+    
+    # Update weight decay before each epoch
+    def update_weight_decay(epoch):
+        wd = weight_decay_cosine_schedule(epoch)
+        for param_group in optimizer.param_groups:
+            if param_group['weight_decay'] != 0:  # Only update groups that should have weight decay
+                param_group['weight_decay'] = wd
+        logging.info(f"Epoch {epoch}: weight decay set to {wd:.4f}")
     
     # Initialize mixed precision training
     scaler = amp.GradScaler('cuda') if args.mixed_precision else None
@@ -397,7 +417,7 @@ def main(args):
     best_loss = float('inf')
     if args.resume:
         checkpoint_path = checkpoint_dir / ('latest_model.pt' if not args.best else 'best_model.pt')
-        start_epoch, best_loss = load_checkpoint(checkpoint_path, model, optimizer, scheduler)
+        start_epoch, best_loss = load_checkpoint(checkpoint_path, model, optimizer, lr_scheduler)
         logging.info(f"Resuming from epoch {start_epoch} with best loss: {best_loss:.6f}")
     
     # Get data loader with specified number of views
@@ -427,7 +447,7 @@ def main(args):
     try:
         for epoch in range(start_epoch, args.epochs):
             loss = train_epoch(model, loader, optimizer, device, epoch, scaler, ema, args.loss_type)
-            scheduler.step()
+            lr_scheduler.step()
             
             # Use EMA model for evaluation and saving
             if ema is not None:
@@ -436,7 +456,7 @@ def main(args):
             # Log epoch metrics
             wandb.log({
                 'epoch_loss': loss,
-                'learning_rate': scheduler.get_last_lr()[0]
+                'learning_rate': lr_scheduler.get_last_lr()[0]
             })
             
             # Save checkpoints
@@ -447,7 +467,7 @@ def main(args):
                 'epoch': epoch,
                 'model_state_dict': model.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
-                'scheduler_state_dict': scheduler.state_dict(),
+                'scheduler_state_dict': lr_scheduler.state_dict(),
                 'scaler_state_dict': scaler.state_dict() if scaler is not None else None,
                 'ema_shadow': ema.shadow if ema is not None else None,
                 'loss': loss,
@@ -459,6 +479,9 @@ def main(args):
             if ema is not None:
                 ema.restore()
             
+            # Update weight decay before each epoch
+            update_weight_decay(epoch)
+            
     except KeyboardInterrupt:
         logging.info("Training interrupted by user")
     except Exception as e:
@@ -468,52 +491,70 @@ def main(args):
         wandb.finish()
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--batch_size', type=int, default=16)
-    parser.add_argument('--epochs', type=int, default=100,
-                      help='Number of epochs to train')
-    parser.add_argument('--warmup_epochs', type=int, default=10,
-                      help='Number of epochs for learning rate warmup')
-    parser.add_argument('--learning_rate', type=float, default=1e-3)
-    parser.add_argument('--weight_decay', type=float, default=0.05)
-    parser.add_argument('--dataset', type=str, choices=['bloch', 'mprage'], default='bloch')
+    parser = argparse.ArgumentParser(description='Self-supervised pretraining for medical imaging')
+    
+    # Training hyperparameters
+    parser.add_argument('--batch_size', type=int, default=16,
+                      help='Batch size for training (default: 16). Will be used to scale learning rate.')
+    parser.add_argument('--epochs', type=int, default=150,
+                      help='Number of epochs to train (default: 150)')
+    parser.add_argument('--warmup_epochs', type=int, default=20,
+                      help='Number of epochs for learning rate warmup (default: 20)')
+    parser.add_argument('--base_lr', type=float, default=5e-4,
+                      help='Base learning rate for batch_size=256. Will be scaled by batch_size/256 (default: 5e-4)')
+    parser.add_argument('--weight_decay_start', type=float, default=0.04,
+                      help='Initial weight decay value (default: 0.04)')
+    parser.add_argument('--weight_decay_end', type=float, default=0.4,
+                      help='Final weight decay value, reached via cosine schedule (default: 0.4)')
+    
+    # Dataset options
+    parser.add_argument('--dataset', type=str, choices=['bloch', 'mprage'], default='mprage',
+                      help='Dataset to use for training (default: mprage)')
     parser.add_argument('--same_contrast', action='store_true',
-                      help='For Bloch data, use same contrast for both views')
-    parser.add_argument('--model_name', type=str, default='resnet18',
-                      help='Model name from timm library')
-    parser.add_argument('--pretrained', action='store_true',
-                      help='Use pretrained weights')
-    parser.add_argument('--checkpoint_dir', type=str, default='checkpoints',
-                      help='Directory to save checkpoints')
-    parser.add_argument('--resume', action='store_true',
-                      help='Resume training from checkpoint')
-    parser.add_argument('--best', action='store_true',
-                      help='Resume from best checkpoint instead of latest')
-    parser.add_argument('--mixed_precision', action='store_true',
-                      help='Use mixed precision training')
-    parser.add_argument('--num_workers', type=int, default=4,
-                      help='Number of data loading workers')
+                      help='For Bloch data: use same contrast for both views (default: False)')
     parser.add_argument('--num_views', type=int, default=2,
-                      help='Number of views for contrastive learning')
-    parser.add_argument('--gradient_accumulation_steps', type=int, default=1,
-                      help='Number of steps to accumulate gradients')
-    parser.add_argument('--max_grad_norm', type=float, default=1.0,
-                      help='Maximum gradient norm for clipping')
-    parser.add_argument('--use_ema', action='store_true',
-                      help='Use Exponential Moving Average of model weights')
-    parser.add_argument('--ema_decay', type=float, default=0.999,
-                      help='EMA decay rate')
+                      help='Number of views for contrastive learning (default: 2)')
+    
+    # Model configuration
+    parser.add_argument('--model_name', type=str, default='timm/resnet50.a1_in1k',
+                      help='Model architecture from timm library (default: ResNet50)')
+    parser.add_argument('--pretrained', action='store_true',
+                      help='Start from pretrained ImageNet weights (default: False)')
     parser.add_argument('--loss_type', type=str, default='nt_xent',
                       choices=['nt_xent', 'vicreg', 'barlow'],
-                      help='Type of loss function to use')
-    parser.add_argument('--wandb_project', type=str, default="mri-ssl",
-                      help='WandB project name')
-    parser.add_argument('--wandb_entity', type=str, default=None,
-                      help='WandB entity (username or team name)')
-    parser.add_argument('--wandb_name', type=str, default=None,
-                      help='WandB run name')
+                      help='Loss function to use (default: nt_xent)')
+    
+    # Training optimizations
+    parser.add_argument('--mixed_precision', action='store_true',
+                      help='Use mixed precision training for better speed and memory usage (default: False)')
+    parser.add_argument('--use_ema', action='store_true',
+                      help='Use Exponential Moving Average of model weights (default: False)')
+    parser.add_argument('--ema_decay', type=float, default=0.999,
+                      help='EMA decay rate (default: 0.999)')
+    parser.add_argument('--gradient_accumulation_steps', type=int, default=1,
+                      help='Number of updates steps to accumulate before backward pass (default: 1)')
+    parser.add_argument('--max_grad_norm', type=float, default=1.0,
+                      help='Maximum gradient norm for clipping (default: 1.0)')
+    
+    # System and logging
+    parser.add_argument('--num_workers', type=int, default=4,
+                      help='Number of data loading workers (default: 4)')
+    parser.add_argument('--checkpoint_dir', type=str, default='checkpoints',
+                      help='Directory to save checkpoints (default: checkpoints)')
+    parser.add_argument('--resume', action='store_true',
+                      help='Resume training from checkpoint (default: False)')
+    parser.add_argument('--best', action='store_true',
+                      help='When resuming, load best checkpoint instead of latest (default: False)')
     parser.add_argument('--gpu_id', type=int, default=0,
-                      help='GPU ID to use for training')
+                      help='GPU ID to use for training (default: 0)')
+    
+    # Weights & Biases logging
+    parser.add_argument('--wandb_project', type=str, default="mri-ssl",
+                      help='Weights & Biases project name (default: mri-ssl)')
+    parser.add_argument('--wandb_entity', type=str, default=None,
+                      help='Weights & Biases entity/username (default: None)')
+    parser.add_argument('--wandb_name', type=str, default=None,
+                      help='Weights & Biases run name (default: None)')
     
     args = parser.parse_args()
     main(args) 
