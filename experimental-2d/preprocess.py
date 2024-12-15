@@ -7,6 +7,8 @@ import h5py
 from random import shuffle, seed, sample
 import numpy as np
 from typing import Any, Dict, List
+from functools import lru_cache
+import multiprocessing as mp
 
 seed(786)
 
@@ -16,8 +18,8 @@ class H5SliceDataset(Dataset):
         self.same_contrast = same_contrast
         self.num_views = num_views
         
-        # Open the file once and keep it open
-        self.h5_file = h5py.File(h5_path, 'r')
+        # Open the file once with optimized settings
+        self.h5_file = h5py.File(h5_path, 'r', libver='latest', swmr=True)
         
         # Create patient-wise index mapping
         self.patient_slices = {}
@@ -36,12 +38,19 @@ class H5SliceDataset(Dataset):
         
         # Sort by patient ID to ensure grouping
         self.index_map.sort(key=lambda x: x[0])
-    
+
+    @lru_cache(maxsize=128)
+    def _get_slice_data(self, subject, slice_idx):
+        """Cache frequently accessed slice data"""
+        if 'contrasts' in self.h5_file[subject].keys():
+            return self.h5_file[subject]['contrasts'][:, slice_idx]
+        return self.h5_file[subject]['slices'][slice_idx]
+
     def __getitem__(self, idx):
         subject, slice_idx = self.index_map[idx]
         
         if 'contrasts' in self.h5_file[subject].keys():  # qMRI data
-            all_contrasts = self.h5_file[subject]['contrasts'][:, slice_idx]  # [num_contrasts, H, W]
+            all_contrasts = self._get_slice_data(subject, slice_idx)
             
             if self.same_contrast:
                 contrast_idx = sample(range(len(all_contrasts)), 1)[0]
@@ -50,7 +59,7 @@ class H5SliceDataset(Dataset):
                 contrast_indices = sample(range(len(all_contrasts)), self.num_views)
                 images = {f"image{i+1}": all_contrasts[contrast_idx] for i, contrast_idx in enumerate(contrast_indices)}
         else:  # MPRAGE data
-            slice_data = self.h5_file[subject]['slices'][slice_idx]  # [H, W]
+            slice_data = self._get_slice_data(subject, slice_idx)
             images = {f"image{i+1}": slice_data for i in range(self.num_views)}
         
         # Convert to tensor and add channel dimension
@@ -67,12 +76,11 @@ class H5SliceDataset(Dataset):
             images['patient_id'] = patient_id
         
         return images
-    
+
     def __len__(self):
         return len(self.index_map)
     
     def __del__(self):
-        # Make sure to close the file when the dataset is deleted
         self.h5_file.close()
 
 class PatientBatchSampler:
@@ -80,54 +88,69 @@ class PatientBatchSampler:
     def __init__(self, dataset, batch_size):
         self.dataset = dataset
         self.batch_size = batch_size
-        self.patient_indices = {}
         
-        # Group indices by patient
+        # Pre-compute patient groupings once during initialization
+        self.patient_indices = {}
         for idx, (subject, _) in enumerate(dataset.index_map):
             if subject not in self.patient_indices:
                 self.patient_indices[subject] = []
             self.patient_indices[subject].append(idx)
         
-        # Calculate exact number of valid batches
-        all_indices = [(idx, subject) for subject, indices in self.patient_indices.items() 
-                      for idx in indices]
-        self.num_samples = len(all_indices)
+        # Pre-compute all valid patients and their slice counts
+        self.all_patients = list(self.patient_indices.keys())
+        self.patient_slice_counts = {p: len(indices) for p, indices in self.patient_indices.items()}
         
-        # Calculate full batches
+        # Pre-calculate batch statistics
+        self.num_samples = sum(len(indices) for indices in self.patient_indices.values())
         self.num_full_batches = self.num_samples // batch_size
-        
-        # Calculate if there's a valid partial batch (more than 1 item)
         remaining_items = self.num_samples % batch_size
         self.has_partial_batch = remaining_items > 1
-        
-        # Total number of valid batches
         self.batches_per_epoch = self.num_full_batches + (1 if self.has_partial_batch else 0)
     
     def __iter__(self):
-        # Create a list of all indices and their corresponding patients
-        all_indices = [(idx, subject) for subject, indices in self.patient_indices.items() 
-                      for idx in indices]
+        # Create a shuffled list of patients
+        available_patients = self.all_patients.copy()
+        shuffle(available_patients)
         
-        # Shuffle all indices
-        shuffle(all_indices)
+        # Create a dict of available indices for each patient
+        available_indices = {
+            patient: self.patient_indices[patient].copy()
+            for patient in available_patients
+        }
         
-        # Create batches ensuring no patient appears twice in same batch
+        # Shuffle individual patient indices
+        for indices in available_indices.values():
+            shuffle(indices)
+        
         current_batch = []
-        current_patients = set()
-        
-        for idx, patient in all_indices:
-            if patient not in current_patients:
-                current_batch.append(idx)
-                current_patients.add(patient)
+        while available_patients:
+            # Try to fill a batch
+            current_patients = []
+            for patient in available_patients[:]:
+                if len(available_indices[patient]) > 0:
+                    # Get next index for this patient
+                    idx = available_indices[patient].pop()
+                    current_batch.append(idx)
+                    current_patients.append(patient)
+                    
+                    if len(current_batch) == self.batch_size:
+                        yield current_batch
+                        current_batch = []
+                        break
                 
-                if len(current_batch) == self.batch_size:
-                    yield current_batch
-                    current_batch = []
-                    current_patients.clear()
+                # If no more slices for this patient, remove from available patients
+                if len(available_indices[patient]) == 0:
+                    available_patients.remove(patient)
             
-        # Only yield the last batch if it has more than one item
-        if len(current_batch) > 1:
-            yield current_batch
+            # Remove used patients from the available list
+            for patient in current_patients:
+                if patient in available_patients:
+                    available_patients.remove(patient)
+            
+            # If we can't fill more complete batches, yield remaining valid batch
+            if len(current_batch) > 1 and len(available_patients) < (self.batch_size - len(current_batch)):
+                yield current_batch
+                break
     
     def __len__(self):
         return self.batches_per_epoch
@@ -151,7 +174,7 @@ def get_transforms():
     9. Gaussian Noise: Simulates scanner noise
     10. Final Normalize: Scales to [-1, 1] range
     """
-    return v2.Compose([
+    transforms = v2.Compose([
         # Geometric transformations
         v2.RandomResizedCrop(
             size=224,
@@ -167,14 +190,12 @@ def get_transforms():
         ),
         # Small affine transforms
         v2.RandomAffine(
-            degrees=15,  # Moderate rotation
-            translate=(0.1, 0.1),  # Small translations
-            scale=(0.9, 1.1),  # Moderate scaling
+            degrees=15,
+            translate=(0.1, 0.1),
+            scale=(0.9, 1.1),
             fill=0,
             interpolation=v2.InterpolationMode.BILINEAR
         ),
-        
-        # Convert to float32 before intensity transforms
         v2.ToDtype(torch.float32, scale=True),
         
         # Intensity transformations
@@ -200,6 +221,11 @@ def get_transforms():
             std=[0.5]
         )
     ])
+    try:
+        return torch.jit.script(transforms)
+    except Exception as e:
+        print(f"Failed to script transforms: {e}")
+        return transforms
 
 def get_bloch_loader(
     batch_size=1,
@@ -209,7 +235,7 @@ def get_bloch_loader(
     pin_memory=True,
     pin_memory_device=None,
     persistent_workers=True,
-    prefetch_factor=2,
+    prefetch_factor=3,
 ):
     if num_views < 2:
         raise ValueError("num_views must be at least 2")
@@ -249,7 +275,7 @@ def get_mprage_loader(
     pin_memory=True,
     pin_memory_device=None,
     persistent_workers=True,
-    prefetch_factor=2,
+    prefetch_factor=3,
 ):
     if num_views < 2:
         raise ValueError("num_views must be at least 2")
