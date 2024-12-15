@@ -388,6 +388,9 @@ def main(args):
     
     # Initialize EMA
     ema = EMA(model, decay=args.ema_decay) if args.use_ema else None
+
+    # Before loading checkpoint
+    model = torch.compile(model)  # Uses TorchDynamo for optimization
     
     # Load checkpoint if resuming
     start_epoch = 0
@@ -419,9 +422,6 @@ def main(args):
             persistent_workers=True,
             prefetch_factor=2,
         )
-    
-    # After model creation
-    model = torch.compile(model)  # Uses TorchDynamo for optimization
     
     # Training loop
     try:
