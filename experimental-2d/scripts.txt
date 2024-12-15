@@ -1,1 +1,1 @@
-python pretrain.py --batch_size 16 --epochs 500 --warmup_epochs 20 --dataset bloch --num_views 5 --model_name timm/resnet50.a1_in1k --pretrained --wandb_entity atlas-ploras
+python pretrain.py --batch_size 16 --epochs 500 --warmup_epochs 20 --dataset mprage --model_name timm/resnet50.a1_in1k --pretrained --wandb_entity atlas-ploras --checkpoint_dir checkpoints/mprage-resnet50-view2 --name mprage-resnet50-view2
