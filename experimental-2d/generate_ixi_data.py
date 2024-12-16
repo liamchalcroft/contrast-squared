@@ -24,7 +24,8 @@ def generate_ixi_dataset(
     metadata_path: str,
     slice_range: Tuple[int, int] = (100, 200),
     image_size: Tuple[int, int, int] = (224, 224, -1),
-    modalities: Optional[List[str]] = None
+    modalities: Optional[List[str]] = None,
+    test: bool = False
 ):
     """Generate H5 dataset from IXI data.
     
@@ -35,6 +36,7 @@ def generate_ixi_dataset(
         slice_range: Range of slices to extract (min, max)
         image_size: Size to resize images to (height, width)
         modalities: List of modalities to include. If None, uses ['t1', 't2', 'pd']
+        test: Run in test mode (process only first 5 images per modality)
     """
     if modalities is None:
         modalities = ['t1', 't2', 'pd']
@@ -77,6 +79,8 @@ def generate_ixi_dataset(
                 
                 # Get all preprocessed images
                 image_paths = sorted(glob.glob(os.path.join(data_path, "p_*.nii.gz")))
+                if test:
+                    image_paths = image_paths[:5]  # Take only first 5 images if in test mode
                 
                 # Set up transforms for this modality
                 transform_keys = [modality] + [f"label{i}" for i in range(1,4)]
@@ -184,6 +188,8 @@ if __name__ == "__main__":
     parser.add_argument('--modalities', type=str, nargs='+',
                       default=['t1', 't2', 'pd'],
                       help='Modalities to include')
+    parser.add_argument('--test', action='store_true',
+                      help='Run in test mode (process only first 5 images per modality)')
     
     args = parser.parse_args()
     
@@ -193,5 +199,6 @@ if __name__ == "__main__":
         metadata_path=args.metadata_path,
         slice_range=tuple(args.slice_range),
         image_size=tuple(args.image_size),
-        modalities=args.modalities
+        modalities=args.modalities,
+        test=args.test
     )
