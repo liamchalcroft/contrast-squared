@@ -109,7 +109,7 @@ def generate_ixi_dataset(
                     
                     # Add segmentation labels
                     for i in range(1, 4):
-                        label_path = os.path.join(data_path, f"c{i}p_IXI{subject_id}-{modality.upper()}.nii.gz")
+                        label_path = image_path.replace("p_IXI", f"c{i}p_IXI")
                         data_dict[f"label{i}"] = label_path
                     
                     # Apply transforms
