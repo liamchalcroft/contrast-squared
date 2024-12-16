@@ -129,6 +129,7 @@ def generate_ixi_dataset(
                     background = 1 - sum(labels)
                     labels.insert(0, background)
                     combined_labels = np.stack(labels, axis=0)
+                    combined_labels = (combined_labels * 255).astype(np.uint8)
                     
                     # Store in appropriate H5 groups with compression
                     for group_name, group in [
@@ -145,7 +146,7 @@ def generate_ixi_dataset(
                         
                         elif group_name == "segmentation":
                             subj_group.create_dataset(f"image_{modality}", data=slices, **compression_opts)
-                            subj_group.create_dataset(f"label_{modality}", data=combined_labels)
+                            subj_group.create_dataset(f"label_{modality}", data=combined_labels, **compression_opts)
                             subj_group[f"image_{modality}"].attrs['modality'] = modality
                             subj_group[f"image_{modality}"].attrs['site'] = SITE_NAMES[site]
                         
