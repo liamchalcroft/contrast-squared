@@ -22,18 +22,18 @@ def generate_ixi_dataset(
     input_dir: str, 
     output_path: str,
     metadata_path: str,
-    slice_range: Tuple[int, int] = (100, 200),
-    image_size: Tuple[int, int, int] = (224, 224, -1),
+    num_slices: int = 50,  # Number of center slices to extract
+    image_size: Tuple[int, int] = (224, 224),
     modalities: Optional[List[str]] = None,
     test: bool = False
 ):
     """Generate H5 dataset from IXI data.
     
     Args:
-        input_dir: Directory containing IXI dataset (e.g. '/path/to/IXI/')
+        input_dir: Directory containing IXI dataset
         output_path: Path to output H5 file
         metadata_path: Path to IXI metadata XLS file
-        slice_range: Range of slices to extract (min, max)
+        num_slices: Number of center slices to extract (default: 50)
         image_size: Size to resize images to (height, width)
         modalities: List of modalities to include. If None, uses ['t1', 't2', 'pd']
         test: Run in test mode (process only first 5 images per modality)
@@ -65,7 +65,7 @@ def generate_ixi_dataset(
         classification = f.create_group("classification")
         
         # Store dataset metadata
-        f.attrs['slice_range'] = slice_range
+        f.attrs['num_slices'] = num_slices
         f.attrs['image_size'] = image_size
         f.attrs.create('modalities', [m.encode('ascii') for m in modalities], dtype='S10')
         
@@ -119,15 +119,21 @@ def generate_ixi_dataset(
                     # Apply transforms
                     data = transform(data_dict)
                     
-                    # Extract relevant slices and convert to uint8
-                    slices = data[modality][0, :, :, slice_range[0]:slice_range[1]]
+                    # Get total number of slices and calculate center range
+                    total_slices = data[modality].shape[-1]
+                    center = total_slices // 2
+                    start = center - (num_slices // 2)
+                    end = start + num_slices
+                    
+                    # Extract center slices
+                    slices = data[modality][0, :, :, start:end]
                     slices = np.moveaxis(slices.numpy(), -1, 0)
                     slices = rescale_to_uint8(slices)
                     
                     # Process segmentation labels
                     labels = []
                     for i in range(1, 4):
-                        label = data[f"label{i}"][0, :, :, slice_range[0]:slice_range[1]]
+                        label = data[f"label{i}"][0, :, :, start:end]
                         label = np.moveaxis(label.numpy(), -1, 0)
                         labels.append(label)
                     
@@ -181,10 +187,10 @@ if __name__ == "__main__":
                       help='Path to output H5 file')
     parser.add_argument('--metadata_path', type=str, required=True,
                       help='Path to IXI metadata XLS file')
-    parser.add_argument('--slice_range', type=int, nargs=2, default=[100, 200],
-                      help='Range of slices to extract (min max)')
-    parser.add_argument('--image_size', type=int, nargs=3, default=[224, 224, -1],
-                      help='Size to resize images to (height width depth)')
+    parser.add_argument('--num_slices', type=int, default=50,
+                      help='Number of center slices to extract (default: 50)')
+    parser.add_argument('--image_size', type=int, nargs=2, default=[224, 224],
+                      help='Size to resize images to (height width)')
     parser.add_argument('--modalities', type=str, nargs='+',
                       default=['t1', 't2', 'pd'],
                       help='Modalities to include')
@@ -197,7 +203,7 @@ if __name__ == "__main__":
         input_dir=args.input_dir,
         output_path=args.output_path,
         metadata_path=args.metadata_path,
-        slice_range=tuple(args.slice_range),
+        num_slices=args.num_slices,
         image_size=tuple(args.image_size),
         modalities=args.modalities,
         test=args.test
