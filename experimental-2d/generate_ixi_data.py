@@ -114,8 +114,6 @@ def generate_ixi_dataset(
                     
                     # Apply transforms
                     data = transform(data_dict)
-
-                    print(f"Data for {modality} {subject_id}: {data[modality].shape}")
                     
                     # Extract relevant slices and convert to uint8
                     slices = data[modality][0, :, :, slice_range[0]:slice_range[1]]
