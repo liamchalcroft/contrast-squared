@@ -20,7 +20,7 @@ def generate_ixi_dataset(
     """Generate H5 dataset from IXI data.
     
     Args:
-        input_dir: Directory containing IXI dataset
+        input_dir: Directory containing IXI dataset (e.g. '/path/to/IXI/')
         output_path: Path to output H5 file
         metadata_path: Path to IXI metadata CSV
         slice_range: Range of slices to extract (min, max)
@@ -50,9 +50,6 @@ def generate_ixi_dataset(
         mn.transforms.NormalizeIntensityD(keys=modalities),
     ])
 
-    # Create output directory if needed
-    os.makedirs(os.path.dirname(output_path), exist_ok=True)
-    
     with h5py.File(output_path, 'w') as f:
         # Create groups for different tasks
         denoising = f.create_group("denoising")
@@ -66,91 +63,83 @@ def generate_ixi_dataset(
         
         # Process each site
         for site in ['guys', 'hh', 'iop']:
-            site_path = os.path.join(input_dir, site)
-            if not os.path.exists(site_path):
-                continue
+            for modality in modalities:
+                # Construct path to preprocessed data
+                data_path = os.path.join(input_dir, site, modality, "preprocessed")
+                if not os.path.exists(data_path):
+                    continue
                 
-            # Process each subject in this site
-            subject_paths = sorted(glob.glob(os.path.join(site_path, "IXI*")))
-            for subject_path in tqdm(subject_paths, desc=f"Processing {site} subjects"):
-                subject_id = os.path.basename(subject_path)
+                # Get all preprocessed images
+                image_paths = sorted(glob.glob(os.path.join(data_path, "p_*.nii.gz")))
                 
-                try:
-                    # Get subject metadata
-                    ixi_id = int(subject_id.split("-")[1])
-                    subject_meta = metadata_df[metadata_df['IXI_ID'] == ixi_id]
-                    
-                    if subject_meta.empty:
-                        print(f"No metadata found for subject {subject_id}")
-                        continue
-                    
-                    # Prepare data dictionary for transform
-                    data_dict = {
-                        mod: os.path.join(subject_path, f"{mod.upper()}.nii.gz")
-                        for mod in modalities
-                    }
-                    
-                    # Add segmentation labels (3 classes + background)
-                    for i in range(1, 4):
-                        data_dict[f"label{i}"] = os.path.join(subject_path, f"c{i}p_IXI{subject_id}-T1.nii.gz")
-                    
-                    # Apply transforms
-                    data = transform(data_dict)
-                    
-                    # Extract relevant slices and combine labels
-                    slices_dict = {
-                        mod: data[mod][0, :, :, slice_range[0]:slice_range[1]]
-                        for mod in modalities
-                    }
-                    
-                    # Combine segmentation labels with background
-                    labels = []
-                    for i in range(1, 4):
-                        label = data[f"label{i}"][0, :, :, slice_range[0]:slice_range[1]]
-                        labels.append(label)
-                    
-                    # Create background as 1 - sum of other labels
-                    background = 1 - sum(labels)
-                    labels.insert(0, background)  # Add background as first channel
-                    
-                    # Stack labels into single tensor
-                    combined_labels = np.stack(labels, axis=0)
-                    slices_dict["label"] = combined_labels
-                    
-                    # Store in H5 groups with site information
-                    for group_name, group in [
-                        ("denoising", denoising),
-                        ("segmentation", segmentation),
-                        ("classification", classification)
-                    ]:
-                        subj_group = group.create_group(subject_id)
+                for image_path in tqdm(image_paths, desc=f"Processing {site}/{modality}"):
+                    try:
+                        # Extract subject ID from filename
+                        subject_id = os.path.basename(image_path).split("-")[0][5:]  # Remove 'p_IXI' prefix
                         
-                        if group_name == "denoising":
-                            for mod in modalities:
-                                subj_group.create_dataset(mod, data=slices_dict[mod])
-                                # Add modality and site metadata
-                                subj_group[mod].attrs['modality'] = mod
-                                subj_group[mod].attrs['site'] = SITE_NAMES[site]
+                        # Get subject metadata
+                        ixi_id = int(subject_id)
+                        subject_meta = metadata_df[metadata_df['IXI_ID'] == ixi_id]
                         
-                        elif group_name == "segmentation":
-                            subj_group.create_dataset("image", data=slices_dict["t1"])
-                            subj_group.create_dataset("mask", data=slices_dict["mask"])
-                            # Add modality and site metadata
-                            subj_group['image'].attrs['modality'] = 't1'
-                            subj_group['image'].attrs['site'] = SITE_NAMES[site]
+                        if subject_meta.empty:
+                            print(f"No metadata found for subject {subject_id}")
+                            continue
                         
-                        elif group_name == "classification":
-                            for mod in modalities:
-                                subj_group.create_dataset(f"image_{mod}", data=slices_dict[mod])
-                                # Add modality and site metadata
-                                subj_group[f"image_{mod}"].attrs['modality'] = mod
-                                subj_group[f"image_{mod}"].attrs['site'] = SITE_NAMES[site]
-                                # Add demographic data
-                                subj_group[f"image_{mod}"].attrs['age'] = float(subject_meta['AGE'].iloc[0])
-                                subj_group[f"image_{mod}"].attrs['sex'] = subject_meta['SEX'].iloc[0]
+                        # Prepare data dictionary for transform
+                        data_dict = {modality: image_path}
+                        
+                        # Add segmentation labels if this is T1
+                        if modality == 't1':
+                            for i in range(1, 4):
+                                label_path = os.path.join(data_path, f"c{i}p_IXI{subject_id}-T1.nii.gz")
+                                data_dict[f"label{i}"] = label_path
+                        
+                        # Apply transforms
+                        data = transform(data_dict)
+                        
+                        # Extract relevant slices
+                        slices = data[modality][0, :, :, slice_range[0]:slice_range[1]]
+                        
+                        # If T1, process segmentation labels
+                        if modality == 't1':
+                            labels = []
+                            for i in range(1, 4):
+                                label = data[f"label{i}"][0, :, :, slice_range[0]:slice_range[1]]
+                                labels.append(label)
+                            
+                            # Create background as 1 - sum of other labels
+                            background = 1 - sum(labels)
+                            labels.insert(0, background)
+                            combined_labels = np.stack(labels, axis=0)
+                        
+                        # Store in appropriate H5 groups
+                        for group_name, group in [
+                            ("denoising", denoising),
+                            ("segmentation", segmentation),
+                            ("classification", classification)
+                        ]:
+                            subj_group = group.create_group(f"IXI{subject_id}")
+                            
+                            if group_name == "denoising":
+                                subj_group.create_dataset(modality, data=slices)
+                                subj_group[modality].attrs['modality'] = modality
+                                subj_group[modality].attrs['site'] = SITE_NAMES[site]
+                            
+                            elif group_name == "segmentation" and modality == 't1':
+                                subj_group.create_dataset("image", data=slices)
+                                subj_group.create_dataset("label", data=combined_labels)
+                                subj_group['image'].attrs['modality'] = modality
+                                subj_group['image'].attrs['site'] = SITE_NAMES[site]
+                            
+                            elif group_name == "classification":
+                                subj_group.create_dataset(f"image_{modality}", data=slices)
+                                subj_group[f"image_{modality}"].attrs['modality'] = modality
+                                subj_group[f"image_{modality}"].attrs['site'] = SITE_NAMES[site]
+                                subj_group[f"image_{modality}"].attrs['age'] = float(subject_meta['AGE'].iloc[0])
+                                subj_group[f"image_{modality}"].attrs['sex'] = subject_meta['SEX'].iloc[0]
                     
-                except Exception as e:
-                    print(f"Error processing subject {subject_id}: {e}")
+                    except Exception as e:
+                        print(f"Error processing {image_path}: {e}")
 
 if __name__ == "__main__":
     import argparse
