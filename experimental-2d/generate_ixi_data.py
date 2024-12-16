@@ -168,8 +168,8 @@ if __name__ == "__main__":
                       help='Path to IXI metadata XLS file')
     parser.add_argument('--slice_range', type=int, nargs=2, default=[100, 200],
                       help='Range of slices to extract (min max)')
-    parser.add_argument('--image_size', type=int, nargs=2, default=[224, 224],
-                      help='Size to resize images to (height width)')
+    parser.add_argument('--image_size', type=int, nargs=3, default=[224, 224, -1],
+                      help='Size to resize images to (height width depth)')
     parser.add_argument('--modalities', type=str, nargs='+',
                       default=['t1', 't2', 'pd'],
                       help='Modalities to include')
