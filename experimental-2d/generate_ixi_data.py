@@ -23,7 +23,7 @@ def generate_ixi_dataset(
     output_path: str,
     metadata_path: str,
     slice_range: Tuple[int, int] = (100, 200),
-    image_size: Tuple[int, int] = (224, 224),
+    image_size: Tuple[int, int, int] = (224, 224, -1),
     modalities: Optional[List[str]] = None
 ):
     """Generate H5 dataset from IXI data.
