@@ -139,25 +139,33 @@ def generate_ixi_dataset(
                         ("segmentation", segmentation),
                         ("classification", classification)
                     ]:
-                        subj_group = group.create_group(f"IXI{subject_id}")
+                        # Create subject group if it doesn't exist
+                        subj_name = f"IXI{subject_id}"
+                        if subj_name not in group:
+                            subj_group = group.create_group(subj_name)
+                        else:
+                            subj_group = group[subj_name]
                         
                         if group_name == "denoising":
-                            subj_group.create_dataset(modality, data=slices, **compression_opts)
-                            subj_group[modality].attrs['modality'] = modality
-                            subj_group[modality].attrs['site'] = SITE_NAMES[site]
+                            if modality not in subj_group:  # Check if modality exists
+                                subj_group.create_dataset(modality, data=slices, **compression_opts)
+                                subj_group[modality].attrs['modality'] = modality
+                                subj_group[modality].attrs['site'] = SITE_NAMES[site]
                         
                         elif group_name == "segmentation":
-                            subj_group.create_dataset(f"image_{modality}", data=slices, **compression_opts)
-                            subj_group.create_dataset(f"label_{modality}", data=combined_labels, **compression_opts)
-                            subj_group[f"image_{modality}"].attrs['modality'] = modality
-                            subj_group[f"image_{modality}"].attrs['site'] = SITE_NAMES[site]
+                            if f"image_{modality}" not in subj_group:  # Check if datasets exist
+                                subj_group.create_dataset(f"image_{modality}", data=slices, **compression_opts)
+                                subj_group.create_dataset(f"label_{modality}", data=combined_labels, **compression_opts)
+                                subj_group[f"image_{modality}"].attrs['modality'] = modality
+                                subj_group[f"image_{modality}"].attrs['site'] = SITE_NAMES[site]
                         
                         elif group_name == "classification":
-                            subj_group.create_dataset(f"image_{modality}", data=slices, **compression_opts)
-                            subj_group[f"image_{modality}"].attrs['modality'] = modality
-                            subj_group[f"image_{modality}"].attrs['site'] = SITE_NAMES[site]
-                            subj_group[f"image_{modality}"].attrs['age'] = float(subject_meta['AGE'].iloc[0])
-                            subj_group[f"image_{modality}"].attrs['sex'] = subject_meta['SEX_ID (1=m, 2=f)'].iloc[0]
+                            if f"image_{modality}" not in subj_group:  # Check if dataset exists
+                                subj_group.create_dataset(f"image_{modality}", data=slices, **compression_opts)
+                                subj_group[f"image_{modality}"].attrs['modality'] = modality
+                                subj_group[f"image_{modality}"].attrs['site'] = SITE_NAMES[site]
+                                subj_group[f"image_{modality}"].attrs['age'] = float(subject_meta['AGE'].iloc[0])
+                                subj_group[f"image_{modality}"].attrs['sex'] = subject_meta['SEX_ID (1=m, 2=f)'].iloc[0]
 
 if __name__ == "__main__":
     import argparse
