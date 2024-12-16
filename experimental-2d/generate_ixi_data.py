@@ -8,6 +8,15 @@ import pandas as pd
 from tqdm import tqdm
 from pathlib import Path
 from typing import Tuple, Optional, List
+from utils import ClipPercentilesD
+
+def rescale_to_uint8(data, dtype=np.uint8):
+    """Rescale data to [0, 255] range and convert to uint8"""
+    data_min = data.min()
+    data_max = data.max()
+    if data_max > data_min:
+        data = 255 * (data - data_min) / (data_max - data_min)
+    return data.astype(dtype)
 
 def generate_ixi_dataset(
     input_dir: str, 
@@ -40,15 +49,12 @@ def generate_ixi_dataset(
         'iop': 'IOP'
     }
     
-    # Set up transforms
-    transform = mn.transforms.Compose([
-        mn.transforms.LoadImageD(keys=modalities + [f"label{i}" for i in range(1,4)]),
-        mn.transforms.EnsureChannelFirstD(keys=modalities + [f"label{i}" for i in range(1,4)]),
-        mn.transforms.OrientationD(keys=modalities + [f"label{i}" for i in range(1,4)], axcodes="RAS"),
-        mn.transforms.SpacingD(keys=modalities + [f"label{i}" for i in range(1,4)], pixdim=(1.0, 1.0, 1.0)),
-        mn.transforms.ResizeD(keys=modalities + [f"label{i}" for i in range(1,4)], spatial_size=image_size),
-        mn.transforms.NormalizeIntensityD(keys=modalities),
-    ])
+    # Configure HDF5 for compression
+    compression_opts = {
+        'compression': 'gzip',
+        'compression_opts': 4,
+        'dtype': np.uint8
+    }
 
     with h5py.File(output_path, 'w') as f:
         # Create groups for different tasks
@@ -72,71 +78,87 @@ def generate_ixi_dataset(
                 # Get all preprocessed images
                 image_paths = sorted(glob.glob(os.path.join(data_path, "p_*.nii.gz")))
                 
+                # Set up transforms for this modality
+                transform_keys = [modality] + [f"label{i}" for i in range(1,4)]
+                
+                transform = mn.transforms.Compose([
+                    mn.transforms.LoadImageD(keys=transform_keys),
+                    mn.transforms.EnsureChannelFirstD(keys=transform_keys),
+                    mn.transforms.OrientationD(keys=transform_keys, axcodes="RAS"),
+                    mn.transforms.SpacingD(keys=transform_keys, pixdim=(1.0, 1.0, 1.0)),
+                    mn.transforms.ResizeD(keys=transform_keys, spatial_size=image_size),
+                    ClipPercentilesD(keys=[modality], lower=0.5, upper=99.5),
+                ])
+                
                 for image_path in tqdm(image_paths, desc=f"Processing {site}/{modality}"):
-                      # Extract subject ID from filename
-                      subject_id = os.path.basename(image_path).split("-")[0][5:]  # Remove 'p_IXI' prefix
-                      
-                      # Get subject metadata
-                      ixi_id = int(subject_id)
-                      subject_meta = metadata_df[metadata_df['IXI_ID'] == ixi_id]
-                      
-                      if subject_meta.empty:
-                          print(f"No metadata found for subject {subject_id}")
-                          continue
-                      
-                      # Prepare data dictionary for transform
-                      data_dict = {modality: image_path}
-                      
-                      # Add segmentation labels if this is T1
-                      if modality == 't1':
-                          for i in range(1, 4):
-                              label_path = os.path.join(data_path, f"c{i}p_IXI{subject_id}-T1.nii.gz")
-                              data_dict[f"label{i}"] = label_path
-                      
-                      # Apply transforms
-                      data = transform(data_dict)
-                      
-                      # Extract relevant slices
-                      slices = data[modality][0, :, :, slice_range[0]:slice_range[1]]
-                      
-                      # If T1, process segmentation labels
-                      if modality == 't1':
-                          labels = []
-                          for i in range(1, 4):
-                              label = data[f"label{i}"][0, :, :, slice_range[0]:slice_range[1]]
-                              labels.append(label)
-                          
-                          # Create background as 1 - sum of other labels
-                          background = 1 - sum(labels)
-                          labels.insert(0, background)
-                          combined_labels = np.stack(labels, axis=0)
-                      
-                      # Store in appropriate H5 groups
-                      for group_name, group in [
-                          ("denoising", denoising),
-                          ("segmentation", segmentation),
-                          ("classification", classification)
-                      ]:
-                          subj_group = group.create_group(f"IXI{subject_id}")
-                          
-                          if group_name == "denoising":
-                              subj_group.create_dataset(modality, data=slices)
-                              subj_group[modality].attrs['modality'] = modality
-                              subj_group[modality].attrs['site'] = SITE_NAMES[site]
-                          
-                          elif group_name == "segmentation" and modality == 't1':
-                              subj_group.create_dataset("image", data=slices)
-                              subj_group.create_dataset("label", data=combined_labels)
-                              subj_group['image'].attrs['modality'] = modality
-                              subj_group['image'].attrs['site'] = SITE_NAMES[site]
-                          
-                          elif group_name == "classification":
-                              subj_group.create_dataset(f"image_{modality}", data=slices)
-                              subj_group[f"image_{modality}"].attrs['modality'] = modality
-                              subj_group[f"image_{modality}"].attrs['site'] = SITE_NAMES[site]
-                              subj_group[f"image_{modality}"].attrs['age'] = float(subject_meta['AGE'].iloc[0])
-                              subj_group[f"image_{modality}"].attrs['sex'] = subject_meta['SEX'].iloc[0]
+                    try:
+                        # Extract subject ID from filename
+                        subject_id = os.path.basename(image_path).split("-")[0][5:]
+                        
+                        # Get subject metadata
+                        ixi_id = int(subject_id)
+                        subject_meta = metadata_df[metadata_df['IXI_ID'] == ixi_id]
+                        
+                        if subject_meta.empty:
+                            print(f"No metadata found for subject {subject_id}")
+                            continue
+                        
+                        # Prepare data dictionary for transform
+                        data_dict = {
+                            modality: image_path,
+                        }
+                        
+                        # Add segmentation labels
+                        for i in range(1, 4):
+                            label_path = os.path.join(data_path, f"c{i}p_IXI{subject_id}-{modality.upper()}.nii.gz")
+                            data_dict[f"label{i}"] = label_path
+                        
+                        # Apply transforms
+                        data = transform(data_dict)
+                        
+                        # Extract relevant slices and convert to uint8
+                        slices = data[modality][0, :, :, slice_range[0]:slice_range[1]]
+                        slices = rescale_to_uint8(slices.numpy())
+                        
+                        # Process segmentation labels
+                        labels = []
+                        for i in range(1, 4):
+                            label = data[f"label{i}"][0, :, :, slice_range[0]:slice_range[1]]
+                            labels.append(label)
+                        
+                        # Create background as 1 - sum of other labels
+                        background = 1 - sum(labels)
+                        labels.insert(0, background)
+                        combined_labels = np.stack(labels, axis=0)
+                        
+                        # Store in appropriate H5 groups with compression
+                        for group_name, group in [
+                            ("denoising", denoising),
+                            ("segmentation", segmentation),
+                            ("classification", classification)
+                        ]:
+                            subj_group = group.create_group(f"IXI{subject_id}")
+                            
+                            if group_name == "denoising":
+                                subj_group.create_dataset(modality, data=slices, **compression_opts)
+                                subj_group[modality].attrs['modality'] = modality
+                                subj_group[modality].attrs['site'] = SITE_NAMES[site]
+                            
+                            elif group_name == "segmentation":
+                                subj_group.create_dataset(f"image_{modality}", data=slices, **compression_opts)
+                                subj_group.create_dataset(f"label_{modality}", data=combined_labels)
+                                subj_group[f"image_{modality}"].attrs['modality'] = modality
+                                subj_group[f"image_{modality}"].attrs['site'] = SITE_NAMES[site]
+                            
+                            elif group_name == "classification":
+                                subj_group.create_dataset(f"image_{modality}", data=slices, **compression_opts)
+                                subj_group[f"image_{modality}"].attrs['modality'] = modality
+                                subj_group[f"image_{modality}"].attrs['site'] = SITE_NAMES[site]
+                                subj_group[f"image_{modality}"].attrs['age'] = float(subject_meta['AGE'].iloc[0])
+                                subj_group[f"image_{modality}"].attrs['sex'] = subject_meta['SEX'].iloc[0]
                     
+                    except Exception as e:
+                        print(f"Error processing {image_path}: {e}")
 
 if __name__ == "__main__":
     import argparse
