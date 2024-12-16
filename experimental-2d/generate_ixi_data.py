@@ -119,18 +119,20 @@ def generate_ixi_dataset(
                     
                     # Extract relevant slices and convert to uint8
                     slices = data[modality][0, :, :, slice_range[0]:slice_range[1]]
-                    slices = rescale_to_uint8(slices.numpy())
+                    slices = np.moveaxis(slices.numpy(), -1, 0)
+                    slices = rescale_to_uint8(slices)
                     
                     # Process segmentation labels
                     labels = []
                     for i in range(1, 4):
                         label = data[f"label{i}"][0, :, :, slice_range[0]:slice_range[1]]
+                        label = np.moveaxis(label.numpy(), -1, 0)
                         labels.append(label)
                     
                     # Create background as 1 - sum of other labels
                     background = 1 - sum(labels)
                     labels.insert(0, background)
-                    combined_labels = np.stack(labels, axis=0)
+                    combined_labels = np.stack(labels, axis=1)
                     combined_labels = (combined_labels * 255).astype(np.uint8)
                     
                     # Store in appropriate H5 groups with compression
