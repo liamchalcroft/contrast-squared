@@ -154,7 +154,7 @@ def generate_ixi_dataset(
                             subj_group[f"image_{modality}"].attrs['modality'] = modality
                             subj_group[f"image_{modality}"].attrs['site'] = SITE_NAMES[site]
                             subj_group[f"image_{modality}"].attrs['age'] = float(subject_meta['AGE'].iloc[0])
-                            subj_group[f"image_{modality}"].attrs['sex'] = subject_meta['SEX'].iloc[0]
+                            subj_group[f"image_{modality}"].attrs['sex'] = subject_meta['SEX_ID (1=m, 2=f)'].iloc[0]
 
 if __name__ == "__main__":
     import argparse
