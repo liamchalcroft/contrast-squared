@@ -82,7 +82,8 @@ def verify_ixi_dataset(h5_path="task_data/ixi.h5"):
                     if task == 'denoising':
                         data = task_group[subj][mod][:]
                         plot_sample(data[len(data)//2], f"{task}\n{site} - {mod}")
-                    
+
+                        plt.axis('off')
                     elif task == 'segmentation':
                         data = task_group[subj][f'image_{mod}'][:]
                         label = task_group[subj][f'label_{mod}'][:]
@@ -93,15 +94,18 @@ def verify_ixi_dataset(h5_path="task_data/ixi.h5"):
                         
                         plt.subplot(3, 6, task_idx*6 + list(sites.keys()).index(site)*2 + 2)
                         plot_sample(label[len(data)//2], f"Labels\n{site} - {mod}", is_label=True)
-                    
+
+                        plt.axis('off')
                     else:  # classification
                         data = task_group[subj][f'image_{mod}'][:]
                         plot_sample(data[len(data)//2], f"{task}\n{site} - {mod}\nAge: {age}, Sex: {sex}")
+
+                        plt.axis('off')
                 else:
                     print("No samples found")
         
         plt.tight_layout()
-        plt.savefig('ixi_dataset_verification.png')
+        plt.savefig('task_data/ixi_dataset_verification.png')
         plt.close()
 
 if __name__ == "__main__":
