@@ -22,7 +22,7 @@ def generate_ixi_dataset(
     Args:
         input_dir: Directory containing IXI dataset (e.g. '/path/to/IXI/')
         output_path: Path to output H5 file
-        metadata_path: Path to IXI metadata CSV
+        metadata_path: Path to IXI metadata XLS file
         slice_range: Range of slices to extract (min, max)
         image_size: Size to resize images to (height, width)
         modalities: List of modalities to include. If None, uses ['t1', 't2', 'pd']
@@ -30,8 +30,8 @@ def generate_ixi_dataset(
     if modalities is None:
         modalities = ['t1', 't2', 'pd']
 
-    # Load metadata
-    metadata_df = pd.read_csv(metadata_path)
+    # Load metadata from Excel file
+    metadata_df = pd.read_excel(metadata_path)
     
     # Site mapping
     SITE_NAMES = {
@@ -150,7 +150,7 @@ if __name__ == "__main__":
     parser.add_argument('--output_path', type=str, required=True,
                       help='Path to output H5 file')
     parser.add_argument('--metadata_path', type=str, required=True,
-                      help='Path to IXI metadata CSV')
+                      help='Path to IXI metadata XLS file')
     parser.add_argument('--slice_range', type=int, nargs=2, default=[100, 200],
                       help='Range of slices to extract (min max)')
     parser.add_argument('--image_size', type=int, nargs=2, default=[224, 224],
