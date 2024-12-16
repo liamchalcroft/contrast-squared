@@ -86,8 +86,8 @@ def generate_ixi_dataset(
                     mn.transforms.EnsureChannelFirstD(keys=transform_keys),
                     mn.transforms.OrientationD(keys=transform_keys, axcodes="RAS"),
                     mn.transforms.SpacingD(keys=transform_keys, pixdim=(1.0, 1.0, 1.0)),
-                    mn.transforms.ResizeD(keys=transform_keys, spatial_size=image_size),
                     ClipPercentilesD(keys=[modality], lower=0.5, upper=99.5),
+                    mn.transforms.ResizeD(keys=transform_keys, spatial_size=image_size),
                 ])
                 
                 for image_path in tqdm(image_paths, desc=f"Processing {site}/{modality}"):
