@@ -18,7 +18,13 @@ def verify_ixi_dataset(h5_path="task_data/ixi.h5"):
         print("Dataset Metadata:")
         print(f"Slice range: {f.attrs['slice_range']}")
         print(f"Image size: {f.attrs['image_size']}")
-        print(f"Modalities: {[m.decode() for m in f.attrs['modalities']]}\n")
+        try:
+            # Handle both string and byte encodings
+            modalities = [m.decode('ascii') if isinstance(m, bytes) else m 
+                         for m in f.attrs['modalities']]
+            print(f"Modalities: {modalities}\n")
+        except AttributeError:
+            print(f"Modalities: {f.attrs['modalities']}\n")
         
         # Create figure for visualization
         fig = plt.figure(figsize=(15, 12))

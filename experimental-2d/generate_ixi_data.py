@@ -65,7 +65,7 @@ def generate_ixi_dataset(
         # Store dataset metadata
         f.attrs['slice_range'] = slice_range
         f.attrs['image_size'] = image_size
-        f.attrs['modalities'] = [m.encode('utf-8') for m in modalities]
+        f.attrs.create('modalities', [m.encode('ascii') for m in modalities], dtype='S10')
         
         # Process each site
         for site in ['guys', 'hh', 'iop']:
