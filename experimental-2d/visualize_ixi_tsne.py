@@ -60,8 +60,10 @@ def create_tsne_plots(h5_path, model_name, weights_path, output_dir, perplexity=
                 central_slice_tensor = transform(central_slice_tensor)
                 
                 # Extract features
-                feature = extract_features(model, central_slice_tensor.unsqueeze(0), device)
-                features.append(feature)
+                model.eval()
+                with torch.no_grad():
+                    feature = model(central_slice_tensor.unsqueeze(0).to(device))
+                features.append(feature.cpu().numpy())
                 
                 # Add metadata for the central slice
                 site_labels.append(site)
