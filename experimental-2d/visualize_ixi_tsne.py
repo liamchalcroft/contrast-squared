@@ -21,16 +21,24 @@ def extract_features(model, data, device):
         feature = model(data)
     return feature.cpu().numpy()
 
+def strip_prefix_state_dict(state_dict, prefix_to_remove):
+    """Load weights and remove a specific prefix from the keys."""
+    new_state_dict = {}
+    for k, v in state_dict.items():
+        new_key = k.replace(prefix_to_remove, '', 1)  # Remove the prefix
+        new_state_dict[new_key] = v
+    return new_state_dict
+
 def create_tsne_plots(h5_path, model_name, weights_path, output_dir, perplexity=30, n_iter=1000, pretrained=False):
     """Create t-SNE plots for IXI dataset slices, colored by site and modality."""
     
     # Load model
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = timm.create_model(model_name, pretrained=pretrained, num_classes=0, in_chans=1)
-    model = torch.compile(model)
     if weights_path:
-        model.load_state_dict(torch.load(weights_path, map_location=device)['model_state_dict'])
+        model.load_state_dict(strip_prefix_state_dict(torch.load(weights_path, map_location=device)['model_state_dict'], '_orig_mod.encoder.'))
     model.to(device)
+    model = torch.compile(model)
     
     # Define normalization transform
     transform = Compose([
