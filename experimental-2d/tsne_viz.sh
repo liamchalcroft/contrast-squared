@@ -34,6 +34,12 @@ declare -A MODELS
 MODELS=(
     ["mprage-resnet50-view2"]="checkpoints/mprage-resnet50-view2/latest_model.pt"
     ["bloch-resnet50-view2"]="checkpoints/bloch-resnet50-view2/latest_model.pt"
+    ["mprage-resnet50-view5"]="checkpoints/mprage-resnet50-view5/latest_model.pt"
+    ["bloch-resnet50-view5"]="checkpoints/bloch-resnet50-view5/latest_model.pt"
+    ["mprage-resnet50-barlow"]="checkpoints/mprage-resnet50-barlow/latest_model.pt"
+    ["bloch-resnet50-barlow"]="checkpoints/bloch-resnet50-barlow/latest_model.pt"
+    ["mprage-resnet50-vicreg"]="checkpoints/mprage-resnet50-vicreg/latest_model.pt"
+    ["bloch-resnet50-vicreg"]="checkpoints/bloch-resnet50-vicreg/latest_model.pt"
 )
 
 # Create output directory if it doesn't exist
