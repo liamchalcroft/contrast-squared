@@ -2,12 +2,16 @@ import h5py
 import numpy as np
 from sklearn.manifold import TSNE
 import matplotlib.pyplot as plt
+import seaborn as sns
 import torch
 import timm
 from tqdm import tqdm
 import argparse
 import os
 from torchvision.transforms import Compose, Normalize
+
+# Ensure the use of a consistent style
+sns.set(style="whitegrid")
 
 def extract_features(model, data, device):
     """Extract features from the model for a single slice."""
@@ -93,44 +97,52 @@ def create_tsne_plots(h5_path, model_name, weights_path, output_dir, perplexity=
     
     # Plot by site
     plt.figure(figsize=(10, 10))
-    site_colors = {'GST': '#1f77b4', 'HH': '#2ca02c', 'IOP': '#d62728'}
-    for site in site_colors:
+    site_colors = sns.color_palette("Set2", n_colors=3)
+    site_labels_unique = list(set(site_labels))
+    for i, site in enumerate(site_labels_unique):
         mask = np.array(site_labels) == site
         plt.scatter(embeddings[mask, 0], embeddings[mask, 1], 
-                   c=site_colors[site], label=site, alpha=0.5, s=10)
-    plt.title('t-SNE by Site')
-    plt.legend()
+                   c=[site_colors[i]], label=site, alpha=0.7, s=20, edgecolor='w', linewidth=0.5)
+    plt.title('t-SNE by Site', fontsize=16)
+    plt.legend(title="Site", fontsize=12)
+    plt.xlabel('t-SNE 1', fontsize=14)
+    plt.ylabel('t-SNE 2', fontsize=14)
     plt.tight_layout()
-    plt.savefig(os.path.join(output_dir, 'ixi_tsne_by_site.png'), dpi=300, bbox_inches='tight')
+    plt.savefig(os.path.join(output_dir, 'ixi_tsne_by_site.png'), dpi=600, bbox_inches='tight')
     plt.close()
     
     # Plot by modality
     plt.figure(figsize=(10, 10))
-    modality_colors = {'t1': '#ff7f0e', 't2': '#9467bd', 'pd': '#8c564b'}
-    for modality in modality_colors:
+    modality_colors = sns.color_palette("Dark2", n_colors=3)
+    modality_labels_unique = list(set(modality_labels))
+    for i, modality in enumerate(modality_labels_unique):
         mask = np.array(modality_labels) == modality
         plt.scatter(embeddings[mask, 0], embeddings[mask, 1], 
-                   c=modality_colors[modality], label=modality, alpha=0.5, s=10)
-    plt.title('t-SNE by Modality')
-    plt.legend()
+                   c=[modality_colors[i]], label=modality, alpha=0.7, s=20, edgecolor='w', linewidth=0.5)
+    plt.title('t-SNE by Modality', fontsize=16)
+    plt.legend(title="Modality", fontsize=12)
+    plt.xlabel('t-SNE 1', fontsize=14)
+    plt.ylabel('t-SNE 2', fontsize=14)
     plt.tight_layout()
-    plt.savefig(os.path.join(output_dir, 'ixi_tsne_by_modality.png'), dpi=300, bbox_inches='tight')
+    plt.savefig(os.path.join(output_dir, 'ixi_tsne_by_modality.png'), dpi=600, bbox_inches='tight')
     plt.close()
     
     # Combined plot (site and modality)
     plt.figure(figsize=(12, 12))
     site_markers = {'GST': 'o', 'HH': 'x', 'IOP': 's'}
     for site in site_markers:
-        for modality in modality_colors:
+        for i, modality in enumerate(modality_labels_unique):
             site_mask = np.array(site_labels) == site
             modality_mask = np.array(modality_labels) == modality
             combined_mask = site_mask & modality_mask
             plt.scatter(embeddings[combined_mask, 0], embeddings[combined_mask, 1], 
-                       c=modality_colors[modality], marker=site_markers[site], label=f'{site}-{modality}', alpha=0.5, s=10)
-    plt.title('t-SNE by Site and Modality')
-    plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+                       c=[modality_colors[i]], marker=site_markers[site], label=f'{site}-{modality}', alpha=0.7, s=20, edgecolor='w', linewidth=0.5)
+    plt.title('t-SNE by Site and Modality', fontsize=16)
+    plt.legend(title="Site-Modality", bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=12)
+    plt.xlabel('t-SNE 1', fontsize=14)
+    plt.ylabel('t-SNE 2', fontsize=14)
     plt.tight_layout()
-    plt.savefig(os.path.join(output_dir, 'ixi_tsne_combined.png'), dpi=300, bbox_inches='tight')
+    plt.savefig(os.path.join(output_dir, 'ixi_tsne_combined.png'), dpi=600, bbox_inches='tight')
     plt.close()
 
 if __name__ == "__main__":
