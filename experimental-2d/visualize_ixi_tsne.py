@@ -76,6 +76,7 @@ def create_tsne_plots(h5_path, model_name, weights_path, output_dir, perplexity=
         features = np.vstack(features)
         
         # Save features and metadata
+        print("Saving features and metadata...")
         np.save(features_path, features)
         with open(os.path.join(output_dir, 'metadata.npy'), 'wb') as f:
             np.save(f, site_labels)
