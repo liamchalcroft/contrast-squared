@@ -47,57 +47,67 @@ def create_tsne_plots(h5_path, model_name, weights_path, output_dir, perplexity=
     
     # Load or compute features
     features_path = os.path.join(output_dir, 'features.npy')
-    if os.path.exists(features_path):
-        print("Loading precomputed features...")
-        features = np.load(features_path)
+    embeddings_path = os.path.join(output_dir, 'embeddings.npy')
+    if os.path.exists(embeddings_path):
+        print("Loading precomputed t-SNE embeddings...")
+        embeddings = np.load(embeddings_path)
         with open(os.path.join(output_dir, 'metadata.npy'), 'rb') as f:
             site_labels = np.load(f)
             modality_labels = np.load(f)
     else:
-        print("Loading data and extracting features...")
-        features = []
-        site_labels = []
-        modality_labels = []
-        
-        with h5py.File(h5_path, 'r') as f:
-            denoising = f['denoising']
+        if os.path.exists(features_path):
+            print("Loading precomputed features...")
+            features = np.load(features_path)
+            with open(os.path.join(output_dir, 'metadata.npy'), 'rb') as f:
+                site_labels = np.load(f)
+                modality_labels = np.load(f)
+        else:
+            print("Loading data and extracting features...")
+            features = []
+            site_labels = []
+            modality_labels = []
             
-            # Collect the central slice and its metadata
-            for subject in tqdm(denoising.keys(), desc="Loading central slices"):
-                for modality in denoising[subject].keys():
-                    slices = denoising[subject][modality][:]  # Shape: [num_slices, H, W]
-                    site = denoising[subject][modality].attrs['site']
-                    
-                    # Select the central slice
-                    central_slice = slices[len(slices) // 2]
-                    central_slice = central_slice[np.newaxis, :, :]  # Add channel dimension
-                    central_slice_tensor = torch.tensor(central_slice, dtype=torch.float32) / 255.0
-                    
-                    # Apply normalization
-                    central_slice_tensor = transform(central_slice_tensor)
-                    
-                    # Extract features
-                    feature = extract_features(model, central_slice_tensor.unsqueeze(0), device)
-                    features.append(feature)
-                    
-                    # Add metadata for the central slice
-                    site_labels.append(site)
-                    modality_labels.append(modality)
+            with h5py.File(h5_path, 'r') as f:
+                denoising = f['denoising']
+                
+                # Collect the central slice and its metadata
+                for subject in tqdm(denoising.keys(), desc="Loading central slices"):
+                    for modality in denoising[subject].keys():
+                        slices = denoising[subject][modality][:]  # Shape: [num_slices, H, W]
+                        site = denoising[subject][modality].attrs['site']
+                        
+                        # Select the central slice
+                        central_slice = slices[len(slices) // 2]
+                        central_slice = central_slice[np.newaxis, :, :]  # Add channel dimension
+                        central_slice_tensor = torch.tensor(central_slice, dtype=torch.float32) / 255.0
+                        
+                        # Apply normalization
+                        central_slice_tensor = transform(central_slice_tensor)
+                        
+                        # Extract features
+                        feature = model(central_slice_tensor.unsqueeze(0).to(device)).cpu().numpy()
+                        features.append(feature)
+                        
+                        # Add metadata for the central slice
+                        site_labels.append(site)
+                        modality_labels.append(modality)
+            
+            # Convert to numpy arrays
+            features = np.vstack(features)
+            
+            # Save features and metadata
+            np.save(features_path, features)
+            with open(os.path.join(output_dir, 'metadata.npy'), 'wb') as f:
+                np.save(f, site_labels)
+                np.save(f, modality_labels)
         
-        # Convert to numpy arrays
-        features = np.vstack(features)
+        # Perform t-SNE
+        print("Computing t-SNE...")
+        tsne = TSNE(n_components=2, perplexity=perplexity, n_iter=n_iter, random_state=42)
+        embeddings = tsne.fit_transform(features)
         
-        # Save features and metadata
-        print("Saving features and metadata...")
-        np.save(features_path, features)
-        with open(os.path.join(output_dir, 'metadata.npy'), 'wb') as f:
-            np.save(f, site_labels)
-            np.save(f, modality_labels)
-    
-    # Perform t-SNE
-    print("Computing t-SNE...")
-    tsne = TSNE(n_components=2, perplexity=perplexity, n_iter=n_iter, random_state=42)
-    embeddings = tsne.fit_transform(features)
+        # Save t-SNE embeddings
+        np.save(embeddings_path, embeddings)
     
     # Create plots
     print("Creating plots...")
