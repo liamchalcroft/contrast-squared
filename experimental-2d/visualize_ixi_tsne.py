@@ -117,7 +117,11 @@ def create_tsne_plots(h5_path, model_name, weights_path, output_dir, perplexity=
     # Mapping for legend labels
     modality_labels_map = {'t1': 'T1w', 't2': 'T2w', 'pd': 'PDw'}
 
-    # Combined plot (site and modality)
+    # Define fixed axis limits
+    xlim = (-2.5, 2.5)  # Example values, adjust based on your data
+    ylim = (-2.5, 2.5)  # Example values, adjust based on your data
+
+    # Create combined plot (site and modality)
     plt.figure(figsize=(12, 12))
     for site in site_order:
         for modality in modality_order:
@@ -126,6 +130,10 @@ def create_tsne_plots(h5_path, model_name, weights_path, output_dir, perplexity=
             combined_mask = site_mask & modality_mask
             plt.scatter(embeddings[combined_mask, 0], embeddings[combined_mask, 1], 
                        c=[modality_colors[modality]], marker=site_markers[site], alpha=0.7, s=50, edgecolor='w', linewidth=0.5)
+
+    # Set fixed axis limits
+    plt.xlim(xlim)
+    plt.ylim(ylim)
 
     # Create custom legend for modalities (colors)
     modality_legend_handles = [plt.Line2D([0], [0], marker='o', color='w', label=modality_labels_map[modality],
