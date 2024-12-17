@@ -13,14 +13,6 @@ from torchvision.transforms import Compose, Normalize
 # Ensure the use of a consistent style
 sns.set(style="whitegrid")
 
-def extract_features(model, data, device):
-    """Extract features from the model for a single slice."""
-    model.eval()
-    with torch.no_grad():
-        data = data.to(device)
-        feature = model(data)
-    return feature.cpu().numpy()
-
 def strip_prefix_state_dict(state_dict, prefix_to_remove):
     """Load weights and remove a specific prefix from the keys."""
     new_state_dict = {}
@@ -85,7 +77,8 @@ def create_tsne_plots(h5_path, model_name, weights_path, output_dir, perplexity=
                         central_slice_tensor = transform(central_slice_tensor)
                         
                         # Extract features
-                        feature = model(central_slice_tensor.unsqueeze(0).to(device)).cpu().numpy()
+                        with torch.no_grad():
+                            feature = model(central_slice_tensor.unsqueeze(0).to(device)).cpu().numpy()
                         features.append(feature)
                         
                         # Add metadata for the central slice
