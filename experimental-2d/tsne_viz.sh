@@ -12,6 +12,7 @@ echo "Generating t-SNE plots for the IXI dataset using ResNet50"
 
 echo "Using random init."
 MODEL_OUTPUT_DIR="$OUTPUT_DIR/random_init"
+mkdir -p $MODEL_OUTPUT_DIR
 python visualize_ixi_tsne.py \
     --model_name timm/resnet50.a1_in1k \
     --output_dir $MODEL_OUTPUT_DIR \
@@ -20,6 +21,7 @@ python visualize_ixi_tsne.py \
 
 echo "Using imagenet weights."
 MODEL_OUTPUT_DIR="$OUTPUT_DIR/imagenet"
+mkdir -p $MODEL_OUTPUT_DIR
 python visualize_ixi_tsne.py \
     --model_name timm/resnet50.a1_in1k \
     --pretrained \
@@ -46,7 +48,7 @@ for MODEL_NAME in "${!MODELS[@]}"; do
     echo "Generating t-SNE for model: $MODEL_NAME"
     python visualize_ixi_tsne.py \
         --h5_path $H5_PATH \
-        --model_name $MODEL_NAME \
+        --model_name timm/resnet50.a1_in1k \
         --weights_path $WEIGHTS_PATH \
         --output_dir $MODEL_OUTPUT_DIR \
         --perplexity $PERPLEXITY \
