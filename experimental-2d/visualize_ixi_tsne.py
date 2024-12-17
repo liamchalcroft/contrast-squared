@@ -36,7 +36,7 @@ def create_tsne_plots(h5_path, model_name, weights_path, output_dir, perplexity=
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = timm.create_model(model_name, pretrained=pretrained, num_classes=0, in_chans=1)
     if weights_path:
-        model.load_state_dict(strip_prefix_state_dict(torch.load(weights_path, map_location=device)['model_state_dict'], '_orig_mod.encoder.'))
+        model.load_state_dict(strip_prefix_state_dict(torch.load(weights_path, map_location=device)['model_state_dict'], '_orig_mod.encoder.'), strict=False)
     model.to(device)
     model = torch.compile(model)
     
