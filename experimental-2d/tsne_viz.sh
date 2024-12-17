@@ -44,7 +44,7 @@ for MODEL_NAME in "${!MODELS[@]}"; do
     mkdir -p $MODEL_OUTPUT_DIR
     
     echo "Generating t-SNE for model: $MODEL_NAME"
-    python experimental-2d/visualize_ixi_tsne.py \
+    python visualize_ixi_tsne.py \
         --h5_path $H5_PATH \
         --model_name $MODEL_NAME \
         --weights_path $WEIGHTS_PATH \
