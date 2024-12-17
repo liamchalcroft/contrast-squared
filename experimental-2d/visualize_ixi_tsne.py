@@ -146,24 +146,36 @@ def create_tsne_plots(h5_path, model_name, weights_path, output_dir, perplexity=
     # Combined plot (site and modality)
     plt.figure(figsize=(12, 12))
     site_markers = {'GST': 'o', 'HH': 'x', 'IOP': 's'}
+    modality_colors = sns.color_palette("Dark2", n_colors=3)
+    modality_labels_unique = list(set(modality_labels))
+
+    # Plot data points
     for site in site_markers:
         for i, modality in enumerate(modality_labels_unique):
             site_mask = np.array(site_labels) == site
             modality_mask = np.array(modality_labels) == modality
             combined_mask = site_mask & modality_mask
-            marker_style = site_markers[site]
-            
-            # Check if the marker is 'x' and adjust edge color accordingly
-            if marker_style == 'x':
-                plt.scatter(embeddings[combined_mask, 0], embeddings[combined_mask, 1], 
-                           c=[modality_colors[i]], marker=marker_style, label=f'{site}-{modality}', alpha=0.7, s=20)
-            else:
-                plt.scatter(embeddings[combined_mask, 0], embeddings[combined_mask, 1], 
-                           c=[modality_colors[i]], marker=marker_style, label=f'{site}-{modality}', alpha=0.7, s=20, edgecolor='w', linewidth=0.5)
+            plt.scatter(embeddings[combined_mask, 0], embeddings[combined_mask, 1], 
+                       c=[modality_colors[i]], marker=site_markers[site], alpha=0.7, s=20, edgecolor='w', linewidth=0.5)
+
+    # Create custom legend for modalities (colors)
+    modality_legend_handles = [plt.Line2D([0], [0], marker='o', color='w', label=modality,
+                                          markerfacecolor=modality_colors[i], markersize=10) 
+                               for i, modality in enumerate(modality_labels_unique)]
+    modality_legend = plt.legend(handles=modality_legend_handles, title="Modality", loc='upper left', fontsize=12)
+
+    # Create custom legend for sites (shapes)
+    site_legend_handles = [plt.Line2D([0], [0], marker=site_markers[site], color='w', label=site,
+                                      markerfacecolor='gray', markersize=10, markeredgecolor='k') 
+                             for site in site_markers]
+    site_legend = plt.legend(handles=site_legend_handles, title="Site", loc='upper right', fontsize=12)
+
+    # Add both legends to the plot
+    plt.gca().add_artist(modality_legend)
+    plt.gca().add_artist(site_legend)
 
     plt.title('t-SNE by Site and Modality', fontsize=16)
-    plt.legend(title="Site-Modality", bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=12)
-    plt.axis('off')
+    plt.axis('off')  # Remove axes
     plt.tight_layout()
     plt.savefig(os.path.join(output_dir, 'ixi_tsne_combined.png'), dpi=600, bbox_inches='tight')
     plt.close()
