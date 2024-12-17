@@ -105,8 +105,7 @@ def create_tsne_plots(h5_path, model_name, weights_path, output_dir, perplexity=
                    c=[site_colors[i]], label=site, alpha=0.7, s=20, edgecolor='w', linewidth=0.5)
     plt.title('t-SNE by Site', fontsize=16)
     plt.legend(title="Site", fontsize=12)
-    plt.xlabel('t-SNE 1', fontsize=14)
-    plt.ylabel('t-SNE 2', fontsize=14)
+    plt.axis('off')
     plt.tight_layout()
     plt.savefig(os.path.join(output_dir, 'ixi_tsne_by_site.png'), dpi=600, bbox_inches='tight')
     plt.close()
@@ -121,8 +120,7 @@ def create_tsne_plots(h5_path, model_name, weights_path, output_dir, perplexity=
                    c=[modality_colors[i]], label=modality, alpha=0.7, s=20, edgecolor='w', linewidth=0.5)
     plt.title('t-SNE by Modality', fontsize=16)
     plt.legend(title="Modality", fontsize=12)
-    plt.xlabel('t-SNE 1', fontsize=14)
-    plt.ylabel('t-SNE 2', fontsize=14)
+    plt.axis('off')
     plt.tight_layout()
     plt.savefig(os.path.join(output_dir, 'ixi_tsne_by_modality.png'), dpi=600, bbox_inches='tight')
     plt.close()
@@ -135,12 +133,19 @@ def create_tsne_plots(h5_path, model_name, weights_path, output_dir, perplexity=
             site_mask = np.array(site_labels) == site
             modality_mask = np.array(modality_labels) == modality
             combined_mask = site_mask & modality_mask
-            plt.scatter(embeddings[combined_mask, 0], embeddings[combined_mask, 1], 
-                       c=[modality_colors[i]], marker=site_markers[site], label=f'{site}-{modality}', alpha=0.7, s=20, edgecolor='w', linewidth=0.5)
+            marker_style = site_markers[site]
+            
+            # Check if the marker is 'x' and adjust edge color accordingly
+            if marker_style == 'x':
+                plt.scatter(embeddings[combined_mask, 0], embeddings[combined_mask, 1], 
+                           c=[modality_colors[i]], marker=marker_style, label=f'{site}-{modality}', alpha=0.7, s=20)
+            else:
+                plt.scatter(embeddings[combined_mask, 0], embeddings[combined_mask, 1], 
+                           c=[modality_colors[i]], marker=marker_style, label=f'{site}-{modality}', alpha=0.7, s=20, edgecolor='w', linewidth=0.5)
+
     plt.title('t-SNE by Site and Modality', fontsize=16)
     plt.legend(title="Site-Modality", bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=12)
-    plt.xlabel('t-SNE 1', fontsize=14)
-    plt.ylabel('t-SNE 2', fontsize=14)
+    plt.axis('off')
     plt.tight_layout()
     plt.savefig(os.path.join(output_dir, 'ixi_tsne_combined.png'), dpi=600, bbox_inches='tight')
     plt.close()
