@@ -117,30 +117,6 @@ def create_tsne_plots(h5_path, model_name, weights_path, output_dir, perplexity=
     # Mapping for legend labels
     modality_labels_map = {'t1': 'T1w', 't2': 'T2w', 'pd': 'PDw'}
 
-    # Plot by site
-    plt.figure(figsize=(10, 10))
-    for site in site_order:
-        mask = np.array(site_labels) == site
-        plt.scatter(embeddings[mask, 0], embeddings[mask, 1], 
-                   c=[modality_colors['t1']], label=site, alpha=0.7, s=50, edgecolor='w', linewidth=0.5)
-    plt.legend(title="Site", fontsize=10, title_fontsize=12)
-    plt.axis('off')  # Remove axes
-    plt.tight_layout()
-    plt.savefig(os.path.join(output_dir, f'tsne_by_site_{name}.png'), dpi=600, bbox_inches='tight')
-    plt.close()
-
-    # Plot by modality
-    plt.figure(figsize=(10, 10))
-    for modality in modality_order:
-        mask = np.array(modality_labels) == modality
-        plt.scatter(embeddings[mask, 0], embeddings[mask, 1], 
-                   c=[modality_colors[modality]], label=modality_labels_map[modality], alpha=0.7, s=50, edgecolor='w', linewidth=0.5)
-    plt.legend(title="Modality", fontsize=10, title_fontsize=12)
-    plt.axis('off')  # Remove axes
-    plt.tight_layout()
-    plt.savefig(os.path.join(output_dir, f'tsne_by_modality_{name}.png'), dpi=600, bbox_inches='tight')
-    plt.close()
-
     # Combined plot (site and modality)
     plt.figure(figsize=(12, 12))
     for site in site_order:
@@ -169,7 +145,7 @@ def create_tsne_plots(h5_path, model_name, weights_path, output_dir, perplexity=
 
     plt.axis('off')  # Remove axes
     plt.tight_layout()
-    plt.savefig(os.path.join(output_dir, f'tsne_combined_{name}.png'), dpi=600, bbox_inches='tight')
+    plt.savefig(os.path.join(output_dir, f'tsne_{name}.png'), dpi=600, bbox_inches='tight')
     plt.close()
 
 if __name__ == "__main__":
