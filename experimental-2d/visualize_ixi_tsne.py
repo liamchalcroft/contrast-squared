@@ -21,7 +21,7 @@ def strip_prefix_state_dict(state_dict, prefix_to_remove):
         new_state_dict[new_key] = v
     return new_state_dict
 
-def create_tsne_plots(h5_path, model_name, weights_path, output_dir, perplexity=30, n_iter=1000, pretrained=False):
+def create_tsne_plots(h5_path, model_name, weights_path, output_dir, perplexity=30, n_iter=1000, pretrained=False, name=''):
     """Create t-SNE plots for IXI dataset slices, colored by site and modality."""
     
     # Load model
@@ -117,7 +117,7 @@ def create_tsne_plots(h5_path, model_name, weights_path, output_dir, perplexity=
     plt.legend(title="Site", fontsize=10, title_fontsize=12)
     plt.axis('off')  # Remove axes
     plt.tight_layout()
-    plt.savefig(os.path.join(output_dir, f'tsne_by_site_{weights_path.split("/")[-2]}.png'), dpi=600, bbox_inches='tight')
+    plt.savefig(os.path.join(output_dir, f'tsne_by_site_{name}.png'), dpi=600, bbox_inches='tight')
     plt.close()
     
     # Plot by modality
@@ -131,7 +131,7 @@ def create_tsne_plots(h5_path, model_name, weights_path, output_dir, perplexity=
     plt.legend(title="Modality", fontsize=10, title_fontsize=12)
     plt.axis('off')  # Remove axes
     plt.tight_layout()
-    plt.savefig(os.path.join(output_dir, f'tsne_by_modality_{weights_path.split("/")[-2]}.png'), dpi=600, bbox_inches='tight')
+    plt.savefig(os.path.join(output_dir, f'tsne_by_modality_{name}.png'), dpi=600, bbox_inches='tight')
     plt.close()
     
     # Combined plot (site and modality)
@@ -163,7 +163,7 @@ def create_tsne_plots(h5_path, model_name, weights_path, output_dir, perplexity=
 
     plt.axis('off')  # Remove axes
     plt.tight_layout()
-    plt.savefig(os.path.join(output_dir, f'tsne_combined_{weights_path.split("/")[-2]}.png'), dpi=600, bbox_inches='tight')
+    plt.savefig(os.path.join(output_dir, f'tsne_combined_{name}.png'), dpi=600, bbox_inches='tight')
     plt.close()
 
 if __name__ == "__main__":
@@ -182,6 +182,8 @@ if __name__ == "__main__":
                       help='Number of iterations for t-SNE')
     parser.add_argument('--pretrained', action='store_true',
                       help='Use pretrained model')
+    parser.add_argument('--name', type=str, default='',
+                      help='Name of the model')
     
     args = parser.parse_args()
-    create_tsne_plots(args.h5_path, args.model_name, args.weights_path, args.output_dir, args.perplexity, args.n_iter, args.pretrained) 
+    create_tsne_plots(args.h5_path, args.model_name, args.weights_path, args.output_dir, args.perplexity, args.n_iter, args.pretrained, args.name) 

@@ -17,7 +17,8 @@ python visualize_ixi_tsne.py \
     --model_name timm/resnet50.a1_in1k \
     --output_dir $MODEL_OUTPUT_DIR \
     --perplexity $PERPLEXITY \
-    --n_iter $N_ITER
+    --n_iter $N_ITER \
+    --name random_init
 
 echo "Using imagenet weights."
 MODEL_OUTPUT_DIR="$OUTPUT_DIR/imagenet"
@@ -27,7 +28,8 @@ python visualize_ixi_tsne.py \
     --pretrained \
     --output_dir $MODEL_OUTPUT_DIR \
     --perplexity $PERPLEXITY \
-    --n_iter $N_ITER
+    --n_iter $N_ITER \
+    --name imagenet
 
 # List of models and their corresponding weights
 declare -A MODELS
@@ -58,7 +60,8 @@ for MODEL_NAME in "${!MODELS[@]}"; do
         --weights_path $WEIGHTS_PATH \
         --output_dir $MODEL_OUTPUT_DIR \
         --perplexity $PERPLEXITY \
-        --n_iter $N_ITER
+        --n_iter $N_ITER \
+        --name $MODEL_NAME
 done
 
 echo "t-SNE generation completed for all models."
