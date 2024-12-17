@@ -32,8 +32,8 @@ python visualize_ixi_tsne.py \
 # List of models and their corresponding weights
 declare -A MODELS
 MODELS=(
-    ["mprage-resnet50-view2"]="checkpoints/mprage-resnet50-view2/latest_model.pt",
-    ["bloch-resnet50-view2"]="checkpoints/bloch-resnet50-view2/latest_model.pt",
+    ["mprage-resnet50-view2"]="checkpoints/mprage-resnet50-view2/latest_model.pt"
+    ["bloch-resnet50-view2"]="checkpoints/bloch-resnet50-view2/latest_model.pt"
 )
 
 # Create output directory if it doesn't exist
