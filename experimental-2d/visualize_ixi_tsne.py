@@ -106,55 +106,61 @@ def create_tsne_plots(h5_path, model_name, weights_path, output_dir, perplexity=
     print("Creating plots...")
     os.makedirs(output_dir, exist_ok=True)
     
+    # Define consistent color and marker orders
+    modality_order = ['t1', 't2', 'pd']
+    site_order = ['GST', 'HH', 'IOP']
+
+    # Define colors and markers
+    modality_colors = {'t1': '#ff7f0e', 't2': '#9467bd', 'pd': '#8c564b'}
+    site_markers = {'GST': 'o', 'HH': 'x', 'IOP': 's'}
+
+    # Mapping for legend labels
+    modality_labels_map = {'t1': 'T1w', 't2': 'T2w', 'pd': 'PDw'}
+
     # Plot by site
     plt.figure(figsize=(10, 10))
-    site_colors = sns.color_palette("Set2", n_colors=3)
-    site_labels_unique = list(set(site_labels))
-    for i, site in enumerate(site_labels_unique):
+    for site in site_order:
         mask = np.array(site_labels) == site
         plt.scatter(embeddings[mask, 0], embeddings[mask, 1], 
-                   c=[site_colors[i]], label=site, alpha=0.7, s=50, edgecolor='w', linewidth=0.5)
+                   c=[modality_colors['t1']], label=site, alpha=0.7, s=50, edgecolor='w', linewidth=0.5)
     plt.legend(title="Site", fontsize=10, title_fontsize=12)
     plt.axis('off')  # Remove axes
     plt.tight_layout()
     plt.savefig(os.path.join(output_dir, f'tsne_by_site_{name}.png'), dpi=600, bbox_inches='tight')
     plt.close()
-    
+
     # Plot by modality
     plt.figure(figsize=(10, 10))
-    modality_colors = sns.color_palette("Dark2", n_colors=3)
-    modality_labels_unique = list(set(modality_labels))
-    for i, modality in enumerate(modality_labels_unique):
+    for modality in modality_order:
         mask = np.array(modality_labels) == modality
         plt.scatter(embeddings[mask, 0], embeddings[mask, 1], 
-                   c=[modality_colors[i]], label=modality, alpha=0.7, s=50, edgecolor='w', linewidth=0.5)
+                   c=[modality_colors[modality]], label=modality_labels_map[modality], alpha=0.7, s=50, edgecolor='w', linewidth=0.5)
     plt.legend(title="Modality", fontsize=10, title_fontsize=12)
     plt.axis('off')  # Remove axes
     plt.tight_layout()
     plt.savefig(os.path.join(output_dir, f'tsne_by_modality_{name}.png'), dpi=600, bbox_inches='tight')
     plt.close()
-    
+
     # Combined plot (site and modality)
     plt.figure(figsize=(12, 12))
-    site_markers = {'GST': 'o', 'HH': 'x', 'IOP': 's'}
-    for site in site_markers:
-        for i, modality in enumerate(modality_labels_unique):
+    for site in site_order:
+        for modality in modality_order:
             site_mask = np.array(site_labels) == site
             modality_mask = np.array(modality_labels) == modality
             combined_mask = site_mask & modality_mask
             plt.scatter(embeddings[combined_mask, 0], embeddings[combined_mask, 1], 
-                       c=[modality_colors[i]], marker=site_markers[site], alpha=0.7, s=50, edgecolor='w', linewidth=0.5)
+                       c=[modality_colors[modality]], marker=site_markers[site], alpha=0.7, s=50, edgecolor='w', linewidth=0.5)
 
     # Create custom legend for modalities (colors)
-    modality_legend_handles = [plt.Line2D([0], [0], marker='o', color='w', label=modality,
-                                          markerfacecolor=modality_colors[i], markersize=10) 
-                               for i, modality in enumerate(modality_labels_unique)]
+    modality_legend_handles = [plt.Line2D([0], [0], marker='o', color='w', label=modality_labels_map[modality],
+                                          markerfacecolor=modality_colors[modality], markersize=10) 
+                               for modality in modality_order]
     modality_legend = plt.legend(handles=modality_legend_handles, title="Modality", loc='upper left', fontsize=10, title_fontsize=12)
 
     # Create custom legend for sites (shapes)
     site_legend_handles = [plt.Line2D([0], [0], marker=site_markers[site], color='w', label=site,
                                       markerfacecolor='gray', markersize=10, markeredgecolor='k') 
-                             for site in site_markers]
+                             for site in site_order]
     site_legend = plt.legend(handles=site_legend_handles, title="Site", loc='upper right', fontsize=10, title_fontsize=12)
 
     # Add both legends to the plot
