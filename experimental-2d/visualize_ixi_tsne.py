@@ -26,7 +26,9 @@ def create_tsne_plots(h5_path, model_name, weights_path, output_dir, perplexity=
     # Load model
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = timm.create_model(model_name, pretrained=pretrained, num_classes=0, in_chans=1)
-    model.load_state_dict(torch.load(weights_path, map_location=device))
+    model = torch.compile(model)
+    if weights_path:
+        model.load_state_dict(torch.load(weights_path, map_location=device)['model_state_dict'])
     model.to(device)
     
     # Define normalization transform
@@ -123,7 +125,7 @@ if __name__ == "__main__":
                       help='Path to IXI HDF5 file')
     parser.add_argument('--model_name', type=str, required=True,
                       help='Name of the timm model to use')
-    parser.add_argument('--weights_path', type=str, required=True,
+    parser.add_argument('--weights_path', type=str,
                       help='Path to the model weights file')
     parser.add_argument('--output_dir', type=str, default='task_data',
                       help='Directory to save the t-SNE plots')
