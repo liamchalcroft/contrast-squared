@@ -111,7 +111,7 @@ def create_tsne_plots(h5_path, model_name, weights_path, output_dir, perplexity=
     site_order = ['GST', 'HH', 'IOP']
 
     # Define colors and markers
-    modality_colors = {'t1': '#ff7f0e', 't2': '#9467bd', 'pd': '#8c564b'}
+    modality_colors = {'t1': '#1f77b4', 't2': '#ff7f0e', 'pd': '#2ca02c'}
     site_markers = {'GST': 'o', 'HH': 'x', 'IOP': 's'}
 
     # Mapping for legend labels
@@ -129,15 +129,15 @@ def create_tsne_plots(h5_path, model_name, weights_path, output_dir, perplexity=
 
     # Create custom legend for modalities (colors)
     modality_legend_handles = [plt.Line2D([0], [0], marker='o', color='w', label=modality_labels_map[modality],
-                                          markerfacecolor=modality_colors[modality], markersize=10) 
+                                          markerfacecolor=modality_colors[modality], markersize=12) 
                                for modality in modality_order]
-    modality_legend = plt.legend(handles=modality_legend_handles, title="Modality", loc='upper left', fontsize=10, title_fontsize=12)
+    modality_legend = plt.legend(handles=modality_legend_handles, title="Modality", loc='upper left', fontsize=14, title_fontsize=16, framealpha=0.5)
 
     # Create custom legend for sites (shapes)
     site_legend_handles = [plt.Line2D([0], [0], marker=site_markers[site], color='w', label=site,
-                                      markerfacecolor='gray', markersize=10, markeredgecolor='k') 
+                                      markerfacecolor='gray', markersize=12, markeredgecolor='k') 
                              for site in site_order]
-    site_legend = plt.legend(handles=site_legend_handles, title="Site", loc='upper right', fontsize=10, title_fontsize=12)
+    site_legend = plt.legend(handles=site_legend_handles, title="Site", loc='upper right', fontsize=14, title_fontsize=16, framealpha=0.5)
 
     # Add both legends to the plot
     plt.gca().add_artist(modality_legend)
