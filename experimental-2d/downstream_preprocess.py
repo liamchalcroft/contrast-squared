@@ -1,5 +1,7 @@
 import torch
-import torchvision.transforms as v2
+import torchvision.transforms as T
+from torchvision.transforms import v2
+from torchvision.transforms.v2 import functional as F, Transform
 import h5py
 import numpy as np
 from torch.utils.data import Dataset, DataLoader
