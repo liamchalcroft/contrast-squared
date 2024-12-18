@@ -99,7 +99,7 @@ class H5SliceDataset(Dataset):
         # Convert to tensor
         image = torch.from_numpy(image.copy()).unsqueeze(0)
         if self.task == 'segmentation':
-            label = torch.from_numpy(label.copy()).unsqueeze(0)
+            label = torch.from_numpy(label.copy())
             print(image.shape, label.shape)
         
         # Apply transforms
