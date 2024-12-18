@@ -7,7 +7,7 @@ def plot_sample(data, title, is_label=False):
         # For labels, show each class in different color
         plt.imshow(torch.argmax(data, axis=0), cmap='tab10')
     else:
-        plt.imshow(data, cmap='gray')
+        plt.imshow(data[0], cmap='gray')
     plt.title(title)
     plt.axis('off')
 
