@@ -60,8 +60,11 @@ def train_denoising(model_name, output_dir, weights_path=None, pretrained=False,
             
             optimizer.zero_grad()
             with torch.amp.autocast('cuda' if amp else None):
+                std = torch.rand(0, 0.2)
+                noise = torch.randn_like(inputs) * std
+                inputs = inputs + noise
                 outputs = model(inputs)
-                loss = criterion(outputs, targets)
+                loss = criterion(outputs, noise) # We want to predict noise, not the original image
             if amp:
                 scaler.scale(loss).backward()
                 scaler.step(optimizer)
