@@ -58,7 +58,7 @@ def train_denoising(model_name, output_dir, weights_path=None, pretrained=False,
             
             optimizer.zero_grad()
             with torch.amp.autocast('cuda' if amp else None):
-                std = torch.rand(dtype=inputs.dtype, device=inputs.device) * 0.2
+                std = torch.rand(1, dtype=inputs.dtype, device=inputs.device) * 0.2
                 noise = torch.randn_like(inputs) * std
                 inputs = inputs + noise
                 outputs = model(inputs)
@@ -85,7 +85,7 @@ def train_denoising(model_name, output_dir, weights_path=None, pretrained=False,
             for batch in tqdm(val_loader, desc=f"Epoch {epoch+1}/{epochs} - Validation"):
                 inputs = batch['image'].to(device)
                 
-                std = torch.rand(dtype=inputs.dtype, device=inputs.device) * 0.2
+                std = torch.rand(1, dtype=inputs.dtype, device=inputs.device) * 0.2
                 noise = torch.randn_like(inputs) * std
                 inputs = inputs + noise
                 outputs = model(inputs)
