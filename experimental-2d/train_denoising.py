@@ -6,7 +6,7 @@ from pathlib import Path
 from downstream_preprocess import get_train_val_loaders
 from models import create_unet_model
 
-def train_denoising(model_name, output_dir, weights_path=None, pretrained=False, epochs=10, batch_size=16, learning_rate=1e-3, modality='t1', site='GST', amp=False):
+def train_denoising(model_name, output_dir, weights_path=None, pretrained=False, epochs=10, batch_size=16, learning_rate=1e-3, modality='t1', site='GST', amp=False, resume=False):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f"Using device: {device}")
 
@@ -29,6 +29,13 @@ def train_denoising(model_name, output_dir, weights_path=None, pretrained=False,
 
     if amp:
         scaler = torch.cuda.amp.GradScaler()
+
+    model = torch.compile(model)
+
+    if resume:
+        checkpoint = torch.load(output_dir / f"denoising_model_{modality}_{site}_best.pth")
+        model.load_state_dict(checkpoint['model_state_dict'])
+        optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
 
     # Training loop
     best_val_loss = float('inf')
@@ -117,6 +124,7 @@ if __name__ == "__main__":
     parser.add_argument('--modality', type=str, default='t1', choices=['t1', 't2', 'pd'], help='Image modality')
     parser.add_argument('--site', type=str, default='GST', choices=['GST', 'HH', 'IOP'], help='Training site')
     parser.add_argument('--amp', action='store_true', help='Use automatic mixed precision')
+    parser.add_argument('--resume', action='store_true', help='Resume training from the last checkpoint')
 
     args = parser.parse_args()
     train_denoising(
@@ -128,5 +136,7 @@ if __name__ == "__main__":
         args.batch_size,
         args.learning_rate,
         args.modality,
-        args.site
+        args.site,
+        args.amp,
+        args.resume
     ) 
