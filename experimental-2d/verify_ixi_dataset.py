@@ -42,5 +42,9 @@ def verify_dataloaders(task='denoising', modalities=['t1', 't2', 'pd'], sites=['
     plt.close()
 
 if __name__ == "__main__":
-    for task in ['denoising', 'segmentation', 'classification']:
+    for task in [
+        # 'denoising', 
+        'segmentation', 
+        'classification'
+    ]:
         verify_dataloaders(task=task)
