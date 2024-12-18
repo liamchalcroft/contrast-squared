@@ -106,6 +106,7 @@ class H5SliceDataset(Dataset):
             if self.task == 'segmentation':
                 # Apply the same transform to both image and label
                 image, label = self.image_label_transform((image, label))
+                print(image.shape, label.shape)
             else:
                 image = self.image_transform(image)
         if self.image_transform:
