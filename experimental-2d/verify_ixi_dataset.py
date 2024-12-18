@@ -32,6 +32,12 @@ def verify_dataloaders(task='denoising', modalities=['t1', 't2', 'pd'], sites=['
                 print(label.shape)
                 plt.subplot(len(modalities), len(sites) * 2, modality_idx * len(sites) * 2 + site_idx * 2 + 2)
                 plot_sample(label, f"Labels\n{site} - {modality}", is_label=True)
+            elif task == 'classification':
+                age = batch['age'][0]
+                sex = 'M' if batch['sex'][0] == 1 else 'F'
+                title = f"{task}\n{site} - {modality}\nAge: {age:.1f}, Sex: {sex}"
+                plt.subplot(len(modalities), len(sites), modality_idx * len(sites) + site_idx + 1)
+                plot_sample(image, title)
             else:
                 # Plot the image
                 plt.subplot(len(modalities), len(sites), modality_idx * len(sites) + site_idx + 1)
