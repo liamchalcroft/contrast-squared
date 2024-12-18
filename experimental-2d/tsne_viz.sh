@@ -31,37 +31,25 @@ python visualize_ixi_tsne.py \
     --n_iter $N_ITER \
     --name imagenet
 
-# List of models and their corresponding weights
-declare -A MODELS
-MODELS=(
-    ["mprage-resnet50-view2"]="checkpoints/mprage-resnet50-view2/latest_model.pt"
-    ["bloch-resnet50-view2"]="checkpoints/bloch-resnet50-view2/latest_model.pt"
-    ["mprage-resnet50-view5"]="checkpoints/mprage-resnet50-view5/latest_model.pt"
-    ["bloch-resnet50-view5"]="checkpoints/bloch-resnet50-view5/latest_model.pt"
-    ["mprage-resnet50-barlow"]="checkpoints/mprage-resnet50-barlow/latest_model.pt"
-    ["bloch-resnet50-barlow"]="checkpoints/bloch-resnet50-barlow/latest_model.pt"
-    ["mprage-resnet50-vicreg"]="checkpoints/mprage-resnet50-vicreg/latest_model.pt"
-    ["bloch-resnet50-vicreg"]="checkpoints/bloch-resnet50-vicreg/latest_model.pt"
-)
-
-# Create output directory if it doesn't exist
-mkdir -p $OUTPUT_DIR
-
-# Loop through each model and generate t-SNE plots
-for MODEL_NAME in "${!MODELS[@]}"; do
-    WEIGHTS_PATH=${MODELS[$MODEL_NAME]}
-    MODEL_OUTPUT_DIR="$OUTPUT_DIR/$MODEL_NAME"
-    mkdir -p $MODEL_OUTPUT_DIR
-    
-    echo "Generating t-SNE for model: $MODEL_NAME"
-    python visualize_ixi_tsne.py \
-        --h5_path $H5_PATH \
-        --model_name timm/resnet50.a1_in1k \
-        --weights_path $WEIGHTS_PATH \
-        --output_dir $MODEL_OUTPUT_DIR \
-        --perplexity $PERPLEXITY \
-        --n_iter $N_ITER \
-        --name $MODEL_NAME
+# Iterate over all folders in checkpoints/
+for MODEL_DIR in checkpoints/*; do
+    if [ -d "$MODEL_DIR" ]; then
+        MODEL_NAME=$(basename "$MODEL_DIR")
+        WEIGHTS_PATH="$MODEL_DIR/latest_model.pt"
+        MODEL_OUTPUT_DIR="$OUTPUT_DIR/$MODEL_NAME"
+        
+        mkdir -p $MODEL_OUTPUT_DIR
+        
+        echo "Generating t-SNE for model: $MODEL_NAME"
+        python visualize_ixi_tsne.py \
+            --h5_path $H5_PATH \
+            --model_name timm/resnet50.a1_in1k \
+            --weights_path $WEIGHTS_PATH \
+            --output_dir $MODEL_OUTPUT_DIR \
+            --perplexity $PERPLEXITY \
+            --n_iter $N_ITER \
+            --name $MODEL_NAME
+    fi
 done
 
 echo "t-SNE generation completed for all models."
