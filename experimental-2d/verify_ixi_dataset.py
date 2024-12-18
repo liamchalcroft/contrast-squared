@@ -22,15 +22,16 @@ def verify_dataloaders(task='denoising', modalities=['t1', 't2', 'pd'], sites=['
             try:
                 # Get the first batch
                 batch = next(iter(test_loader))
-                print(batch.keys())
                 image = batch['image'][0]
-                
+                print(image.shape)
+
                 # Plot the image
                 plt.subplot(len(modalities), len(sites), modality_idx * len(sites) + site_idx + 1)
                 plot_sample(image, f"{task}\n{site} - {modality}")
                 
                 if task == 'segmentation':
                     label = batch['label'][0]
+                    print(label.shape)
                     plt.subplot(len(modalities), len(sites) * 2, modality_idx * len(sites) * 2 + site_idx * 2 + 2)
                     plot_sample(label, f"Labels\n{site} - {modality}", is_label=True)
             except StopIteration:
