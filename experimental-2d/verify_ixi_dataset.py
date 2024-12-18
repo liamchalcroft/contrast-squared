@@ -22,6 +22,7 @@ def verify_dataloaders(task='denoising', modalities=['t1', 't2', 'pd'], sites=['
             try:
                 # Get the first batch
                 batch = next(iter(test_loader))
+                print(batch.keys())
                 image = batch['image'][0]
                 
                 # Plot the image
