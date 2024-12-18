@@ -87,11 +87,15 @@ def create_classification_model(model_name: str, num_classes: int, weights_path:
         encoder_dim = output.shape[1]
     
     # Add a linear classification head
-    model.classifier = nn.Linear(encoder_dim, num_classes)
+    classifier = nn.Sequential(
+        model,
+        nn.Flatten(),
+        nn.Linear(encoder_dim, num_classes)
+    )
     
     # Load weights if provided
     if weights_path:
         state_dict = torch.load(weights_path)['model_state_dict']
-        model.load_state_dict(state_dict, strict=False)
+        classifier.load_state_dict(state_dict, strict=False)
     
     return model
