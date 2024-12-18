@@ -1,9 +1,10 @@
 import torch
 import torchseg as ts
 import timm
+import torch.nn as nn
 import logging
 
-def create_model(model_name: str, weights_path: str = None, pretrained: bool = True) -> ts.Unet:
+def create_unet_model(model_name: str, weights_path: str = None, pretrained: bool = True) -> ts.Unet:
     """Create a U-Net model with a specific backbone encoder.
     
     This function creates a U-Net model using either a ResNet or ViT backbone,
@@ -73,4 +74,24 @@ def create_model(model_name: str, weights_path: str = None, pretrained: bool = T
     else:
         model = torch.compile(model)
 
+    return model
+
+def create_classification_model(model_name: str, num_classes: int, weights_path: str = None, pretrained: bool = True) -> nn.Module:
+    """Create a classification model with a specific backbone encoder."""
+    model = timm.create_model(model_name, pretrained=pretrained, num_classes=0, in_chans=1)
+
+    # Get encoder output dimension
+    with torch.no_grad():
+        dummy_input = torch.zeros(1, 1, 224, 224)
+        output = model(dummy_input)
+        encoder_dim = output.shape[1]
+    
+    # Add a linear classification head
+    model.classifier = nn.Linear(encoder_dim, num_classes)
+    
+    # Load weights if provided
+    if weights_path:
+        state_dict = torch.load(weights_path)['model_state_dict']
+        model.load_state_dict(state_dict, strict=False)
+    
     return model
