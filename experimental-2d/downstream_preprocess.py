@@ -23,9 +23,12 @@ def get_data_chunks(h5_path, task='denoising', split='train', train_ratio=0.6, v
                task_group[subject].attrs.get('site') == site
         ]
 
-        # Split subjects into train, val, and test
-        train_subjects, temp_subjects = train_test_split(filtered_subjects, train_size=train_ratio)
-        val_subjects, test_subjects = train_test_split(temp_subjects, test_size=(1 - train_ratio - val_ratio) / (val_ratio + (1 - train_ratio - val_ratio)))
+        if train_ratio + val_ratio == 0:
+            test_subjects = filtered_subjects
+        else:
+            # Split subjects into train, val, and test
+            train_subjects, temp_subjects = train_test_split(filtered_subjects, train_size=train_ratio)
+            val_subjects, test_subjects = train_test_split(temp_subjects, test_size=(1 - train_ratio - val_ratio) / (val_ratio + (1 - train_ratio - val_ratio)))
 
         if split == 'train':
             selected_subjects = train_subjects
