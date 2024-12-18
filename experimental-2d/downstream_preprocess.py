@@ -63,8 +63,9 @@ def get_data_chunks(h5_path, task='denoising', split='train', train_ratio=0.6, v
     return data_chunks
 
 class H5SliceDataset(Dataset):
-    def __init__(self, data_chunks, task='denoising', transform=None):
-        self.transform = transform
+    def __init__(self, data_chunks, task='denoising', image_transform=None, image_label_transform=None):
+        self.image_transform = image_transform
+        self.image_label_transform = image_label_transform
         self.task = task
         self.data_chunks = data_chunks
         
