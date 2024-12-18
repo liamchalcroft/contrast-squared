@@ -77,39 +77,40 @@ def train_denoising(model_name, output_dir, weights_path=None, pretrained=False,
         avg_train_loss = train_loss / train_batches
         
         # Validation phase
-        model.eval()
-        val_loss = 0.0
-        val_batches = 0
-        
-        with torch.no_grad():
-            for batch in tqdm(val_loader, desc=f"Epoch {epoch+1}/{epochs} - Validation"):
-                inputs = batch['image'].to(device)
-                
-                std = torch.rand(1, dtype=inputs.dtype, device=inputs.device) * 0.2
-                noise = torch.randn_like(inputs) * std
-                inputs = inputs + noise
-                outputs = model(inputs)
-                loss = criterion(outputs, noise)
-                
-                val_loss += loss.item()
-                val_batches += 1
-        
-        avg_val_loss = val_loss / val_batches
-        
-        print(f"Epoch {epoch+1}")
-        print(f"Training Loss: {avg_train_loss:.6f}")
-        print(f"Validation Loss: {avg_val_loss:.6f}")
-        
-        # Save best model
-        if avg_val_loss < best_val_loss:
-            best_val_loss = avg_val_loss
-            torch.save({
-                'epoch': epoch,
-                'model_state_dict': model.state_dict(),
-                'optimizer_state_dict': optimizer.state_dict(),
-                'train_loss': avg_train_loss,
-                'val_loss': avg_val_loss,
-            }, output_dir / f"denoising_model_{modality}_{site}_best.pth")
+        if epoch % 2 == 0:
+          model.eval()
+          val_loss = 0.0
+          val_batches = 0
+          
+          with torch.no_grad():
+              for batch in tqdm(val_loader, desc=f"Epoch {epoch+1}/{epochs} - Validation"):
+                  inputs = batch['image'].to(device)
+                  
+                  std = torch.rand(1, dtype=inputs.dtype, device=inputs.device) * 0.2
+                  noise = torch.randn_like(inputs) * std
+                  inputs = inputs + noise
+                  outputs = model(inputs)
+                  loss = criterion(outputs, noise)
+                  
+                  val_loss += loss.item()
+                  val_batches += 1
+          
+          avg_val_loss = val_loss / val_batches
+          
+          print(f"Epoch {epoch+1}")
+          print(f"Training Loss: {avg_train_loss:.6f}")
+          print(f"Validation Loss: {avg_val_loss:.6f}")
+          
+          # Save best model
+          if avg_val_loss < best_val_loss:
+              best_val_loss = avg_val_loss
+              torch.save({
+                  'epoch': epoch,
+                  'model_state_dict': model.state_dict(),
+                  'optimizer_state_dict': optimizer.state_dict(),
+                  'train_loss': avg_train_loss,
+                  'val_loss': avg_val_loss,
+              }, output_dir / f"denoising_model_{modality}_{site}_best.pth")
 
     # Save final model
     torch.save({
