@@ -36,7 +36,7 @@ def train_denoising(model_name, output_dir, weights_path=None, pretrained=False,
     optimizer = optim.AdamW(model.parameters(), lr=learning_rate)
 
     if amp:
-        scaler = torch.cuda.amp.GradScaler()
+        scaler = torch.amp.GradScaler('cuda')
 
     if resume:
         checkpoint = torch.load(output_dir / f"denoising_model_{modality}_{site}_best.pth")
@@ -59,7 +59,7 @@ def train_denoising(model_name, output_dir, weights_path=None, pretrained=False,
             targets = inputs.clone()
             
             optimizer.zero_grad()
-            with torch.cuda.amp.autocast(enabled=amp):
+            with torch.amp.autocast('cuda' if amp else None):
                 outputs = model(inputs)
                 loss = criterion(outputs, targets)
             if amp:
