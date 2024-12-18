@@ -90,14 +90,14 @@ class H5SliceDataset(Dataset):
         subject, slice_idx = self.index_map[idx]
         data = self.data_chunks[subject]
         
-        image = data['image'][slice_idx].unsqueeze(0)
+        image = data['image'][slice_idx]
         if self.task == 'segmentation':
-            label = data['label'][slice_idx].unsqueeze(0)
+            label = data['label'][slice_idx]
         
         # Convert to tensor
-        image = torch.from_numpy(image.copy())
+        image = torch.from_numpy(image.copy()).unsqueeze(0)
         if self.task == 'segmentation':
-            label = torch.from_numpy(label.copy())
+            label = torch.from_numpy(label.copy()).unsqueeze(0)
         
         # Apply transforms
         if self.image_label_transform:
