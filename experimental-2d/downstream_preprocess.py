@@ -16,6 +16,9 @@ def get_data_chunks(h5_path, task='denoising', split='train', train_ratio=0.6, v
         task_group = f[task]
         subjects = list(task_group.keys())
 
+        print(f"Modalities: {task_group.attrs['modalities']}")
+        print(f"Sites: {task_group.attrs['sites']}")
+
         # Filter subjects by modality and site
         filtered_subjects = [
             subject for subject in subjects
