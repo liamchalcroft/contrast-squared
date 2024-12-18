@@ -19,9 +19,9 @@ def get_data_chunks(h5_path, task='denoising', split='train', train_ratio=0.6, v
         subjects = list(task_group.keys())
 
         print(f"Sample subject keys: {list(task_group[subjects[0]].keys())}")
-        print(f"Sample modality: {task_group[subjects[0]][modality].attrs.get('modality')}")
-        print(f"Sample site: {task_group[subjects[0]][modality].attrs.get('site')}")
-        print(f"Sample data shape: {task_group[subjects[0]][modality][:].shape}")
+        print(f"Sample modality: {task_group[subjects[0]][f"image_{subjects[0]}" if task == "segmentation" else subjects[0]][modality].attrs.get('modality')}")
+        print(f"Sample site: {task_group[subjects[0]][f"image_{subjects[0]}" if task == "segmentation" else subjects[0]][modality].attrs.get('site')}")
+        print(f"Sample data shape: {task_group[subjects[0]][f"image_{subjects[0]}" if task == "segmentation" else subjects[0]][modality][:].shape}")
 
         # Filter subjects by modality and site
         filtered_subjects = [
