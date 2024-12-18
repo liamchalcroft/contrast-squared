@@ -30,8 +30,6 @@ def train_denoising(model_name, output_dir, weights_path=None, pretrained=False,
     if amp:
         scaler = torch.cuda.amp.GradScaler()
 
-    model = torch.compile(model)
-
     if resume:
         checkpoint = torch.load(output_dir / f"denoising_model_{modality}_{site}_best.pth")
         model.load_state_dict(checkpoint['model_state_dict'])
@@ -39,8 +37,9 @@ def train_denoising(model_name, output_dir, weights_path=None, pretrained=False,
 
     # Training loop
     best_val_loss = float('inf')
+    start_epoch = checkpoint['epoch'] + 1 if resume else 0
     
-    for epoch in range(epochs):
+    for epoch in range(start_epoch, epochs):
         # Training phase
         model.train()
         train_loss = 0.0
