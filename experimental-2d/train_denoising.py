@@ -52,7 +52,7 @@ def train_denoising(model_name, output_dir, weights_path=None, pretrained=False,
             targets = inputs.clone()
             
             optimizer.zero_grad()
-            with torch.amp.autocast(enabled=amp):
+            with torch.cuda.amp.autocast(enabled=amp):
                 outputs = model(inputs)
                 loss = criterion(outputs, targets)
             if amp:
