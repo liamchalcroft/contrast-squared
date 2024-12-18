@@ -100,13 +100,13 @@ class H5SliceDataset(Dataset):
         image = torch.from_numpy(image.copy()).unsqueeze(0)
         if self.task == 'segmentation':
             label = torch.from_numpy(label.copy()).unsqueeze(0)
+            print(image.shape, label.shape)
         
         # Apply transforms
         if self.image_label_transform:
             if self.task == 'segmentation':
                 # Apply the same transform to both image and label
                 image, label = self.image_label_transform((image, label))
-                print(image.shape, label.shape)
             else:
                 image = self.image_transform(image)
         if self.image_transform:
