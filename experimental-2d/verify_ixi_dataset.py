@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 import torch
-from experimental_2d.downstream_preprocess import get_test_loader
+from downstream_preprocess import get_test_loader
 
 def plot_sample(data, title, is_label=False):
     if is_label:
