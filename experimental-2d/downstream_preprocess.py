@@ -261,11 +261,13 @@ def get_train_val_loaders(
 
     train_dataset = H5SliceDataset(
         train_data_chunks,
+        task=task,
         image_label_transform=image_label_transform,
         image_transform=image_transform,
     )
     val_dataset = H5SliceDataset(
         val_data_chunks,
+        task=task,
         image_label_transform=image_label_transform,
         image_transform=image_transform,
     )
@@ -328,6 +330,7 @@ def get_test_loader(
 
     test_dataset = H5SliceDataset(
         test_data_chunks,
+        task=task,
         image_label_transform=image_label_transform,
         image_transform=image_transform,
     )
