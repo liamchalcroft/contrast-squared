@@ -254,20 +254,18 @@ def get_train_val_loaders(
     val_ratio = 0.2
     
     image_label_transform, image_transform = get_train_val_transforms()
-    train_data_chunks = get_data_chunks(h5_path, task=task, split='train', site=site, train_ratio=train_ratio, val_ratio=val_ratio)
-    val_data_chunks = get_data_chunks(h5_path, task=task, split='val', site=site, train_ratio=train_ratio, val_ratio=val_ratio)
+    train_data_chunks = get_data_chunks(h5_path, task=task, modality=modality, split='train', site=site, train_ratio=train_ratio, val_ratio=val_ratio)
+    val_data_chunks = get_data_chunks(h5_path, task=task, modality=modality, split='val', site=site, train_ratio=train_ratio, val_ratio=val_ratio)
 
     train_dataset = H5SliceDataset(
         train_data_chunks,
         image_label_transform=image_label_transform,
         image_transform=image_transform,
-        modality=modality,
     )
     val_dataset = H5SliceDataset(
         val_data_chunks,
         image_label_transform=image_label_transform,
         image_transform=image_transform,
-        modality=modality,
     )
 
     # Use custom sampler instead of shuffle
@@ -324,13 +322,12 @@ def get_test_loader(
         val_ratio = 0.
 
     image_label_transform, image_transform = get_test_transforms()
-    test_data_chunks = get_data_chunks(h5_path, task=task, split='test', site=site, train_ratio=train_ratio, val_ratio=val_ratio)
+    test_data_chunks = get_data_chunks(h5_path, task=task, modality=modality, split='test', site=site, train_ratio=train_ratio, val_ratio=val_ratio)
 
     test_dataset = H5SliceDataset(
         test_data_chunks,
         image_label_transform=image_label_transform,
         image_transform=image_transform,
-        modality=modality,
     )
 
     test_dataloader_kwargs = {
