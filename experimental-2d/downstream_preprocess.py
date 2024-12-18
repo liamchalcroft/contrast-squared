@@ -23,8 +23,8 @@ def get_data_chunks(h5_path, task='denoising', split='train', train_ratio=0.6, v
         # Filter subjects by modality and site
         filtered_subjects = [
             subject for subject in subjects
-            if task_group[subject][f"image_{modality}"].attrs.get('modality') == modality and
-               task_group[subject][f"image_{modality}"].attrs.get('site') == site
+            if task_group[subject][modality].attrs.get('modality') == modality and
+               task_group[subject][modality].attrs.get('site') == site
         ]
 
         if train_ratio + val_ratio == 0:
@@ -48,14 +48,14 @@ def get_data_chunks(h5_path, task='denoising', split='train', train_ratio=0.6, v
         for subject in selected_subjects:
             subj_group = task_group[subject]
             data_chunks[subject] = {
-                'image': subj_group[f"image_{modality}"][:]
+                'image': subj_group[modality][:]
             }
             if task == 'segmentation':
                 data_chunks[subject]['label'] = subj_group[f"label_{modality}"][:]
             # Add metadata if available
             if task == 'classification':
-                data_chunks[subject]['age'] = subj_group[f"image_{modality}"].attrs.get('age', None)
-                data_chunks[subject]['sex'] = subj_group[f"image_{modality}"].attrs.get('sex', None)
+                data_chunks[subject]['age'] = subj_group[modality].attrs.get('age', None)
+                data_chunks[subject]['sex'] = subj_group[modality].attrs.get('sex', None)
 
     return data_chunks
 
