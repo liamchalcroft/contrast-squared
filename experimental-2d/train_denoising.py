@@ -6,6 +6,14 @@ from pathlib import Path
 from downstream_preprocess import get_train_val_loaders
 from models import create_unet_model
 
+def strip_prefix_state_dict(state_dict, substring_to_remove):
+    """Load weights and remove a specific prefix from the keys."""
+    new_state_dict = {}
+    for k, v in state_dict.items():
+        new_key = k.replace(substring_to_remove, '', 1)  # Remove the prefix
+        new_state_dict[new_key] = v
+    return new_state_dict
+
 def train_denoising(model_name, output_dir, weights_path=None, pretrained=False, epochs=10, batch_size=16, learning_rate=1e-3, modality='t1', site='GST', amp=False, resume=False):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f"Using device: {device}")
@@ -32,7 +40,7 @@ def train_denoising(model_name, output_dir, weights_path=None, pretrained=False,
 
     if resume:
         checkpoint = torch.load(output_dir / f"denoising_model_{modality}_{site}_best.pth")
-        model.load_state_dict(checkpoint['model_state_dict'])
+        model.load_state_dict(strip_prefix_state_dict(checkpoint['model_state_dict'], 'encoder.'), strict=False)
         optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
 
     # Training loop
