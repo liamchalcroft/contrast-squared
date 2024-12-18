@@ -60,6 +60,8 @@ def get_data_chunks(h5_path, task='denoising', split='train', train_ratio=0.6, v
                 data_chunks[subject]['age'] = subj_group[modality].attrs.get('age', None)
                 data_chunks[subject]['sex'] = subj_group[modality].attrs.get('sex', None)
 
+    print(f"Loaded {len(data_chunks)} subjects for task {task} with modality {modality} and site {site}")
+
     return data_chunks
 
 class H5SliceDataset(Dataset):
