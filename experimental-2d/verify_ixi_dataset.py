@@ -13,31 +13,29 @@ def plot_sample(data, title, is_label=False):
 
 def verify_dataloaders(task='denoising', modalities=['t1', 't2', 'pd'], sites=['GST', 'HH', 'IOP']):
     # Create figure for visualization
-    fig = plt.figure(figsize=(15, 15))
+    fig = plt.figure(figsize=(30, 15)) if task == 'segmentation' else plt.figure(figsize=(15, 15))
     
     for modality_idx, modality in enumerate(modalities):
         for site_idx, site in enumerate(sites):
             # Get test loader for each modality and site
             test_loader = get_test_loader(batch_size=1, task=task, modality=modality, site=site)
-            try:
-                # Get the first batch
-                batch = next(iter(test_loader))
-                image = batch['image'][0]
-                print(image.shape)
-
+            # Get the first batch
+            batch = next(iter(test_loader))
+            image = batch['image'][0]
+            print(image.shape)
+            
+            if task == 'segmentation':
+                # Plot the image
+                plt.subplot(len(modalities), len(sites) * 2, modality_idx * len(sites) * 2 + site_idx * 2 + 1)
+                plot_sample(image, f"{task}\n{site} - {modality}")
+                label = batch['label'][0]
+                print(label.shape)
+                plt.subplot(len(modalities), len(sites) * 2, modality_idx * len(sites) * 2 + site_idx * 2 + 2)
+                plot_sample(label, f"Labels\n{site} - {modality}", is_label=True)
+            else:
                 # Plot the image
                 plt.subplot(len(modalities), len(sites), modality_idx * len(sites) + site_idx + 1)
                 plot_sample(image, f"{task}\n{site} - {modality}")
-                
-                if task == 'segmentation':
-                    label = batch['label'][0]
-                    print(label.shape)
-                    plt.subplot(len(modalities), len(sites) * 2, modality_idx * len(sites) * 2 + site_idx * 2 + 2)
-                    plot_sample(label, f"Labels\n{site} - {modality}", is_label=True)
-            except StopIteration:
-                plt.subplot(len(modalities), len(sites), modality_idx * len(sites) + site_idx + 1)
-                plt.text(0.5, 0.5, f"No data\n{site}", ha='center', va='center')
-                plt.axis('off')
     
     plt.tight_layout()
     plt.savefig(f'task_data/ixi_dataset_verification_{task}.png')
