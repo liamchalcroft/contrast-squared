@@ -12,6 +12,8 @@ from sklearn.model_selection import train_test_split
 seed(786)
 
 def get_data_chunks(h5_path, task='denoising', split='train', train_ratio=0.6, val_ratio=0.2, modality='t1', site='GST'):
+    print(f"Loading data from {h5_path} for task {task} with modality {modality} and site {site}")
+
     with h5py.File(h5_path, 'r') as f:
         task_group = f[task]
         subjects = list(task_group.keys())
