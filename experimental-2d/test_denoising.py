@@ -43,7 +43,7 @@ def test_denoising(model_dir, model_name, modality, site):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     
     # Load model
-    model = create_unet_model(model_name, pretrained=False)
+    model = create_unet_model(model_name, pretrained=False).to(device)
     checkpoint = torch.load(Path(model_dir) / f"denoising_model_{modality}_GST_final.pth")
     model.load_state_dict(checkpoint['model_state_dict'])
     model.eval()
