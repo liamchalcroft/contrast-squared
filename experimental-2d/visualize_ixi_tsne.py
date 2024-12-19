@@ -131,9 +131,9 @@ def create_tsne_plots(h5_path, model_name, weights_path, output_dir, perplexity=
             plt.scatter(embeddings[combined_mask, 0], embeddings[combined_mask, 1], 
                        c=[modality_colors[modality]], marker=site_markers[site], alpha=0.7, s=50, edgecolor='w', linewidth=0.5)
 
-    # Set fixed axis limits
-    plt.xlim(xlim)
-    plt.ylim(ylim)
+    # # Set fixed axis limits
+    # plt.xlim(xlim)
+    # plt.ylim(ylim)
 
     # Create custom legend for modalities (colors)
     modality_legend_handles = [plt.Line2D([0], [0], marker='o', color='w', label=modality_labels_map[modality],
