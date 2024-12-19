@@ -40,12 +40,9 @@ def train_denoising(model_name, output_dir, weights_path=None, pretrained=False,
         scaler = torch.amp.GradScaler('cuda')
 
     if resume:
-        if os.path.exists(os.path.join(output_dir, f"denoising_model_{modality}_{site}_best.pth")):
-          checkpoint = torch.load(output_dir / f"denoising_model_{modality}_{site}_best.pth")
-          model.load_state_dict(strip_prefix_state_dict(checkpoint['model_state_dict'], 'encoder.'), strict=False)
-          optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-        else:
-          print("No checkpoint found, starting from scratch")
+        checkpoint = torch.load(output_dir / f"denoising_model_{modality}_{site}_best.pth")
+        model.load_state_dict(strip_prefix_state_dict(checkpoint['model_state_dict'], 'encoder.'), strict=False)
+        optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
 
     # Training loop
     best_val_loss = float('inf')
@@ -145,6 +142,9 @@ if __name__ == "__main__":
     if args.resume and os.path.exists(os.path.join(args.output_dir, f"denoising_model_{args.modality}_{args.site}_final.pth")):
         print("Final weights already exist, skipping training")
     else:
+        if args.resume and not os.path.exists(os.path.join(args.output_dir, f"denoising_model_{args.modality}_{args.site}_best.pth")):
+            print("Resume flag set but no best checkpoint found, starting from scratch")
+            args.resume = False
         train_denoising(
             args.model_name,
             args.output_dir,
