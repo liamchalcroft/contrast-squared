@@ -7,14 +7,14 @@ BASE_DIR="task_checkpoints"
 declare -A MODELS=(
     ["random-resnet50"]="timm/resnet50.a1_in1k"
     ["imagenet-resnet50"]="timm/resnet50.a1_in1k --pretrained"
-    ["mprage-resnet50-view2"]="timm/resnet50.a1_in1k --weights_path checkpoints/mprage_view2/model_best.pth"
-    ["mprage-resnet50-view5"]="timm/resnet50.a1_in1k --weights_path checkpoints/mprage_view5/model_best.pth"
-    ["mprage-resnet50-barlow"]="timm/resnet50.a1_in1k --weights_path checkpoints/mprage_barlow/model_best.pth"
-    ["mprage-resnet50-vicreg"]="timm/resnet50.a1_in1k --weights_path checkpoints/mprage_vicreg/model_best.pth"
-    ["bloch-resnet50-view2"]="timm/resnet50.a1_in1k --weights_path checkpoints/bloch_view2/model_best.pth"
-    ["bloch-resnet50-view5"]="timm/resnet50.a1_in1k --weights_path checkpoints/bloch_view5/model_best.pth"
-    ["bloch-resnet50-barlow"]="timm/resnet50.a1_in1k --weights_path checkpoints/bloch_barlow/model_best.pth"
-    ["bloch-resnet50-vicreg"]="timm/resnet50.a1_in1k --weights_path checkpoints/bloch_vicreg/model_best.pth"
+    ["mprage-resnet50-view2"]="timm/resnet50.a1_in1k --weights_path checkpoints/mprage-resnet50-view2/model_best.pth"
+    ["mprage-resnet50-view5"]="timm/resnet50.a1_in1k --weights_path checkpoints/mprage-resnet50-view5/model_best.pth"
+    ["mprage-resnet50-barlow"]="timm/resnet50.a1_in1k --weights_path checkpoints/mprage-resnet50-barlow/model_best.pth"
+    ["mprage-resnet50-vicreg"]="timm/resnet50.a1_in1k --weights_path checkpoints/mprage-resnet50-vicreg/model_best.pth"
+    ["bloch-resnet50-view2"]="timm/resnet50.a1_in1k --weights_path checkpoints/bloch-resnet50-view2/model_best.pth"
+    ["bloch-resnet50-view5"]="timm/resnet50.a1_in1k --weights_path checkpoints/bloch-resnet50-view5/model_best.pth"
+    ["bloch-resnet50-barlow"]="timm/resnet50.a1_in1k --weights_path checkpoints/bloch-resnet50-barlow/model_best.pth"
+    ["bloch-resnet50-vicreg"]="timm/resnet50.a1_in1k --weights_path checkpoints/bloch-resnet50-vicreg/model_best.pth"
 )
 
 # Modalities to process
@@ -53,6 +53,7 @@ for MODEL_NAME in "${!MODELS[@]}"; do
                 --batch_size $BATCH_SIZE \
                 --learning_rate $LR \
                 --amp \
+                --resume \
                 2>&1 | tee "$CHECKPOINT_DIR/training_${MODALITY}_${SITE}.log"
             
             # Check if training completed successfully

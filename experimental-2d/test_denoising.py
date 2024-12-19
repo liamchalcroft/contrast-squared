@@ -39,7 +39,7 @@ def test_denoising(model_dir, model_name, modality, site):
     
     # Load model
     model = create_unet_model(model_name, pretrained=False)
-    checkpoint = torch.load(Path(model_dir) / f"denoising_model_{modality}_GST_best.pth")
+    checkpoint = torch.load(Path(model_dir) / f"denoising_model_{modality}_GST_latest.pth")
     model.load_state_dict(checkpoint['model_state_dict'])
     model.eval()
 
