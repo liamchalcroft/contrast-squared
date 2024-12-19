@@ -26,12 +26,17 @@ def calculate_metrics(clean, noisy, denoised):
     
     noisy_ssim = structural_similarity(clean, noisy, data_range=1.0)
     denoised_ssim = structural_similarity(clean, denoised, data_range=1.0)
+
+    mae = torch.mean(torch.abs(clean - denoised))
+    mse = torch.mean((clean - denoised) ** 2)
     
     return {
         'noisy_psnr': noisy_psnr,
         'denoised_psnr': denoised_psnr,
         'noisy_ssim': noisy_ssim,
-        'denoised_ssim': denoised_ssim
+        'denoised_ssim': denoised_ssim,
+        'mae': mae,
+        'mse': mse
     }
 
 def test_denoising(model_dir, model_name, modality, site):
@@ -121,6 +126,8 @@ if __name__ == "__main__":
         'noisy_psnr': ['mean', 'std'],
         'denoised_psnr': ['mean', 'std'],
         'noisy_ssim': ['mean', 'std'],
-        'denoised_ssim': ['mean', 'std']
+        'denoised_ssim': ['mean', 'std'],
+        'mae': ['mean', 'std'],
+        'mse': ['mean', 'std']
     }).round(3)
     print(summary) 
