@@ -3,6 +3,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from pathlib import Path
 import argparse
+import numpy as np
 
 def load_and_process_results(results_dir):
     """Load and combine all CSV files from results directory."""
@@ -18,17 +19,29 @@ def load_and_process_results(results_dir):
     # Clean up model names for better display
     df['model'] = df['model'].apply(lambda x: x.replace('ResNet-50', '').strip())
     
+    # Create mapping for model name replacements
+    name_mapping = {
+        'View2': 'SimCLR (n=2)',
+        'View5': 'SimCLR (n=5)',
+        'Barlow': 'Barlow Twins',
+        'VICReg': 'VICReg'
+    }
+    
+    # Apply replacements
+    for old, new in name_mapping.items():
+        df['model'] = df['model'].apply(lambda x: x.replace(old, new))
+    
     # Define consistent model order
     model_order = [
         'Random',
         'ImageNet',
-        'MPRAGE View2',
-        'MPRAGE View5',
-        'MPRAGE Barlow',
+        'MPRAGE SimCLR (n=2)',
+        'MPRAGE SimCLR (n=5)',
+        'MPRAGE Barlow Twins',
         'MPRAGE VICReg',
-        'Bloch View2',
-        'Bloch View5',
-        'Bloch Barlow',
+        'Bloch SimCLR (n=2)',
+        'Bloch SimCLR (n=5)',
+        'Bloch Barlow Twins',
         'Bloch VICReg'
     ]
     
@@ -39,6 +52,25 @@ def load_and_process_results(results_dir):
     df = df.sort_values('model')
     
     return df
+
+def get_model_colors():
+    """Define consistent colors for model groups."""
+    # Use different base colors for each group
+    colors = {
+        'Random': '#808080',  # Gray
+        'ImageNet': '#000000',  # Black
+        # Blues for MPRAGE
+        'MPRAGE SimCLR (n=2)': '#1f77b4',
+        'MPRAGE SimCLR (n=5)': '#1f77b4',
+        'MPRAGE Barlow Twins': '#1f77b4',
+        'MPRAGE VICReg': '#1f77b4',
+        # Oranges for Bloch
+        'Bloch SimCLR (n=2)': '#ff7f0e',
+        'Bloch SimCLR (n=5)': '#ff7f0e',
+        'Bloch Barlow Twins': '#ff7f0e',
+        'Bloch VICReg': '#ff7f0e'
+    }
+    return colors
 
 def create_boxplots(df, output_dir, metrics=None):
     """Create boxplots for specified metrics."""
@@ -54,9 +86,11 @@ def create_boxplots(df, output_dir, metrics=None):
     output_dir.mkdir(exist_ok=True)
     
     # Set style
-    plt.style.use('default')  # Use default style instead of seaborn
-    sns.set_theme()  # Apply seaborn theme on top
-    sns.set_palette("husl")
+    plt.style.use('default')
+    sns.set_theme()
+    
+    # Get color palette
+    colors = get_model_colors()
     
     # Create plots for each metric
     for metric_name, metric_col in metrics:
@@ -67,13 +101,14 @@ def create_boxplots(df, output_dir, metrics=None):
         for ax, site in zip(axes, ['GST', 'HH', 'IOP']):
             site_data = df[df['site'] == site]
             
-            # Create boxplot
+            # Create boxplot with custom colors
             sns.boxplot(
                 data=site_data,
                 x='modality',
                 y=metric_col,
                 hue='model',
-                ax=ax
+                ax=ax,
+                palette=colors
             )
             
             # Customize plot
@@ -94,25 +129,81 @@ def create_boxplots(df, output_dir, metrics=None):
                    bbox_inches='tight', dpi=300)
         plt.close()
 
-def create_site_comparison(df, output_dir):
-    """Create plots comparing performance across sites."""
+def create_radar_plots(df, output_dir):
+    """Create radar plots comparing models across metrics."""
     output_dir = Path(output_dir)
     
-    # Create violin plots for site comparison
-    plt.figure(figsize=(15, 6))
-    sns.violinplot(
-        data=df,
-        x='model',
-        y='denoised_psnr',
-        hue='site',
-        split=True
-    )
-    plt.xticks(rotation=45, ha='right')
-    plt.title('Denoising Performance Across Sites')
-    plt.tight_layout()
-    plt.savefig(output_dir / 'site_comparison.png', 
-                bbox_inches='tight', dpi=300)
-    plt.close()
+    # Get color palette
+    colors = get_model_colors()
+    
+    # Prepare metrics for radar plot
+    metrics = ['denoised_psnr', 'denoised_ssim', 'mse', 'mae']
+    metric_names = ['PSNR', 'SSIM', 'MSE', 'MAE']
+    
+    # For each modality and site
+    for modality in ['t1', 't2', 'pd']:
+        for site in ['GST', 'HH', 'IOP']:
+            # Filter data
+            plot_data = df[(df['modality'] == modality) & (df['site'] == site)]
+            
+            # Calculate mean values for each model and metric
+            means = plot_data.groupby('model')[metrics].mean()
+            
+            # Normalize metrics to [0,1] scale for comparison
+            # Note: Invert MSE and MAE since lower is better
+            normalized = pd.DataFrame()
+            for metric in metrics:
+                if metric in ['mse', 'mae']:
+                    normalized[metric] = 1 - ((means[metric] - means[metric].min()) / 
+                                            (means[metric].max() - means[metric].min()))
+                else:
+                    normalized[metric] = (means[metric] - means[metric].min()) / \
+                                       (means[metric].max() - means[metric].min())
+            
+            # Calculate min and max values for smart limits
+            min_val = normalized.values.min()
+            max_val = normalized.values.max()
+            
+            # Set limits to 95% of min and 105% of max
+            ylim_min = min_val * 0.95
+            ylim_max = max_val * 1.05
+            
+            # Set up the angles for the spider plot
+            angles = np.linspace(0, 2*np.pi, len(metrics), endpoint=False)
+            angles = np.concatenate((angles, [angles[0]]))  # Close the plot
+            
+            # Create figure
+            fig, ax = plt.subplots(figsize=(10, 10), subplot_kw=dict(projection='polar'))
+            
+            # Plot each model
+            for model in normalized.index:
+                values = normalized.loc[model].values
+                values = np.concatenate((values, [values[0]]))  # Close the plot
+                ax.plot(angles, values, 'o-', linewidth=2, label=model, color=colors[model])
+                ax.fill(angles, values, alpha=0.25, color=colors[model])
+            
+            # Fix axis to go in the right order and start at 12 o'clock
+            ax.set_theta_offset(np.pi / 2)
+            ax.set_theta_direction(-1)
+            
+            # Set the ylim
+            ax.set_ylim(ylim_min, ylim_max)
+            
+            # Draw axis lines for each angle and label
+            ax.set_xticks(angles[:-1])
+            ax.set_xticklabels(metric_names, rotation=45)
+            
+            # Add legend
+            plt.legend(loc='upper right', bbox_to_anchor=(1.1, 1.1))
+            
+            # Add title
+            plt.title(f"Performance Metrics - {modality.upper()} {site}")
+            
+            # Save plot
+            plt.tight_layout()
+            plt.savefig(output_dir / f'radar_plot_{modality}_{site}.png',
+                       bbox_inches='tight', dpi=300)
+            plt.close()
 
 def print_summary_stats(df):
     """Print summary statistics for the results."""
@@ -151,7 +242,6 @@ if __name__ == "__main__":
     
     # Create plots
     create_boxplots(df, args.output_dir)
-    create_site_comparison(df, args.output_dir)
     
     # Print statistics
     print_summary_stats(df) 
