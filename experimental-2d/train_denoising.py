@@ -33,8 +33,19 @@ def train_denoising(model_name, output_dir, weights_path=None, pretrained=False,
     
     # Initialize model, loss, and optimizer
     model = create_unet_model(model_name, weights_path, pretrained).to(device)
+    
+    # Freeze encoder weights
+    for name, param in model.named_parameters():
+        if 'encoder' in name:
+            param.requires_grad = False
+    print("Encoder weights frozen")
+    
+    # Only optimize decoder parameters
+    optimizer = optim.AdamW(
+        filter(lambda p: p.requires_grad, model.parameters()), 
+        lr=learning_rate
+    )
     criterion = nn.MSELoss()
-    optimizer = optim.AdamW(model.parameters(), lr=learning_rate)
 
     if amp:
         scaler = torch.amp.GradScaler('cuda')
