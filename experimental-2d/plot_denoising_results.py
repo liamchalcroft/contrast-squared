@@ -16,7 +16,7 @@ def load_and_process_results(results_dir):
     df = pd.concat([pd.read_csv(f) for f in all_files], ignore_index=True)
     
     # Clean up model names for better display
-    # df['model'] = df['model'].apply(lambda x: x.replace('ResNet-50', '').strip())
+    df['model'] = df['model'].apply(lambda x: x.replace('ResNet-50', '').strip())
     
     return df
 
@@ -24,8 +24,10 @@ def create_boxplots(df, output_dir, metrics=None):
     """Create boxplots for specified metrics."""
     if metrics is None:
         metrics = [
-            ('PSNR', ['noisy_psnr', 'denoised_psnr']),
-            ('SSIM', ['noisy_ssim', 'denoised_ssim'])
+            ('PSNR', 'denoised_psnr'),
+            ('SSIM', 'denoised_ssim'),
+            ('MSE', 'mse'),
+            ('MAE', 'mae')
         ]
     
     output_dir = Path(output_dir)
@@ -37,39 +39,33 @@ def create_boxplots(df, output_dir, metrics=None):
     sns.set_palette("husl")
     
     # Create plots for each metric
-    for metric_name, metric_cols in metrics:
-        # Create figure with subplots for each modality
+    for metric_name, metric_col in metrics:
+        # Create figure with subplots for each site
         fig, axes = plt.subplots(1, 3, figsize=(20, 6))
-        fig.suptitle(f'{metric_name} by Model and Modality', fontsize=16)
+        fig.suptitle(f'{metric_name} by Model and Site', fontsize=16)
         
-        for ax, modality in zip(axes, ['t1', 't2', 'pd']):
-            modality_data = df[df['modality'] == modality]
-            
-            # Reshape data for boxplot
-            plot_data = pd.melt(
-                modality_data,
-                id_vars=['model'],
-                value_vars=metric_cols,
-                var_name='Type',
-                value_name=metric_name
-            )
+        for ax, site in zip(axes, ['GST', 'HH', 'IOP']):
+            site_data = df[df['site'] == site]
             
             # Create boxplot
             sns.boxplot(
-                data=plot_data,
-                x='model',
-                y=metric_name,
-                hue='Type',
+                data=site_data,
+                x='modality',
+                y=metric_col,
+                hue='model',
                 ax=ax
             )
             
             # Customize plot
-            ax.set_title(f'{modality.upper()} Images')
-            ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha='right')
-            ax.set_xlabel('')
+            ax.set_title(f'Site: {site}')
+            ax.set_xlabel('Modality')
+            ax.set_ylabel(metric_name)
             
-            # Only show legend for first subplot
-            if ax != axes[0]:
+            # Rotate legend labels if needed
+            ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+            
+            # Only show legend for last subplot
+            if ax != axes[-1]:
                 ax.get_legend().remove()
         
         # Adjust layout and save
