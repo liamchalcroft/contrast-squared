@@ -1,3 +1,4 @@
+import os
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -138,16 +139,19 @@ if __name__ == "__main__":
     parser.add_argument('--resume', action='store_true', help='Resume training from the last checkpoint')
 
     args = parser.parse_args()
-    train_denoising(
-        args.model_name,
-        args.output_dir,
-        args.weights_path,
-        args.pretrained,
-        args.epochs,
-        args.batch_size,
-        args.learning_rate,
-        args.modality,
-        args.site,
-        args.amp,
-        args.resume
-    ) 
+    if args.resume and os.path.exists(args.output_dir / f"denoising_model_{args.modality}_{args.site}_final.pth"):
+        print("Final weights already exist, skipping training")
+    else:
+        train_denoising(
+            args.model_name,
+            args.output_dir,
+            args.weights_path,
+            args.pretrained,
+            args.epochs,
+            args.batch_size,
+            args.learning_rate,
+            args.modality,
+            args.site,
+            args.amp,
+            args.resume
+        ) 
