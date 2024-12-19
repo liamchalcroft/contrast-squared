@@ -48,8 +48,26 @@ def load_and_process_results(results_dir):
     # Convert model column to categorical with specific order
     df['model'] = pd.Categorical(df['model'], categories=model_order, ordered=True)
     
-    # Sort the dataframe by model order
-    df = df.sort_values('model')
+    # Define modality mapping and order
+    modality_mapping = {
+        't1': 'T1w',
+        't2': 'T2w',
+        'pd': 'PDw'
+    }
+    modality_order = ['t1', 't2', 'pd']
+    
+    # Apply modality mapping
+    df['modality'] = df['modality'].map(modality_mapping)
+    
+    # Convert modality to categorical with specific order
+    df['modality'] = pd.Categorical(
+        df['modality'], 
+        categories=[modality_mapping[m] for m in modality_order], 
+        ordered=True
+    )
+    
+    # Sort the dataframe by model and modality order
+    df = df.sort_values(['model', 'modality'])
     
     return df
 
