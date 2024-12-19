@@ -57,8 +57,8 @@ def get_model_colors():
     """Define consistent colors for model groups."""
     # Use different base colors for each group
     colors = {
-        'Random': '#808080',  # Gray
-        'ImageNet': '#000000',  # Black
+        'Random': '#ffffff',  # White
+        'ImageNet': '#808080',  # Gray
         # Blues for MPRAGE
         'MPRAGE SimCLR (n=2)': '#1f77b4',
         'MPRAGE SimCLR (n=5)': '#1f77b4',
@@ -242,7 +242,7 @@ if __name__ == "__main__":
     
     # Create plots
     create_boxplots(df, args.output_dir)
-    create_radar_plots(df, args.output_dir)
+    # create_radar_plots(df, args.output_dir)
     
     # Print statistics
     print_summary_stats(df) 
