@@ -32,7 +32,8 @@ python pretrain.py \
     --same_contrast \
     --wandb_entity $WANDB_ENTITY \
     --checkpoint_dir $CHECKPOINT_BASE/$DATASET-resnet50-view2-same-contrast \
-    --wandb_name $DATASET-resnet50-view2-same-contrast
+    --wandb_name $DATASET-resnet50-view2-same-contrast \
+    --resume
 # 3 views
 log "Running ResNet50 SimCLR with 3 views"
 python pretrain.py \
@@ -42,7 +43,8 @@ python pretrain.py \
     --same_contrast \
     --wandb_entity $WANDB_ENTITY \
     --checkpoint_dir $CHECKPOINT_BASE/$DATASET-resnet50-view3-same-contrast \
-    --wandb_name $DATASET-resnet50-view3-same-contrast
+    --wandb_name $DATASET-resnet50-view3-same-contrast \
+    --resume
 # 4 views
 log "Running ResNet50 SimCLR with 4 views"
 python pretrain.py \
@@ -52,7 +54,8 @@ python pretrain.py \
     --same_contrast \
     --wandb_entity $WANDB_ENTITY \
     --checkpoint_dir $CHECKPOINT_BASE/$DATASET-resnet50-view4-same-contrast \
-    --wandb_name $DATASET-resnet50-view4-same-contrast
+    --wandb_name $DATASET-resnet50-view4-same-contrast \
+    --resume
 # 5 views
 log "Running ResNet50 SimCLR with 5 views"
 python pretrain.py \
@@ -62,7 +65,8 @@ python pretrain.py \
     --same_contrast \
     --wandb_entity $WANDB_ENTITY \
     --checkpoint_dir $CHECKPOINT_BASE/$DATASET-resnet50-view5-same-contrast \
-    --wandb_name $DATASET-resnet50-view5-same-contrast
+    --wandb_name $DATASET-resnet50-view5-same-contrast \
+    --resume
 # Barlow Twins
 log "Running ResNet50 Barlow Twins"
 python pretrain.py \
@@ -73,7 +77,8 @@ python pretrain.py \
     --wandb_entity $WANDB_ENTITY \
     --checkpoint_dir $CHECKPOINT_BASE/$DATASET-resnet50-barlow-same-contrast \
     --wandb_name $DATASET-resnet50-barlow-same-contrast \
-    --loss_type barlow
+    --loss_type barlow \
+    --resume
 # VICReg
 log "Running ResNet50 VICReg"
 python pretrain.py \
@@ -84,7 +89,8 @@ python pretrain.py \
     --wandb_entity $WANDB_ENTITY \
     --checkpoint_dir $CHECKPOINT_BASE/$DATASET-resnet50-vicreg-same-contrast \
     --wandb_name $DATASET-resnet50-vicreg-same-contrast \
-    --loss_type vicreg
+    --loss_type vicreg \
+    --resume
 
 # CLIP ViT-B/16
 # 2 views
@@ -96,7 +102,8 @@ python pretrain.py \
     --same_contrast \
     --wandb_entity $WANDB_ENTITY \
     --checkpoint_dir $CHECKPOINT_BASE/$DATASET-vitclip-view2-same-contrast \
-    --wandb_name $DATASET-vitclip-view2-same-contrast
+    --wandb_name $DATASET-vitclip-view2-same-contrast \
+    --resume
 
 # DINO ViT-B/16
 # 2 views
@@ -108,4 +115,5 @@ python pretrain.py \
     --same_contrast \
     --wandb_entity $WANDB_ENTITY \
     --checkpoint_dir $CHECKPOINT_BASE/$DATASET-vitdino-view2-same-contrast \
-    --wandb_name $DATASET-vitdino-view2-same-contrast
+    --wandb_name $DATASET-vitdino-view2-same-contrast \
+    --resume
