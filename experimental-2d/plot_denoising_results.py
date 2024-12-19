@@ -110,6 +110,13 @@ def create_boxplots(df, output_dir, metrics=None):
     # Get color palette
     colors = get_model_colors()
     
+    # Site labels mapping
+    site_labels = {
+        'GST': 'Training Site (GST)',
+        'HH': 'OOD Site (HH)',
+        'IOP': 'OOD Site (IOP)'
+    }
+    
     # Create plots for each metric
     for metric_name, metric_col in metrics:
         # Create figure with subplots for each site
@@ -129,8 +136,12 @@ def create_boxplots(df, output_dir, metrics=None):
                 palette=colors
             )
             
+            # Set log scale for MSE and MAE
+            if metric_name in ['MSE', 'MAE']:
+                ax.set_yscale('log')
+            
             # Customize plot
-            ax.set_title(f'Site: {site}')
+            ax.set_title(site_labels[site])
             ax.set_xlabel('Modality')
             ax.set_ylabel(metric_name)
             
