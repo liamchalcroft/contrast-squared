@@ -27,8 +27,8 @@ def calculate_metrics(clean, noisy, denoised):
     noisy_ssim = structural_similarity(clean, noisy, data_range=1.0)
     denoised_ssim = structural_similarity(clean, denoised, data_range=1.0)
 
-    mae = torch.mean(torch.abs(clean - denoised))
-    mse = torch.mean((clean - denoised) ** 2)
+    mae = np.mean(np.abs(clean - denoised))
+    mse = np.mean((clean - denoised) ** 2)
     
     return {
         'noisy_psnr': noisy_psnr,
