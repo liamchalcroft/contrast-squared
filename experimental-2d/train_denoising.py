@@ -139,7 +139,7 @@ if __name__ == "__main__":
     parser.add_argument('--resume', action='store_true', help='Resume training from the last checkpoint')
 
     args = parser.parse_args()
-    if args.resume and os.path.exists(args.output_dir / f"denoising_model_{args.modality}_{args.site}_final.pth"):
+    if args.resume and os.path.exists(os.path.join(args.output_dir, f"denoising_model_{args.modality}_{args.site}_final.pth")):
         print("Final weights already exist, skipping training")
     else:
         train_denoising(
