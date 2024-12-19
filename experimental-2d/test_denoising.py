@@ -105,7 +105,7 @@ if __name__ == "__main__":
     all_results = pd.DataFrame()
     
     # Test each modality and site combination
-    for modality in args.modalities:
+    for modality in args.modality:
         for site in args.sites:
             try:
               results = test_denoising(
