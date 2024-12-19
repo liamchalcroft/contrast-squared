@@ -18,6 +18,26 @@ def load_and_process_results(results_dir):
     # Clean up model names for better display
     df['model'] = df['model'].apply(lambda x: x.replace('ResNet-50', '').strip())
     
+    # Define consistent model order
+    model_order = [
+        'Random',
+        'ImageNet',
+        'MPRAGE View2',
+        'MPRAGE View5',
+        'MPRAGE Barlow',
+        'MPRAGE VICReg',
+        'Bloch View2',
+        'Bloch View5',
+        'Bloch Barlow',
+        'Bloch VICReg'
+    ]
+    
+    # Convert model column to categorical with specific order
+    df['model'] = pd.Categorical(df['model'], categories=model_order, ordered=True)
+    
+    # Sort the dataframe by model order
+    df = df.sort_values('model')
+    
     return df
 
 def create_boxplots(df, output_dir, metrics=None):
