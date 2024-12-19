@@ -117,9 +117,9 @@ def create_tsne_plots(h5_path, model_name, weights_path, output_dir, perplexity=
     # Mapping for legend labels
     modality_labels_map = {'t1': 'T1w', 't2': 'T2w', 'pd': 'PDw'}
 
-    # Define fixed axis limits
-    xlim = (-2.5, 2.5)  # Example values, adjust based on your data
-    ylim = (-2.5, 2.5)  # Example values, adjust based on your data
+    # # Define fixed axis limits
+    # xlim = (-2.5, 2.5)  # Example values, adjust based on your data
+    # ylim = (-2.5, 2.5)  # Example values, adjust based on your data
 
     # Create combined plot (site and modality)
     plt.figure(figsize=(12, 12))
