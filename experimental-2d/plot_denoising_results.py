@@ -32,7 +32,8 @@ def create_boxplots(df, output_dir, metrics=None):
     output_dir.mkdir(exist_ok=True)
     
     # Set style
-    plt.style.use('seaborn')
+    plt.style.use('default')  # Use default style instead of seaborn
+    sns.set_theme()  # Apply seaborn theme on top
     sns.set_palette("husl")
     
     # Create plots for each metric
