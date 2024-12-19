@@ -77,16 +77,16 @@ def get_model_colors():
     colors = {
         'Random': '#ffffff',  # White
         'ImageNet': '#808080',  # Gray
-        # Blues for MPRAGE
+        # Blues for MPRAGE with different shades
         'MPRAGE SimCLR (n=2)': '#1f77b4',
-        'MPRAGE SimCLR (n=5)': '#1f77b4',
-        'MPRAGE Barlow Twins': '#1f77b4',
-        'MPRAGE VICReg': '#1f77b4',
-        # Oranges for Bloch
+        'MPRAGE SimCLR (n=5)': '#2f87c4',
+        'MPRAGE Barlow Twins': '#3f97d4',
+        'MPRAGE VICReg': '#4fa7e4',
+        # Oranges for Bloch with different shades
         'Bloch SimCLR (n=2)': '#ff7f0e',
-        'Bloch SimCLR (n=5)': '#ff7f0e',
-        'Bloch Barlow Twins': '#ff7f0e',
-        'Bloch VICReg': '#ff7f0e'
+        'Bloch SimCLR (n=5)': '#ff8f1e',
+        'Bloch Barlow Twins': '#ff9f2e',
+        'Bloch VICReg': '#ffaf3e'
     }
     return colors
 
