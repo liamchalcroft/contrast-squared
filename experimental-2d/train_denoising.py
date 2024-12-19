@@ -40,9 +40,12 @@ def train_denoising(model_name, output_dir, weights_path=None, pretrained=False,
         scaler = torch.amp.GradScaler('cuda')
 
     if resume:
-        checkpoint = torch.load(output_dir / f"denoising_model_{modality}_{site}_latest.pth")
-        model.load_state_dict(strip_prefix_state_dict(checkpoint['model_state_dict'], 'encoder.'), strict=False)
-        optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+        if os.path.exists(os.path.join(output_dir, f"denoising_model_{modality}_{site}_best.pth")):
+          checkpoint = torch.load(output_dir / f"denoising_model_{modality}_{site}_best.pth")
+          model.load_state_dict(strip_prefix_state_dict(checkpoint['model_state_dict'], 'encoder.'), strict=False)
+          optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+        else:
+          print("No checkpoint found, starting from scratch")
 
     # Training loop
     best_val_loss = float('inf')

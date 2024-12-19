@@ -7,14 +7,14 @@ BASE_DIR="task_checkpoints"
 declare -A MODELS=(
     ["random-resnet50"]="timm/resnet50.a1_in1k"
     ["imagenet-resnet50"]="timm/resnet50.a1_in1k --pretrained"
-    ["mprage-resnet50-view2"]="timm/resnet50.a1_in1k --weights_path checkpoints/mprage-resnet50-view2/model_best.pth"
-    ["mprage-resnet50-view5"]="timm/resnet50.a1_in1k --weights_path checkpoints/mprage-resnet50-view5/model_best.pth"
-    ["mprage-resnet50-barlow"]="timm/resnet50.a1_in1k --weights_path checkpoints/mprage-resnet50-barlow/model_best.pth"
-    ["mprage-resnet50-vicreg"]="timm/resnet50.a1_in1k --weights_path checkpoints/mprage-resnet50-vicreg/model_best.pth"
-    ["bloch-resnet50-view2"]="timm/resnet50.a1_in1k --weights_path checkpoints/bloch-resnet50-view2/model_best.pth"
-    ["bloch-resnet50-view5"]="timm/resnet50.a1_in1k --weights_path checkpoints/bloch-resnet50-view5/model_best.pth"
-    ["bloch-resnet50-barlow"]="timm/resnet50.a1_in1k --weights_path checkpoints/bloch-resnet50-barlow/model_best.pth"
-    ["bloch-resnet50-vicreg"]="timm/resnet50.a1_in1k --weights_path checkpoints/bloch-resnet50-vicreg/model_best.pth"
+    ["mprage-resnet50-view2"]="timm/resnet50.a1_in1k --weights_path checkpoints/mprage-resnet50-view2/model_best.pt"
+    ["mprage-resnet50-view5"]="timm/resnet50.a1_in1k --weights_path checkpoints/mprage-resnet50-view5/model_best.pt"
+    ["mprage-resnet50-barlow"]="timm/resnet50.a1_in1k --weights_path checkpoints/mprage-resnet50-barlow/model_best.pt"
+    ["mprage-resnet50-vicreg"]="timm/resnet50.a1_in1k --weights_path checkpoints/mprage-resnet50-vicreg/model_best.pt"
+    ["bloch-resnet50-view2"]="timm/resnet50.a1_in1k --weights_path checkpoints/bloch-resnet50-view2/model_best.pt"
+    ["bloch-resnet50-view5"]="timm/resnet50.a1_in1k --weights_path checkpoints/bloch-resnet50-view5/model_best.pt"
+    ["bloch-resnet50-barlow"]="timm/resnet50.a1_in1k --weights_path checkpoints/bloch-resnet50-barlow/model_best.pt"
+    ["bloch-resnet50-vicreg"]="timm/resnet50.a1_in1k --weights_path checkpoints/bloch-resnet50-vicreg/model_best.pt"
 )
 
 # Modalities to process
