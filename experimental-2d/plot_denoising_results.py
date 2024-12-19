@@ -16,7 +16,7 @@ def load_and_process_results(results_dir):
     df = pd.concat([pd.read_csv(f) for f in all_files], ignore_index=True)
     
     # Clean up model names for better display
-    df['model'] = all_files.split('/')[-1].split('_results.csv')[0]
+    # df['model'] = df['model'].apply(lambda x: x.replace('ResNet-50', '').strip())
     
     return df
 
@@ -25,9 +25,7 @@ def create_boxplots(df, output_dir, metrics=None):
     if metrics is None:
         metrics = [
             ('PSNR', ['noisy_psnr', 'denoised_psnr']),
-            ('SSIM', ['noisy_ssim', 'denoised_ssim']),
-            ('MAE', ['mae']),
-            ('MSE', ['mse'])
+            ('SSIM', ['noisy_ssim', 'denoised_ssim'])
         ]
     
     output_dir = Path(output_dir)
