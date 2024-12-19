@@ -18,7 +18,7 @@ declare -A MODELS=(
 )
 
 # Create results directory
-RESULTS_DIR="results"
+RESULTS_DIR="task_results/denoising"
 mkdir -p "$RESULTS_DIR"
 
 # Test each model

@@ -95,6 +95,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Test denoising models and generate metrics')
     parser.add_argument('--model_dir', type=str, required=True, help='Directory containing model checkpoints')
     parser.add_argument('--model_name', type=str, required=True, help='Name of the model for logging')
+    parser.add_argument('--output_file', type=str, required=True, help='Path to the output CSV file')
     parser.add_argument('--modality', type=str, nargs='+', default=['t1', 't2', 'pd'], help='Modalities to test')
     parser.add_argument('--sites', type=str, nargs='+', default=['GST', 'HH', 'IOP'], help='Sites to test')
     
