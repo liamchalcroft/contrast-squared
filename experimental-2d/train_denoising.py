@@ -7,6 +7,7 @@ from pathlib import Path
 from downstream_preprocess import get_train_val_loaders
 from models import create_unet_model
 import matplotlib.pyplot as plt
+from torch.optim.lr_scheduler import LinearLR, CosineAnnealingLR, SequentialLR
 
 def strip_prefix_state_dict(state_dict, substring_to_remove):
     """Load weights and remove a specific prefix from the keys."""
@@ -69,19 +70,43 @@ def train_denoising(model_name, output_dir, weights_path=None, pretrained=False,
     )
     criterion = nn.MSELoss()
 
+    # Set up learning rate scheduler
+    warmup_epochs = 10
+    warmup_scheduler = LinearLR(
+        optimizer, 
+        start_factor=0.1, 
+        end_factor=1.0, 
+        total_iters=warmup_epochs
+    )
+    cosine_scheduler = CosineAnnealingLR(
+        optimizer,
+        T_max=epochs - warmup_epochs,
+        eta_min=learning_rate * 0.01  # Minimum LR will be 1% of initial LR
+    )
+    scheduler = SequentialLR(
+        optimizer,
+        schedulers=[warmup_scheduler, cosine_scheduler],
+        milestones=[warmup_epochs]
+    )
+
     if amp:
         scaler = torch.amp.GradScaler('cuda')
-
-    if resume:
-        checkpoint = torch.load(output_dir / f"denoising_model_{modality}_{site}_best.pth")
-        model.load_state_dict(strip_prefix_state_dict(checkpoint['model_state_dict'], 'encoder.'), strict=False)
-        optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
 
     # Initialize loss tracking
     train_losses = []
     val_losses = []
     best_val_loss = float('inf')
-    start_epoch = checkpoint['epoch'] + 1 if resume else 0
+    start_epoch = 0
+
+    if resume:
+        checkpoint = torch.load(output_dir / f"denoising_model_{modality}_{site}_best.pth")
+        model.load_state_dict(checkpoint['model_state_dict'])
+        optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+        scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
+        start_epoch = checkpoint['epoch'] + 1
+        train_losses = checkpoint['train_losses']
+        val_losses = checkpoint['val_losses']
+        best_val_loss = checkpoint['val_loss']
     
     for epoch in range(start_epoch, epochs):
         # Training phase
@@ -98,7 +123,8 @@ def train_denoising(model_name, output_dir, weights_path=None, pretrained=False,
                 noise = torch.randn_like(inputs) * std
                 inputs = inputs + noise
                 outputs = model(inputs)
-                loss = criterion(outputs, noise) # We want to predict noise, not the original image
+                loss = criterion(outputs, noise)
+            
             if amp:
                 scaler.scale(loss).backward()
                 scaler.step(optimizer)
@@ -110,10 +136,13 @@ def train_denoising(model_name, output_dir, weights_path=None, pretrained=False,
             train_loss += loss.item()
             train_batches += 1
         
+        # Step the scheduler
+        scheduler.step()
+        
         avg_train_loss = train_loss / train_batches
         train_losses.append(avg_train_loss)
         
-        # Validation phase
+        # Validation phase and checkpoint saving
         if epoch % 2 == 0:
             model.eval()
             val_loss = 0.0
@@ -122,13 +151,11 @@ def train_denoising(model_name, output_dir, weights_path=None, pretrained=False,
             with torch.no_grad():
                 for batch in tqdm(val_loader, desc=f"Epoch {epoch+1}/{epochs} - Validation"):
                     inputs = batch['image'].to(device)
-                    
                     std = torch.rand(1, dtype=inputs.dtype, device=inputs.device) * 0.2
                     noise = torch.randn_like(inputs) * std
                     inputs = inputs + noise
                     outputs = model(inputs)
                     loss = criterion(outputs, noise)
-                    
                     val_loss += loss.item()
                     val_batches += 1
             
@@ -138,6 +165,7 @@ def train_denoising(model_name, output_dir, weights_path=None, pretrained=False,
             print(f"Epoch {epoch+1}")
             print(f"Training Loss: {avg_train_loss:.6f}")
             print(f"Validation Loss: {avg_val_loss:.6f}")
+            print(f"Learning Rate: {scheduler.get_last_lr()[0]:.6f}")
             
             # Save best model
             if avg_val_loss < best_val_loss:
@@ -146,6 +174,7 @@ def train_denoising(model_name, output_dir, weights_path=None, pretrained=False,
                     'epoch': epoch,
                     'model_state_dict': model.state_dict(),
                     'optimizer_state_dict': optimizer.state_dict(),
+                    'scheduler_state_dict': scheduler.state_dict(),
                     'train_loss': avg_train_loss,
                     'val_loss': avg_val_loss,
                     'train_losses': train_losses,
@@ -160,6 +189,7 @@ def train_denoising(model_name, output_dir, weights_path=None, pretrained=False,
         'epoch': epochs,
         'model_state_dict': model.state_dict(),
         'optimizer_state_dict': optimizer.state_dict(),
+        'scheduler_state_dict': scheduler.state_dict(),
         'train_loss': avg_train_loss,
         'val_loss': avg_val_loss,
         'train_losses': train_losses,
