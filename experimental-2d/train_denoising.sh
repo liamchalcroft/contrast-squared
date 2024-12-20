@@ -23,8 +23,8 @@ MODALITIES=("t1" "t2" "pd")
 # Sites to process - only GST for training, the rest are for testing
 SITES=("GST")
 
-# Common training parameters - try 20 epochs first
-EPOCHS=20
+# Common training parameters - try 50 epochs first
+EPOCHS=50
 BATCH_SIZE=32
 LR=1e-3
 
