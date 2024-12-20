@@ -53,7 +53,6 @@ for MODEL_NAME in "${!MODELS[@]}"; do
                 --batch_size $BATCH_SIZE \
                 --learning_rate $LR \
                 --amp \
-                --resume \
                 2>&1 | tee "$CHECKPOINT_DIR/training_${MODALITY}_${SITE}.log"
             
             # Check if training completed successfully
