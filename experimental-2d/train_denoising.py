@@ -30,6 +30,7 @@ def plot_training_curves(train_losses, val_losses, output_dir, modality, site):
     plt.title(f'Training and Validation Losses - {modality.upper()} {site}')
     plt.legend()
     plt.grid(True)
+    plt.yscale('log')
     
     # Save plot
     plt.savefig(output_dir / f'training_curves_{modality}_{site}.png',
