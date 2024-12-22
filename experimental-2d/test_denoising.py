@@ -65,7 +65,7 @@ def test_denoising(model_dir, model_name, modality, site):
             clean = batch['image'].to(device)
             
             # Add noise
-            std = torch.rand(1, dtype=clean.dtype, device=clean.device) * 0.2
+            std = 0.05
             noise = torch.randn_like(clean) * std
             noisy = clean + noise
             
