@@ -273,20 +273,24 @@ def get_train_val_loaders(
         image_transform=image_transform,
     )
 
-    # Use custom sampler instead of shuffle
-    train_sampler = PatientBatchSampler(train_dataset, batch_size)
-    val_sampler = PatientBatchSampler(val_dataset, batch_size)
+    # # Use custom sampler instead of shuffle
+    # train_sampler = PatientBatchSampler(train_dataset, batch_size)
+    # val_sampler = PatientBatchSampler(val_dataset, batch_size)
 
     # Only include pin_memory_device if it's specified
     train_dataloader_kwargs = {
-        'batch_sampler': train_sampler,
+        # 'batch_sampler': train_sampler,
+        'shuffle': True,
+        'batch_size': batch_size,
         'num_workers': num_workers,
         'pin_memory': pin_memory,
         'persistent_workers': persistent_workers,
         'prefetch_factor': prefetch_factor,
     }
     val_dataloader_kwargs = {
-        'batch_sampler': val_sampler,
+        # 'batch_sampler': val_sampler,
+        'shuffle': False,
+        'batch_size': batch_size,
         'num_workers': num_workers,
         'pin_memory': pin_memory,
         'persistent_workers': persistent_workers,
