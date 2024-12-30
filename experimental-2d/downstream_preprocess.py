@@ -253,8 +253,8 @@ def get_train_val_loaders(
         prefetch_factor=3
     ):
     h5_path = 'task_data/ixi.h5'
-    train_ratio = 0.6
-    val_ratio = 0.2
+    train_ratio = 0.1
+    val_ratio = 0.1
     
     image_label_transform, image_transform = get_train_val_transforms()
     train_data_chunks = get_data_chunks(h5_path, task=task, modality=modality, split='train', site=site, train_ratio=train_ratio, val_ratio=val_ratio)
@@ -320,8 +320,8 @@ def get_test_loader(
     ):
     h5_path = 'task_data/ixi.h5'
     if site == 'GST':
-        train_ratio = 0.6
-        val_ratio = 0.2
+        train_ratio = 0.1
+        val_ratio = 0.1
     else:
         train_ratio = 0.
         val_ratio = 0.
