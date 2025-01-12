@@ -107,7 +107,7 @@ def create_boxplots(df, output_dir, metrics=None):
     
     # Set style
     plt.style.use('default')
-    sns.set_style("whitegrid")  # Changed to whitegrid for better visibility
+    sns.set_theme()
     
     # Get color palette
     colors = get_model_colors()
@@ -125,35 +125,33 @@ def create_boxplots(df, output_dir, metrics=None):
         fig, axes = plt.subplots(1, 3, figsize=(20, 6))
         fig.suptitle(f'{metric_name} by Model and Site', fontsize=16)
         
-        for ax, (site, site_label) in enumerate(site_labels.items()):
+        for ax, site in zip(axes, ['GST', 'HH', 'IOP']):
             site_data = df[df['site'] == site]
             
-            # Create boxplot
             sns.boxplot(
                 data=site_data,
                 x='modality',
                 y=metric_col,
                 hue='model',
-                ax=axes[ax],
-                palette=colors,
-                fliersize=3  # Reduce outlier point size
+                ax=ax,
+                palette=colors
             )
             
             # Set log scale for Loss
             if metric_name == 'Loss':
-                axes[ax].set_yscale('log')
+                ax.set_yscale('log')
             
             # Customize plot
-            axes[ax].set_title(site_label)
-            axes[ax].set_xlabel('Modality')
-            axes[ax].set_ylabel(metric_name)
+            ax.set_title(site_labels[site])
+            ax.set_xlabel('Modality')
+            ax.set_ylabel(metric_name)
             
             # Rotate legend labels if needed
-            axes[ax].legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+            ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
             
             # Only show legend for last subplot
-            if ax != 2:
-                axes[ax].get_legend().remove()
+            if ax != axes[-1]:
+                ax.get_legend().remove()
         
         # Adjust layout and save
         plt.tight_layout()
