@@ -44,7 +44,7 @@ def test_classifier(model_dir, model_name, modality, site):
     
     # Initialize model
     model = create_classification_model(
-        model_name=model_name,
+        model_name='timm/resnet50.a1_in1k',  # Always use ResNet-50 architecture
         num_classes=2,
         pretrained=False
     ).to(device)
@@ -73,7 +73,7 @@ def test_classifier(model_dir, model_name, modality, site):
     
     # Return results as a single row DataFrame
     return pd.DataFrame([{
-        'model_name': model_name,
+        'model': model_name,  # Changed from model_name to model to match denoising
         'modality': modality,
         'site': site,
         'test_loss': test_loss,
@@ -113,7 +113,7 @@ if __name__ == "__main__":
     
     # Print summary statistics
     print("\nSummary Statistics:")
-    summary = all_results.groupby(['model_name', 'modality', 'site']).agg({
+    summary = all_results.groupby(['model', 'modality', 'site']).agg({
         'test_accuracy': ['mean', 'std'],
         'test_loss': ['mean', 'std']
     }).round(3)
