@@ -3,86 +3,42 @@
 # Base directory for all checkpoints
 BASE_DIR="task_checkpoints"
 
-# Model configurations (name, weights path)
+# Model configurations (same as in train_classifier.sh)
 declare -A MODELS=(
-    ["random-resnet50"]="timm/resnet50.a1_in1k"
-    ["imagenet-resnet50"]="timm/resnet50.a1_in1k"
-    ["mprage-resnet50-view2"]="timm/resnet50.a1_in1k"
-    ["mprage-resnet50-view5"]="timm/resnet50.a1_in1k"
-    ["mprage-resnet50-barlow"]="timm/resnet50.a1_in1k"
-    ["mprage-resnet50-vicreg"]="timm/resnet50.a1_in1k"
-    ["bloch-resnet50-view2"]="timm/resnet50.a1_in1k"
-    ["bloch-resnet50-view5"]="timm/resnet50.a1_in1k"
-    ["bloch-resnet50-barlow"]="timm/resnet50.a1_in1k"
-    ["bloch-resnet50-vicreg"]="timm/resnet50.a1_in1k"
+    ["random-resnet50"]="Random ResNet-50"
+    ["imagenet-resnet50"]="ImageNet ResNet-50"
+    ["mprage-resnet50-view2"]="MPRAGE View2 ResNet-50"
+    ["mprage-resnet50-view5"]="MPRAGE View5 ResNet-50"
+    ["mprage-resnet50-barlow"]="MPRAGE Barlow ResNet-50"
+    ["mprage-resnet50-vicreg"]="MPRAGE VICReg ResNet-50"
+    ["bloch-resnet50-view2"]="Bloch View2 ResNet-50"
+    ["bloch-resnet50-view5"]="Bloch View5 ResNet-50"
+    ["bloch-resnet50-barlow"]="Bloch Barlow ResNet-50"
+    ["bloch-resnet50-vicreg"]="Bloch VICReg ResNet-50"
 )
 
-# Modalities to process
-MODALITIES=("t1" "t2" "pd")
+# Create results directory
+RESULTS_DIR="task_results/classification"
+mkdir -p "$RESULTS_DIR"
 
-# Sites to process - test on all sites
-SITES=("GST" "HH" "IOP")
-
-# Common parameters
-BATCH_SIZE=32
-
-# Loop through all combinations
-for MODEL_NAME in "${!MODELS[@]}"; do
-    MODEL_ARGS="${MODELS[$MODEL_NAME]}"
+# Test each model
+for MODEL_DIR in "${!MODELS[@]}"; do
+    MODEL_NAME="${MODELS[$MODEL_DIR]}"
+    echo "Testing model: $MODEL_NAME"
     
-    # Get checkpoint directory
-    CHECKPOINT_DIR="$BASE_DIR/${MODEL_NAME}/"
-    
-    # Skip if checkpoint directory doesn't exist
-    if [ ! -d "$CHECKPOINT_DIR" ]; then
-        echo "Skipping $MODEL_NAME - checkpoint directory not found"
-        continue
-    fi
-    
-    for MODALITY in "${MODALITIES[@]}"; do
-        for SITE in "${SITES[@]}"; do
-            echo "Testing classifier: $MODEL_NAME on $MODALITY data from $SITE"
-            
-            # Check if model checkpoint exists
-            if [ ! -f "$CHECKPOINT_DIR/classifier_${MODALITY}_GST_best.pth" ]; then
-                echo "Skipping - no checkpoint found for $MODEL_NAME on $MODALITY"
-                continue
-            fi
-            
-            # Run testing with specified parameters
-            python test_classifier.py \
-                --checkpoint_dir "$CHECKPOINT_DIR" \
-                --model_name $MODEL_ARGS \
-                --modality "$MODALITY" \
-                --site "$SITE" \
-                --batch_size $BATCH_SIZE \
-                2>&1 | tee "$CHECKPOINT_DIR/test_${MODALITY}_${SITE}.log"
-            
-            # Check if testing completed successfully
-            if [ $? -eq 0 ]; then
-                echo "Successfully completed testing for $MODEL_NAME on $MODALITY data from $SITE"
-            else
-                echo "Error testing $MODEL_NAME on $MODALITY data from $SITE"
-            fi
-        done
-    done
+    python test_classifier.py \
+        --model_dir "$BASE_DIR/$MODEL_DIR" \
+        --model_name "$MODEL_NAME" \
+        --output_file "$RESULTS_DIR/${MODEL_DIR}_results.csv"
 done
 
-# Combine all results into a single CSV
-echo "Combining results..."
-COMBINED_RESULTS="$BASE_DIR/combined_test_results.csv"
+# Combine all results
+python -c "
+import pandas as pd
+import glob
+files = glob.glob('$RESULTS_DIR/*_results.csv')
+combined = pd.concat([pd.read_csv(f) for f in files], ignore_index=True)
+combined.to_csv('$RESULTS_DIR/combined_results.csv', index=False)
+"
 
-# Find the first CSV file to get headers
-FIRST_CSV=$(find "$BASE_DIR" -name "test_results_*.csv" | head -n 1)
-
-if [ -n "$FIRST_CSV" ]; then
-    # Copy headers from first file
-    head -n 1 "$FIRST_CSV" > "$COMBINED_RESULTS"
-    
-    # Append all results (excluding headers)
-    find "$BASE_DIR" -name "test_results_*.csv" -exec tail -n +2 {} \; >> "$COMBINED_RESULTS"
-    
-    echo "Combined results saved to $COMBINED_RESULTS"
-else
-    echo "No results files found"
-fi 
+echo "Testing complete. Results saved in $RESULTS_DIR/combined_results.csv"
