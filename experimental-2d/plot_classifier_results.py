@@ -94,8 +94,14 @@ def get_model_colors():
     }
     return colors
 
-def create_boxplots(df, output_dir):
-    """Create boxplots for accuracy across models, modalities, and sites."""
+def create_boxplots(df, output_dir, metrics=None):
+    """Create boxplots for specified metrics."""
+    if metrics is None:
+        metrics = [
+            ('Accuracy', 'test_accuracy'),
+            ('Loss', 'test_loss')
+        ]
+    
     output_dir = Path(output_dir)
     output_dir.mkdir(exist_ok=True)
     
@@ -113,93 +119,138 @@ def create_boxplots(df, output_dir):
         'IOP': 'OOD Site (IOP)'
     }
     
-    # Create figure with subplots for each site
-    fig, axes = plt.subplots(1, 3, figsize=(20, 6))
-    fig.suptitle('Classification Accuracy by Model and Site', fontsize=16)
-    
-    for ax, (site, site_label) in enumerate(site_labels.items()):
-        site_data = df[df['site'] == site]
+    # Create plots for each metric
+    for metric_name, metric_col in metrics:
+        # Create figure with subplots for each site
+        fig, axes = plt.subplots(1, 3, figsize=(20, 6))
+        fig.suptitle(f'{metric_name} by Model and Site', fontsize=16)
         
-        # Create boxplot
-        sns.boxplot(
-            data=site_data,
-            x='modality',
-            y='test_accuracy',
-            hue='model',
-            ax=axes[ax],
-            palette=colors
-        )
+        for ax, site in zip(axes, ['GST', 'HH', 'IOP']):
+            site_data = df[df['site'] == site]
+            
+            # Create boxplot with custom colors
+            sns.boxplot(
+                data=site_data,
+                x='modality',
+                y=metric_col,
+                hue='model',
+                ax=ax,
+                palette=colors
+            )
+            
+            # Set log scale for Loss
+            if metric_name == 'Loss':
+                ax.set_yscale('log')
+            
+            # Customize plot
+            ax.set_title(site_labels[site])
+            ax.set_xlabel('Modality')
+            ax.set_ylabel(metric_name)
+            
+            # Rotate legend labels if needed
+            ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+            
+            # Only show legend for last subplot
+            if ax != axes[-1]:
+                ax.get_legend().remove()
         
-        # Customize plot
-        axes[ax].set_title(site_label)
-        axes[ax].set_xlabel('Modality')
-        axes[ax].set_ylabel('Accuracy (%)')
-        
-        # Rotate legend labels if needed
-        axes[ax].legend(bbox_to_anchor=(1.05, 1), loc='upper left')
-        
-        # Only show legend for last subplot
-        if ax != 2:
-            axes[ax].get_legend().remove()
-    
-    # Adjust layout and save
-    plt.tight_layout()
-    plt.savefig(output_dir / 'accuracy_comparison.png', 
-                bbox_inches='tight', dpi=300)
-    plt.close()
+        # Adjust layout and save
+        plt.tight_layout()
+        plt.savefig(output_dir / f'{metric_name.lower()}_comparison.png', 
+                   bbox_inches='tight', dpi=300)
+        plt.close()
 
-def create_heatmap(df, output_dir):
-    """Create heatmap showing accuracy across modalities and sites for each model."""
+def create_radar_plots(df, output_dir):
+    """Create radar plots comparing models across metrics."""
     output_dir = Path(output_dir)
     
-    # Pivot data for heatmap
-    pivot_data = df.pivot_table(
-        values='test_accuracy',
-        index='model',
-        columns=['modality', 'site'],
-        aggfunc='mean'
-    )
+    # Get color palette
+    colors = get_model_colors()
     
-    # Create figure
-    plt.figure(figsize=(15, 8))
+    # Prepare metrics for radar plot
+    metrics = ['test_accuracy', 'test_loss']
+    metric_names = ['Accuracy', 'Loss']
     
-    # Create heatmap
-    sns.heatmap(
-        pivot_data,
-        annot=True,
-        fmt='.1f',
-        cmap='RdYlBu_r',
-        center=50,  # Center colormap at 50%
-        vmin=0,
-        vmax=100
-    )
-    
-    plt.title('Classification Accuracy (%) Across Modalities and Sites')
-    plt.tight_layout()
-    plt.savefig(output_dir / 'accuracy_heatmap.png',
-                bbox_inches='tight', dpi=300)
-    plt.close()
+    # For each modality and site
+    for modality in df['modality'].unique():
+        for site in df['site'].unique():
+            # Filter data
+            plot_data = df[(df['modality'] == modality) & (df['site'] == site)]
+            
+            # Calculate mean values for each model and metric
+            means = plot_data.groupby('model')[metrics].mean()
+            
+            # Normalize metrics to [0,1] scale for comparison
+            # Note: Invert loss since lower is better
+            normalized = pd.DataFrame()
+            for metric in metrics:
+                if metric == 'test_loss':
+                    normalized[metric] = 1 - ((means[metric] - means[metric].min()) / 
+                                            (means[metric].max() - means[metric].min()))
+                else:
+                    normalized[metric] = (means[metric] - means[metric].min()) / \
+                                       (means[metric].max() - means[metric].min())
+            
+            # Calculate min and max values for smart limits
+            min_val = normalized.values.min()
+            max_val = normalized.values.max()
+            
+            # Set limits to 95% of min and 105% of max
+            ylim_min = min_val * 0.95
+            ylim_max = max_val * 1.05
+            
+            # Set up the angles for the spider plot
+            angles = np.linspace(0, 2*np.pi, len(metrics), endpoint=False)
+            angles = np.concatenate((angles, [angles[0]]))  # Close the plot
+            
+            # Create figure
+            fig, ax = plt.subplots(figsize=(10, 10), subplot_kw=dict(projection='polar'))
+            
+            # Plot each model
+            for model in normalized.index:
+                values = normalized.loc[model].values
+                values = np.concatenate((values, [values[0]]))  # Close the plot
+                ax.plot(angles, values, 'o-', linewidth=2, label=model, color=colors[model])
+                ax.fill(angles, values, alpha=0.25, color=colors[model])
+            
+            # Fix axis to go in the right order and start at 12 o'clock
+            ax.set_theta_offset(np.pi / 2)
+            ax.set_theta_direction(-1)
+            
+            # Set the ylim
+            ax.set_ylim(ylim_min, ylim_max)
+            
+            # Draw axis lines for each angle and label
+            ax.set_xticks(angles[:-1])
+            ax.set_xticklabels(metric_names, rotation=45)
+            
+            # Add legend
+            plt.legend(loc='upper right', bbox_to_anchor=(1.1, 1.1))
+            
+            # Add title
+            plt.title(f"Performance Metrics - {modality} {site}")
+            
+            # Save plot
+            plt.tight_layout()
+            plt.savefig(output_dir / f'radar_plot_{modality}_{site}.png',
+                       bbox_inches='tight', dpi=300)
+            plt.close()
 
 def print_summary_stats(df):
     """Print summary statistics for the results."""
     print("\nSummary Statistics:")
+    summary = df.groupby(['model', 'modality']).agg({
+        'test_accuracy': ['mean', 'std'],
+        'test_loss': ['mean', 'std']
+    }).round(3)
     
-    # Overall performance by model
-    print("\nOverall Model Performance:")
-    summary = df.groupby('model')['test_accuracy'].agg(['mean', 'std']).round(2)
     print(summary)
     
-    # Performance by model and modality
-    print("\nPerformance by Model and Modality:")
-    modality_summary = df.groupby(['model', 'modality'])['test_accuracy'].agg(['mean', 'std']).round(2)
-    print(modality_summary)
-    
-    # Cross-site generalization
-    print("\nCross-site Generalization (Training site vs. OOD sites):")
-    site_summary = df.groupby(['model', 'site'])['test_accuracy'].mean().round(2)
-    site_summary = site_summary.unstack()
-    site_summary['OOD_drop'] = site_summary['GST'] - site_summary[['HH', 'IOP']].mean(axis=1)
-    print(site_summary)
+    # Print cross-site generalization metrics
+    print("\nCross-site Generalization:")
+    site_perf = df.groupby(['model', 'site'])['test_accuracy'].mean().unstack()
+    site_perf['OOD_drop'] = site_perf['GST'] - site_perf[['HH', 'IOP']].mean(axis=1)
+    print(site_perf.round(3))
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Generate plots from classification results')
@@ -215,7 +266,7 @@ if __name__ == "__main__":
     
     # Create plots
     create_boxplots(df, args.output_dir)
-    create_heatmap(df, args.output_dir)
+    create_radar_plots(df, args.output_dir)
     
     # Print statistics
     print_summary_stats(df) 
