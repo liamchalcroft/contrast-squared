@@ -120,16 +120,14 @@ def create_boxplots(df, output_dir):
     for ax, (site, site_label) in enumerate(site_labels.items()):
         site_data = df[df['site'] == site]
         
-        # Create boxplot with explicit hue parameter
-        boxprops = dict(alpha=0.8)
+        # Create boxplot
         sns.boxplot(
             data=site_data,
             x='modality',
             y='test_accuracy',
-            hue='model',  # Explicitly specify hue
+            hue='model',
             ax=axes[ax],
-            palette=colors,
-            boxprops=boxprops
+            palette=colors
         )
         
         # Customize plot
@@ -141,7 +139,7 @@ def create_boxplots(df, output_dir):
         axes[ax].legend(bbox_to_anchor=(1.05, 1), loc='upper left')
         
         # Only show legend for last subplot
-        if ax != 2:  # Changed from axes[-1] comparison
+        if ax != 2:
             axes[ax].get_legend().remove()
     
     # Adjust layout and save
