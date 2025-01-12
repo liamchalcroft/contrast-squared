@@ -38,44 +38,31 @@ def test_model(model, loader, criterion, device):
     
     return avg_loss, accuracy, all_preds, all_labels
 
-def main():
-    parser = argparse.ArgumentParser(description='Test a classification model on brain data')
-    parser.add_argument('--checkpoint_dir', type=str, required=True, help='Directory containing model checkpoints')
-    parser.add_argument('--model_name', type=str, required=True, help='Name of the model to use')
-    parser.add_argument('--batch_size', type=int, default=32, help='Batch size')
-    parser.add_argument('--modality', type=str, default='t1', choices=['t1', 't2', 'pd'], help='Image modality')
-    parser.add_argument('--site', type=str, default='GST', choices=['GST', 'HH', 'IOP'], help='Test site')
-    
-    args = parser.parse_args()
-    
-    # Setup
+def test_classifier(model_dir, model_name, modality, site):
+    """Test classifier for a specific modality and site."""
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    checkpoint_dir = Path(args.checkpoint_dir)
-    results_file = checkpoint_dir / f'test_results_{args.modality}_{args.site}.csv'
     
     # Initialize model
     model = create_classification_model(
-        model_name=args.model_name,
+        model_name=model_name,
         num_classes=2,
         pretrained=False
     ).to(device)
     
     # Load model weights
-    checkpoint_path = checkpoint_dir / f"classifier_{args.modality}_{args.site}_best.pth"
+    checkpoint_path = Path(model_dir) / f"classifier_{modality}_GST_best.pth"
     if not checkpoint_path.exists():
-        print(f"No checkpoint found at {checkpoint_path}")
-        return
+        raise FileNotFoundError(f"No checkpoint found at {checkpoint_path}")
     
     checkpoint = torch.load(checkpoint_path)
     model.load_state_dict(checkpoint['model_state_dict'])
-    print(f"Loaded checkpoint from epoch {checkpoint['epoch']}")
     
     # Get test loader
     test_loader = get_test_loader(
-        batch_size=args.batch_size,
+        batch_size=32,
         task='classification',
-        modality=args.modality,
-        site=args.site
+        modality=modality,
+        site=site
     )
     
     # Test model
@@ -84,28 +71,50 @@ def main():
         model, test_loader, criterion, device
     )
     
-    # Save results
-    results = {
-        'model_name': [args.model_name],
-        'modality': [args.modality],
-        'site': [args.site],
-        'test_loss': [test_loss],
-        'test_accuracy': [test_acc],
-        'epoch': [checkpoint['epoch']]
-    }
-    
-    df = pd.DataFrame(results)
-    print("\nTest Results:")
-    print(f"Loss: {test_loss:.4f}")
-    print(f"Accuracy: {test_acc:.2f}%")
-    
-    # Append results if file exists, otherwise create new file
-    if results_file.exists():
-        df.to_csv(results_file, mode='a', header=False, index=False)
-    else:
-        df.to_csv(results_file, index=False)
-    
-    print(f"\nResults saved to {results_file}")
+    # Return results as a single row DataFrame
+    return pd.DataFrame([{
+        'model_name': model_name,
+        'modality': modality,
+        'site': site,
+        'test_loss': test_loss,
+        'test_accuracy': test_acc,
+        'epoch': checkpoint['epoch']
+    }])
 
-if __name__ == '__main__':
-    main() 
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Test classification models and generate metrics')
+    parser.add_argument('--model_dir', type=str, required=True, help='Directory containing model checkpoints')
+    parser.add_argument('--model_name', type=str, required=True, help='Name of the model for logging')
+    parser.add_argument('--output_file', type=str, required=True, help='Path to the output CSV file')
+    parser.add_argument('--modality', type=str, nargs='+', default=['t1', 't2', 'pd'], help='Modalities to test')
+    parser.add_argument('--sites', type=str, nargs='+', default=['GST', 'HH', 'IOP'], help='Sites to test')
+    
+    args = parser.parse_args()
+    
+    # Initialize empty DataFrame for all results
+    all_results = pd.DataFrame()
+    
+    # Test each modality and site combination
+    for modality in args.modality:
+        for site in args.sites:
+            try:
+                results = test_classifier(
+                    args.model_dir,
+                    args.model_name,
+                    modality,
+                    site
+                )
+                all_results = pd.concat([all_results, results], ignore_index=True)
+            except Exception as e:
+                print(f"Error testing {modality} {site}: {e}")
+    
+    # Save results
+    all_results.to_csv(args.output_file, index=False)
+    
+    # Print summary statistics
+    print("\nSummary Statistics:")
+    summary = all_results.groupby(['model_name', 'modality', 'site']).agg({
+        'test_accuracy': ['mean', 'std'],
+        'test_loss': ['mean', 'std']
+    }).round(3)
+    print(summary) 
