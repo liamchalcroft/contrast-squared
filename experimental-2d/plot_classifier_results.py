@@ -117,30 +117,32 @@ def create_boxplots(df, output_dir):
     fig, axes = plt.subplots(1, 3, figsize=(20, 6))
     fig.suptitle('Classification Accuracy by Model and Site', fontsize=16)
     
-    for ax, site in zip(axes, ['GST', 'HH', 'IOP']):
+    for ax, (site, site_label) in enumerate(site_labels.items()):
         site_data = df[df['site'] == site]
         
-        # Create boxplot with custom colors
+        # Create boxplot with explicit hue parameter
+        boxprops = dict(alpha=0.8)
         sns.boxplot(
             data=site_data,
             x='modality',
             y='test_accuracy',
-            hue='model',
-            ax=ax,
-            palette=colors
+            hue='model',  # Explicitly specify hue
+            ax=axes[ax],
+            palette=colors,
+            boxprops=boxprops
         )
         
         # Customize plot
-        ax.set_title(site_labels[site])
-        ax.set_xlabel('Modality')
-        ax.set_ylabel('Accuracy (%)')
+        axes[ax].set_title(site_label)
+        axes[ax].set_xlabel('Modality')
+        axes[ax].set_ylabel('Accuracy (%)')
         
         # Rotate legend labels if needed
-        ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+        axes[ax].legend(bbox_to_anchor=(1.05, 1), loc='upper left')
         
         # Only show legend for last subplot
-        if ax != axes[-1]:
-            ax.get_legend().remove()
+        if ax != 2:  # Changed from axes[-1] comparison
+            axes[ax].get_legend().remove()
     
     # Adjust layout and save
     plt.tight_layout()
