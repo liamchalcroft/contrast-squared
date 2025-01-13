@@ -94,8 +94,8 @@ def get_model_colors():
     }
     return colors
 
-def create_boxplots(df, output_dir, metrics=None):
-    """Create boxplots for specified metrics."""
+def create_barplots(df, output_dir, metrics=None):
+    """Create bar plots for specified metrics."""
     if metrics is None:
         metrics = [
             ('Accuracy', 'test_accuracy'),
@@ -118,6 +118,8 @@ def create_boxplots(df, output_dir, metrics=None):
         'HH': 'OOD Site (HH)',
         'IOP': 'OOD Site (IOP)'
     }
+
+    print(df.head())
     
     # Create plots for each metric
     for metric_name, metric_col in metrics:
@@ -128,8 +130,8 @@ def create_boxplots(df, output_dir, metrics=None):
         for ax, site in zip(axes, ['GST', 'HH', 'IOP']):
             site_data = df[df['site'] == site]
             
-            # Create boxplot with custom colors
-            sns.boxplot(
+            # Create bar plot with custom colors
+            sns.barplot(
                 data=site_data,
                 x='modality',
                 y=metric_col,
@@ -265,7 +267,7 @@ if __name__ == "__main__":
     df = load_and_process_results(args.results_dir)
     
     # Create plots
-    create_boxplots(df, args.output_dir)
+    create_barplots(df, args.output_dir)
     create_radar_plots(df, args.output_dir)
     
     # Print statistics
