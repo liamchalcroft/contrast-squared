@@ -145,7 +145,6 @@ def create_barplots(df, output_dir, metrics=None):
                 hue='model',
                 ax=ax,
                 palette=colors,
-                estimator=None,  # No aggregation
                 ci=None  # No confidence intervals
             )
             
@@ -303,7 +302,6 @@ def create_ood_barplots(df, output_dir):
             hue='model',
             ax=ax,
             palette=colors,
-            estimator=None,  # No aggregation
             ci=None  # No confidence intervals
         )
         
