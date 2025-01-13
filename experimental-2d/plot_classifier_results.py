@@ -274,7 +274,7 @@ if __name__ == "__main__":
     
     # Create plots
     create_barplots(df, args.output_dir)
-    create_radar_plots(df, args.output_dir)
+    # create_radar_plots(df, args.output_dir)
     
     # Print statistics
     print_summary_stats(df) 
