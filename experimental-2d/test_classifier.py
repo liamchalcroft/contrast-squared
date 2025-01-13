@@ -50,7 +50,7 @@ def test_classifier(model_dir, model_name, modality, site):
     ).to(device)
     
     # Load model weights
-    checkpoint_path = Path(model_dir) / f"classifier_{modality}_GST_best.pth"
+    checkpoint_path = Path(model_dir) / f"classifier_{modality}_GST_final.pth"
     if not checkpoint_path.exists():
         raise FileNotFoundError(f"No checkpoint found at {checkpoint_path}")
     
