@@ -170,82 +170,6 @@ def create_barplots(df, output_dir, metrics=None):
                    bbox_inches='tight', dpi=300)
         plt.close()
 
-def create_radar_plots(df, output_dir):
-    """Create radar plots comparing models across metrics."""
-    output_dir = Path(output_dir)
-    
-    # Get color palette
-    colors = get_model_colors()
-    
-    # Prepare metrics for radar plot
-    metrics = ['test_accuracy', 'test_loss']
-    metric_names = ['Accuracy', 'Loss']
-    
-    # For each modality and site
-    for modality in df['modality'].unique():
-        for site in df['site'].unique():
-            # Filter data
-            plot_data = df[(df['modality'] == modality) & (df['site'] == site)]
-            
-            # Calculate mean values for each model and metric
-            means = plot_data.groupby('model')[metrics].mean()
-            
-            # Normalize metrics to [0,1] scale for comparison
-            # Note: Invert loss since lower is better
-            normalized = pd.DataFrame()
-            for metric in metrics:
-                if metric == 'test_loss':
-                    normalized[metric] = 1 - ((means[metric] - means[metric].min()) / 
-                                            (means[metric].max() - means[metric].min()))
-                else:
-                    normalized[metric] = (means[metric] - means[metric].min()) / \
-                                       (means[metric].max() - means[metric].min())
-            
-            # Calculate min and max values for smart limits
-            min_val = normalized.values.min()
-            max_val = normalized.values.max()
-            
-            # Set limits to 95% of min and 105% of max
-            ylim_min = min_val * 0.95
-            ylim_max = max_val * 1.05
-            
-            # Set up the angles for the spider plot
-            angles = np.linspace(0, 2*np.pi, len(metrics), endpoint=False)
-            angles = np.concatenate((angles, [angles[0]]))  # Close the plot
-            
-            # Create figure
-            fig, ax = plt.subplots(figsize=(10, 10), subplot_kw=dict(projection='polar'))
-            
-            # Plot each model
-            for model in normalized.index:
-                values = normalized.loc[model].values
-                values = np.concatenate((values, [values[0]]))  # Close the plot
-                ax.plot(angles, values, 'o-', linewidth=2, label=model, color=colors[model])
-                ax.fill(angles, values, alpha=0.25, color=colors[model])
-            
-            # Fix axis to go in the right order and start at 12 o'clock
-            ax.set_theta_offset(np.pi / 2)
-            ax.set_theta_direction(-1)
-            
-            # Set the ylim
-            ax.set_ylim(ylim_min, ylim_max)
-            
-            # Draw axis lines for each angle and label
-            ax.set_xticks(angles[:-1])
-            ax.set_xticklabels(metric_names, rotation=45)
-            
-            # Add legend
-            plt.legend(loc='upper right', bbox_to_anchor=(1.1, 1.1))
-            
-            # Add title
-            plt.title(f"Performance Metrics - {modality} {site}")
-            
-            # Save plot
-            plt.tight_layout()
-            plt.savefig(output_dir / f'radar_plot_{modality}_{site}.png',
-                       bbox_inches='tight', dpi=300)
-            plt.close()
-
 def print_summary_stats(df):
     """Print summary statistics for the results."""
     print("\nSummary Statistics:")
@@ -337,7 +261,6 @@ if __name__ == "__main__":
     # Create plots
     create_barplots(df, args.output_dir)
     create_ood_barplots(df, args.output_dir)
-    create_radar_plots(df, args.output_dir)
     
     # Print statistics
     print_summary_stats(df) 
