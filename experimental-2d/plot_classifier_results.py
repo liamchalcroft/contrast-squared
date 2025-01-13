@@ -41,9 +41,10 @@ def load_and_process_results(results_dir):
     # df['model'] = df['model'].map(name_mapping)
 
     df['model'] = df['model'].apply(lambda x: x.replace(' ResNet-50', ''))
-    df['model'] = df['model'].apply(lambda x: x.replace('View2', '(n=2)'))
-    df['model'] = df['model'].apply(lambda x: x.replace('View5', '(n=5)'))
-    
+    df['model'] = df['model'].apply(lambda x: x.replace('View2', 'SimCLR (n=2)'))
+    df['model'] = df['model'].apply(lambda x: x.replace('View5', 'SimCLR (n=5)'))
+    df['model'] = df['model'].apply(lambda x: x.replace('Barlow', 'Barlow Twins'))
+
     # Define consistent model order
     model_order = [
         'Random',
