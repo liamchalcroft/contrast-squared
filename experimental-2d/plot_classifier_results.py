@@ -105,6 +105,9 @@ def get_model_colors():
 
 def create_barplots(df, output_dir, metrics=None):
     """Create bar plots for specified metrics."""
+    # Filter out cross-modal results for standard plots
+    df = df[~df['t1_finetuned']]
+    
     if metrics is None:
         metrics = [
             ('Accuracy', 'test_accuracy'),
@@ -172,22 +175,35 @@ def create_barplots(df, output_dir, metrics=None):
 
 def print_summary_stats(df):
     """Print summary statistics for the results."""
-    print("\nSummary Statistics:")
-    summary = df.groupby(['model', 'modality']).agg({
+    # Standard results
+    print("\nStandard Results:")
+    standard_df = df[~df['t1_finetuned']]
+    summary = standard_df.groupby(['model', 'modality']).agg({
         'test_accuracy': ['mean', 'std'],
         'test_loss': ['mean', 'std']
     }).round(3)
-    
     print(summary)
     
-    # Print cross-site generalization metrics
-    print("\nCross-site Generalization:")
-    site_perf = df.groupby(['model', 'site'])['test_accuracy'].mean().unstack()
+    # Cross-modal results
+    print("\nCross-Modal Results (T1w-Finetuned):")
+    t1_finetuned = df[df['t1_finetuned']]
+    cross_modal_summary = t1_finetuned.groupby(['model', 'modality']).agg({
+        'test_accuracy': ['mean', 'std'],
+        'test_loss': ['mean', 'std']
+    }).round(3)
+    print(cross_modal_summary)
+    
+    # Cross-site generalization metrics
+    print("\nCross-site Generalization (Standard):")
+    site_perf = standard_df.groupby(['model', 'site'])['test_accuracy'].mean().unstack()
     site_perf['OOD_drop'] = site_perf['GST'] - site_perf[['HH', 'IOP']].mean(axis=1)
     print(site_perf.round(3))
 
 def create_ood_barplots(df, output_dir):
     """Create bar plots showing OOD performance degradation."""
+    # Filter out cross-modal results for OOD plots
+    df = df[~df['t1_finetuned']]
+    
     output_dir = Path(output_dir)
     output_dir.mkdir(exist_ok=True)
     
@@ -246,6 +262,58 @@ def create_ood_barplots(df, output_dir):
     plt.savefig(output_dir / 'ood_degradation.png', bbox_inches='tight', dpi=300)
     plt.close()
 
+def create_cross_modal_barplots(df, output_dir):
+    """Create bar plots showing cross-modal performance using T1w-finetuned models."""
+    output_dir = Path(output_dir)
+    output_dir.mkdir(exist_ok=True)
+    
+    # Get color palette
+    colors = get_model_colors()
+    
+    # Filter for T1w-finetuned results only
+    t1_finetuned = df[df['t1_finetuned']]
+    
+    # Site labels mapping
+    site_labels = {
+        'GST': 'Training Site (GST)',
+        'HH': 'OOD Site (HH)',
+        'IOP': 'OOD Site (IOP)'
+    }
+    
+    # Create figure with subplots for each site
+    fig, axes = plt.subplots(1, 3, figsize=(20, 6))
+    fig.suptitle('Cross-Modal Performance (T1w-Finetuned Models)', fontsize=16)
+    
+    for ax, (site, title) in zip(axes, site_labels.items()):
+        site_data = t1_finetuned[t1_finetuned['site'] == site]
+        
+        sns.barplot(
+            data=site_data,
+            x='modality',
+            y='test_accuracy',
+            hue='model',
+            ax=ax,
+            palette=colors,
+            errorbar=None
+        )
+        
+        # Customize plot
+        ax.set_title(title)
+        ax.set_xlabel('Test Modality')
+        ax.set_ylabel('Accuracy')
+        
+        # Rotate legend labels if needed
+        ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+        
+        # Only show legend for last subplot
+        if ax != axes[-1]:
+            ax.get_legend().remove()
+    
+    # Adjust layout and save
+    plt.tight_layout()
+    plt.savefig(output_dir / 'cross_modal_performance.png', bbox_inches='tight', dpi=300)
+    plt.close()
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Generate plots from classification results')
     parser.add_argument('--results_dir', type=str, required=True,
@@ -259,8 +327,9 @@ if __name__ == "__main__":
     df = load_and_process_results(args.results_dir)
     
     # Create plots
-    create_barplots(df, args.output_dir)
-    create_ood_barplots(df, args.output_dir)
+    create_barplots(df, args.output_dir)  # Standard results
+    create_ood_barplots(df, args.output_dir)  # OOD analysis
+    create_cross_modal_barplots(df, args.output_dir)  # Cross-modal analysis
     
     # Print statistics
     print_summary_stats(df) 
