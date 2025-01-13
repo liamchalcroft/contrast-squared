@@ -263,6 +263,65 @@ def print_summary_stats(df):
     site_perf['OOD_drop'] = site_perf['GST'] - site_perf[['HH', 'IOP']].mean(axis=1)
     print(site_perf.round(3))
 
+def create_ood_barplots(df, output_dir):
+    """Create bar plots showing OOD performance degradation."""
+    output_dir = Path(output_dir)
+    output_dir.mkdir(exist_ok=True)
+    
+    # Set style
+    plt.style.use('default')
+    sns.set_theme()
+    
+    # Get color palette
+    colors = get_model_colors()
+    
+    # Calculate OOD degradation
+    site_perf = df.groupby(['model', 'modality', 'site'])['test_accuracy'].mean().unstack()
+    ood_drop = pd.DataFrame({
+        'model': site_perf.index.get_level_values(0),
+        'modality': site_perf.index.get_level_values(1),
+        'HH_drop': site_perf['GST'] - site_perf['HH'],
+        'IOP_drop': site_perf['GST'] - site_perf['IOP'],
+        'avg_drop': site_perf['GST'] - site_perf[['HH', 'IOP']].mean(axis=1)
+    }).reset_index(drop=True)
+    
+    # Create figure with subplots for each type of drop
+    fig, axes = plt.subplots(1, 3, figsize=(20, 6))
+    fig.suptitle('Out-of-Distribution Performance Degradation', fontsize=16)
+    
+    drop_types = [
+        ('HH_drop', 'HH Site Drop'),
+        ('IOP_drop', 'IOP Site Drop'),
+        ('avg_drop', 'Average OOD Drop')
+    ]
+    
+    for ax, (drop_col, title) in zip(axes, drop_types):
+        sns.barplot(
+            data=ood_drop,
+            x='modality',
+            y=drop_col,
+            hue='model',
+            ax=ax,
+            palette=colors
+        )
+        
+        # Customize plot
+        ax.set_title(title)
+        ax.set_xlabel('Modality')
+        ax.set_ylabel('Accuracy Drop')
+        
+        # Rotate legend labels if needed
+        ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+        
+        # Only show legend for last subplot
+        if ax != axes[-1]:
+            ax.get_legend().remove()
+    
+    # Adjust layout and save
+    plt.tight_layout()
+    plt.savefig(output_dir / 'ood_degradation.png', bbox_inches='tight', dpi=300)
+    plt.close()
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Generate plots from classification results')
     parser.add_argument('--results_dir', type=str, required=True,
@@ -277,7 +336,8 @@ if __name__ == "__main__":
     
     # Create plots
     create_barplots(df, args.output_dir)
-    # create_radar_plots(df, args.output_dir)
+    create_ood_barplots(df, args.output_dir)
+    create_radar_plots(df, args.output_dir)
     
     # Print statistics
     print_summary_stats(df) 
