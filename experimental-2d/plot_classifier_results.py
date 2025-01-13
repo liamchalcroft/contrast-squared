@@ -106,6 +106,7 @@ def get_model_colors():
 def create_barplots(df, output_dir, metrics=None):
     """Create bar plots for specified metrics."""
     # Filter out cross-modal results for standard plots
+    print(df['t1_finetuned'].unique())
     df = df[~df['t1_finetuned']]
     
     if metrics is None:
