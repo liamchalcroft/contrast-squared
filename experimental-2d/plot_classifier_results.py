@@ -17,7 +17,7 @@ def load_and_process_results(results_dir):
     df = pd.concat([pd.read_csv(f) for f in all_files], ignore_index=True)
     
     # Clean up model names for better display
-    df['model_name'] = df['model_name'].apply(lambda x: x.replace('timm/', '').replace('.a1_in1k', ''))
+    df['model'] = df['model'].apply(lambda x: x.replace('timm/', '').replace('.a1_in1k', ''))
     
     # Create mapping for model name replacements
     name_mapping = {
@@ -34,7 +34,7 @@ def load_and_process_results(results_dir):
     }
     
     # Apply replacements
-    df['model'] = df['model_name'].map(name_mapping)
+    df['model'] = df['model'].map(name_mapping)
     
     # Define consistent model order
     model_order = [
