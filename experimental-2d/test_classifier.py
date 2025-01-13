@@ -59,7 +59,7 @@ def test_classifier(model_dir, model_name, modality, site, t1_cross_modal=False)
     
     # Load checkpoint - use T1w checkpoint if doing cross-modal testing
     checkpoint_modality = 't1' if t1_cross_modal else modality
-    checkpoint_path = Path(model_dir) / f"classifier_model_{checkpoint_modality}_GST_final.pth"
+    checkpoint_path = Path(model_dir) / f"classifier_{checkpoint_modality}_GST_final.pth"
     if not checkpoint_path.exists():
         raise FileNotFoundError(f"No checkpoint found at {checkpoint_path}")
     
