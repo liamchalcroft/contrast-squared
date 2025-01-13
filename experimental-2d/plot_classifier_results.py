@@ -17,6 +17,8 @@ def load_and_process_results(results_dir):
     df = pd.concat([pd.read_csv(f) for f in all_files], ignore_index=True)
 
     print(df.head())
+
+    print(df['model'].unique())
     
     # Clean up model names for better display
     df['model'] = df['model'].apply(lambda x: x.replace('timm/', '').replace('.a1_in1k', ''))
