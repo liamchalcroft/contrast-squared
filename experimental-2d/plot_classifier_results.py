@@ -20,25 +20,27 @@ def load_and_process_results(results_dir):
 
     print(df['model'].unique())
     
-    # Clean up model names for better display
-    df['model'] = df['model'].apply(lambda x: x.replace('timm/', '').replace('.a1_in1k', ''))
+    # # Clean up model names for better display
+    # df['model'] = df['model'].apply(lambda x: x.replace('timm/', '').replace('.a1_in1k', ''))
     
-    # Create mapping for model name replacements
-    name_mapping = {
-        'random-resnet50': 'Random',
-        'imagenet-resnet50': 'ImageNet',
-        'mprage-resnet50-view2': 'MPRAGE SimCLR (n=2)',
-        'mprage-resnet50-view5': 'MPRAGE SimCLR (n=5)',
-        'mprage-resnet50-barlow': 'MPRAGE Barlow Twins',
-        'mprage-resnet50-vicreg': 'MPRAGE VICReg',
-        'bloch-resnet50-view2': 'Bloch SimCLR (n=2)',
-        'bloch-resnet50-view5': 'Bloch SimCLR (n=5)',
-        'bloch-resnet50-barlow': 'Bloch Barlow Twins',
-        'bloch-resnet50-vicreg': 'Bloch VICReg'
-    }
+    # # Create mapping for model name replacements
+    # name_mapping = {
+    #     'random-resnet50': 'Random',
+    #     'imagenet-resnet50': 'ImageNet',
+    #     'mprage-resnet50-view2': 'MPRAGE SimCLR (n=2)',
+    #     'mprage-resnet50-view5': 'MPRAGE SimCLR (n=5)',
+    #     'mprage-resnet50-barlow': 'MPRAGE Barlow Twins',
+    #     'mprage-resnet50-vicreg': 'MPRAGE VICReg',
+    #     'bloch-resnet50-view2': 'Bloch SimCLR (n=2)',
+    #     'bloch-resnet50-view5': 'Bloch SimCLR (n=5)',
+    #     'bloch-resnet50-barlow': 'Bloch Barlow Twins',
+    #     'bloch-resnet50-vicreg': 'Bloch VICReg'
+    # }
     
-    # Apply replacements
-    df['model'] = df['model'].map(name_mapping)
+    # # Apply replacements
+    # df['model'] = df['model'].map(name_mapping)
+
+    df['model'] = df['model'].apply(lambda x: x.replace(' ResNet-50', ''))
     
     # Define consistent model order
     model_order = [
