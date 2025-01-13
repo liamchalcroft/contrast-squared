@@ -127,8 +127,6 @@ def create_barplots(df, output_dir, metrics=None):
         'HH': 'OOD Site (HH)',
         'IOP': 'OOD Site (IOP)'
     }
-
-    print(df.head())
     
     # Create plots for each metric
     for metric_name, metric_col in metrics:
@@ -139,14 +137,16 @@ def create_barplots(df, output_dir, metrics=None):
         for ax, site in zip(axes, ['GST', 'HH', 'IOP']):
             site_data = df[df['site'] == site]
             
-            # Create bar plot with custom colors
+            # Create bar plot with custom colors, no aggregation
             sns.barplot(
                 data=site_data,
                 x='modality',
                 y=metric_col,
                 hue='model',
                 ax=ax,
-                palette=colors
+                palette=colors,
+                estimator=None,  # No aggregation
+                ci=None  # No confidence intervals
             )
             
             # Set log scale for Loss
@@ -302,7 +302,9 @@ def create_ood_barplots(df, output_dir):
             y=drop_col,
             hue='model',
             ax=ax,
-            palette=colors
+            palette=colors,
+            estimator=None,  # No aggregation
+            ci=None  # No confidence intervals
         )
         
         # Customize plot
