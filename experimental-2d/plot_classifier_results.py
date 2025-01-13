@@ -8,7 +8,7 @@ import numpy as np
 def load_and_process_results(results_dir):
     """Load and combine all CSV files from results directory."""
     results_dir = Path(results_dir)
-    all_files = list(results_dir.glob('*-resnet50-*.csv'))
+    all_files = list(results_dir.glob('*-resnet50*.csv'))
     
     if not all_files:
         raise ValueError(f"No CSV files found in {results_dir}")
