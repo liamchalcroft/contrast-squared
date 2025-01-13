@@ -128,18 +128,14 @@ def create_boxplots(df, output_dir, metrics=None):
         for ax, site in zip(axes, ['GST', 'HH', 'IOP']):
             site_data = df[df['site'] == site]
             
-            # Clean data and get ordered models
-            site_data = site_data.dropna(subset=['model', 'modality', metric_col])
-            model_order = [m for m in df['model'].cat.categories if m in site_data['model'].unique()]
-            color_list = [colors[model] for model in model_order]
-            
+            # Create boxplot with custom colors
             sns.boxplot(
                 data=site_data,
                 x='modality',
                 y=metric_col,
                 hue='model',
                 ax=ax,
-                palette=color_list
+                palette=colors
             )
             
             # Set log scale for Loss
