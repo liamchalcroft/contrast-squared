@@ -145,7 +145,7 @@ def create_barplots(df, output_dir, metrics=None):
                 hue='model',
                 ax=ax,
                 palette=colors,
-                ci=None  # No confidence intervals
+                errorbar=None  # No confidence intervals
             )
             
             # Set log scale for Loss
@@ -302,7 +302,7 @@ def create_ood_barplots(df, output_dir):
             hue='model',
             ax=ax,
             palette=colors,
-            ci=None  # No confidence intervals
+            errorbar=None  # No confidence intervals
         )
         
         # Customize plot
