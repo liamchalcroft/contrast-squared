@@ -66,6 +66,8 @@ def create_unet_model(model_name: str, weights_path: str = None, pretrained: boo
         model = torch.compile(model)
         # Weights are for compiled model
         state_dict = torch.load(weights_path)['model_state_dict']
+        # Filter out the _orig_mod. torch compile prefix from all keys
+        state_dict = {k.replace('_orig_mod.', ''): v for k, v in state_dict.items()}
         model.load_state_dict(state_dict, strict=False)
     elif pretrained:
         state_dict = timm.create_model(model_name, pretrained=True).state_dict()
@@ -85,6 +87,13 @@ def create_classification_model(model_name: str, num_classes: int, weights_path:
         dummy_input = torch.zeros(1, 1, 224, 224)
         output = model(dummy_input)
         encoder_dim = output.shape[1]
+
+    # Load weights if provided
+    if weights_path:
+        state_dict = torch.load(weights_path)['model_state_dict']
+        # Filter out the _orig_mod. torch compile prefix from all keys
+        state_dict = {k.replace('_orig_mod.', ''): v for k, v in state_dict.items()}
+        model.load_state_dict(state_dict, strict=False)
     
     # Add a linear classification head
     classifier = nn.Sequential(
@@ -92,10 +101,7 @@ def create_classification_model(model_name: str, num_classes: int, weights_path:
         nn.Flatten(),
         nn.Linear(encoder_dim, num_classes)
     )
-    
-    # Load weights if provided
-    if weights_path:
-        state_dict = torch.load(weights_path)['model_state_dict']
-        classifier.load_state_dict(state_dict, strict=False)
+
+    classifier = torch.compile(classifier)
     
     return classifier
