@@ -95,7 +95,6 @@ def train_regression(model_name, output_dir, weights_path, pretrained, epochs, b
                 if amp:
                     with torch.cuda.amp.autocast():
                         outputs = model(images).squeeze()
-                        print(f"images: {images.shape}, outputs: {outputs.shape}, ages: {ages.shape}")
                         loss = criterion(outputs, ages)
                     scaler.scale(loss).backward()
                     scaler.step(optimizer)

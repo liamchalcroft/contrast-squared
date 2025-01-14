@@ -84,7 +84,6 @@ def create_classification_model(model_name: str, num_classes: int, weights_path:
     with torch.no_grad():
         dummy_input = torch.zeros(1, 1, 224, 224)
         output = model(dummy_input)
-        print(f"output: {output.shape}")
         encoder_dim = output.shape[1]
     
     # Add a linear classification head
