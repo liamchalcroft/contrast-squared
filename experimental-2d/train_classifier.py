@@ -49,6 +49,7 @@ def validate(model, loader, criterion, device):
             labels = batch['sex'].to(device)
             
             outputs = model(images)
+            print(f"outputs: {outputs.shape}")
             loss = criterion(outputs, labels)
             
             running_loss += loss.item()
