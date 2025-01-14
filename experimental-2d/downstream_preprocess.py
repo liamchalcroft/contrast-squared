@@ -116,6 +116,7 @@ class H5SliceDataset(Dataset):
         if self.task == 'classification':
             age = data.get('age', None)
             sex = data.get('sex', None)
+            sex = (sex - 1).long()
         
         if self.task == 'segmentation':
             return {'image': image, 'label': label, 'patient_id': subject}
