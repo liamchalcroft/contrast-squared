@@ -44,11 +44,6 @@ def train_regression(model_name, output_dir, weights_path, pretrained, epochs, b
     # Create model
     model = create_classification_model(model_name, num_classes=1, weights_path=weights_path, pretrained=pretrained).to(device)
     
-    # Load pretrained weights if specified
-    if weights_path:
-        checkpoint = torch.load(weights_path)
-        model.load_state_dict(checkpoint['model_state_dict'], strict=False)
-    
     # Get data loaders
     train_loader, val_loader = get_train_val_loaders(
         batch_size=batch_size,
