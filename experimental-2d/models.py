@@ -84,6 +84,7 @@ def create_classification_model(model_name: str, num_classes: int, weights_path:
     with torch.no_grad():
         dummy_input = torch.zeros(1, 1, 224, 224)
         output = model(dummy_input)
+        print(f"output: {output.shape}")
         encoder_dim = output.shape[1]
     
     # Add a linear classification head
@@ -98,4 +99,4 @@ def create_classification_model(model_name: str, num_classes: int, weights_path:
         state_dict = torch.load(weights_path)['model_state_dict']
         classifier.load_state_dict(state_dict, strict=False)
     
-    return model
+    return classifier
