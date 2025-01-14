@@ -42,7 +42,10 @@ def train_regression(model_name, output_dir, weights_path, pretrained, epochs, b
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     
     # Create model
-    model = create_classification_model(model_name, num_classes=1, weights_path=weights_path, pretrained=pretrained).to(device)
+    model = create_classification_model(model_name, 
+                                        num_classes=1, 
+                                        weights_path=weights_path, 
+                                        pretrained=pretrained).to(device)
     
     # Get data loaders
     train_loader, val_loader = get_train_val_loaders(
