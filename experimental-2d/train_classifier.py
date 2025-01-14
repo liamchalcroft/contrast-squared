@@ -25,7 +25,7 @@ def train_epoch(model, loader, criterion, optimizer, device):
         optimizer.zero_grad()
         outputs = model(images)
         print(f"outputs: {outputs.shape}, labels: {labels.shape}")
-        loss = criterion(outputs, labels.long())
+        loss = criterion(outputs.cpu(), labels.cpu().long())
         loss.backward()
         optimizer.step()
         
