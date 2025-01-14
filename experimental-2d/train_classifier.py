@@ -21,12 +21,13 @@ def train_epoch(model, loader, criterion, optimizer, device):
     for batch in pbar:
         images = batch['image'].to(device)
         labels = batch['sex'].to(device)  # Assuming binary classification for sex
+        labels = (labels - 1).long()
         
         optimizer.zero_grad()
         outputs = model(images)
         print(f"outputs: {outputs.shape}, labels: {labels.shape}")
         print(labels.unique())
-        loss = criterion(outputs.cpu(), labels.cpu().long())
+        loss = criterion(outputs.cpu(), labels.cpu())
         loss.backward()
         optimizer.step()
         
