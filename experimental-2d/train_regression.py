@@ -121,6 +121,9 @@ def train_regression(model_name, output_dir, weights_path, pretrained, epochs, b
                 images = batch['image'].to(device)
                 ages = batch['age'].float().to(device)
                 outputs = model(images).squeeze()
+                print(f"Images: {images.shape}, min: {images.min()}, max: {images.max()}")
+                print(f"Ages: {ages.shape}, min: {ages.min()}, max: {ages.max()}")
+                print(f"Outputs: {outputs.shape}, min: {outputs.min()}, max: {outputs.max()}")
                 loss = criterion(outputs, ages)
                 val_loss += loss.item()
         
