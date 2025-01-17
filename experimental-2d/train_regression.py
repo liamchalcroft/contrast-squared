@@ -22,8 +22,7 @@ def plot_training_curves(train_losses, val_losses, output_dir, modality, site):
     plt.yscale('log')
     
     plt.subplot(1, 2, 2)
-    val_epochs = list(range(0, len(train_losses), 2))
-    plt.plot(val_epochs, val_losses, label='Validation Loss', marker='o')
+    plt.plot(val_losses, label='Validation Loss', marker='o')
     plt.xlabel('Epoch')
     plt.ylabel('Loss')
     plt.title('Validation Loss')
@@ -98,7 +97,6 @@ def train_regression(model_name, output_dir, weights_path, pretrained, epochs, b
                 if amp:
                     with torch.cuda.amp.autocast():
                         outputs = model(images).squeeze()
-                        print(f"outputs: {outputs.shape}, ages: {ages.shape}")
                         loss = criterion(outputs, ages)
                     scaler.scale(loss).backward()
                     scaler.step(optimizer)
