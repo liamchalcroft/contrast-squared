@@ -74,21 +74,19 @@ def get_loaders(data_dict, lowres=False):
 
 def run_model(args, device):
     if args.net == "cnn":
-        net = model.CNNClassifier(
+        net = model.CNNEncoder(
             spatial_dims=3,
             in_channels=1,
-            out_channels=2,  # binary classification for sex
-            features=(64, 128, 256, 512, 768, 32),
+            features=(64, 128, 256, 512, 768),
             act="GELU",
             norm="instance",
             bias=True,
             dropout=0.2,
         ).to(device)
     elif args.net == "vit":
-        net = model.ViTClassifier(
+        net = model.ViTEncoder(
             spatial_dims=3,
             in_channels=1,
-            out_channels=2,
             img_size=96,  # Always use 96 since we're center cropping
             hidden_size=768,
             mlp_dim=3072,
@@ -98,9 +96,21 @@ def run_model(args, device):
             save_attn=False,
         ).to(device)
 
-    checkpoint = torch.load(args.weights, map_location=device)
+    class BinaryClassifier(torch.nn.Module):
+        def __init__(self, in_features):
+            super().__init__()
+            self.net = torch.nn.Sequential(
+                torch.nn.Linear(in_features, 2),  # Output 2 classes for male/female
+            )
+
+        def forward(self, x):
+            return self.net(x)
+
+    classifier = BinaryClassifier(768).to(device)
+
+    checkpoint = torch.load(args.encoder_weights, map_location=device)
     print(
-        "\nResuming from epoch #{} with WandB ID {}".format(
+        "\nResuming encoder from epoch #{} with WandB ID {}".format(
             checkpoint["epoch"], checkpoint["wandb"]
         )
     )
@@ -109,7 +119,17 @@ def run_model(args, device):
     net.load_state_dict(checkpoint["model"], strict=False)
     net.eval()
 
-    odir = os.path.dirname(args.weights)
+    checkpoint = torch.load(args.classifier_weights, map_location=device)
+    print(
+        "\nResuming classifier from epoch #{} with WandB ID {}".format(
+            checkpoint["epoch"], checkpoint["wandb"]
+        )
+    )
+    print()
+    classifier.load_state_dict(checkpoint["model"], strict=False)
+    classifier.eval()
+
+    odir = os.path.dirname(args.classifier_weights)
 
     # Load IXI data
     ixi_data = pd.read_excel('/home/lchalcroft/Data/IXI/IXI.xls')
@@ -197,7 +217,9 @@ def run_model(args, device):
             
             with torch.cuda.amp.autocast() if args.amp else nullcontext():
                 outputs = net(images)
-                preds = torch.argmax(outputs, dim=1)
+                features = outputs.view(outputs.shape[0], outputs.shape[1], -1).mean(dim=-1)
+                preds = classifier(features)
+                preds = preds.softmax(dim=1).argmax(dim=1)
             
             all_preds.extend(preds.cpu().numpy())
             all_labels.extend(labels.cpu().numpy())
@@ -243,7 +265,8 @@ def run_model(args, device):
 
 def set_up():
     parser = argparse.ArgumentParser(argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument("--weights", type=str, help="Path to model weights.")
+    parser.add_argument("--encoder_weights", type=str, help="Path to encoder model weights.")
+    parser.add_argument("--classifier_weights", type=str, help="Path to classifier model weights.")
     parser.add_argument(
         "--net", 
         type=str, 
