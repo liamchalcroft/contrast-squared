@@ -1,39 +1,75 @@
-from contextlib import nullcontext
 import glob
 import os
 import model
 import torch
 import logging
 import argparse
-import pandas as pd
+import monai as mn
 import numpy as np
+from contextlib import nullcontext
+from tqdm import tqdm
 from torch.utils.data import DataLoader
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
-from tqdm import tqdm
+import pandas as pd
 import warnings
 
 logging.getLogger("monai").setLevel(logging.ERROR)
 warnings.filterwarnings("ignore", category=FutureWarning, module="pandas")
 
-class IXIDataset(torch.utils.data.Dataset):
-    def __init__(self, features_dir, ixi_data, ids):
-        self.features_dir = features_dir
-        self.ixi_data = ixi_data
-        self.ids = ids
+def get_center_crop(volume, size=96):
+    """Extract a center crop of given size from a 3D volume."""
+    if len(volume.shape) == 3:
+        d, h, w = volume.shape
+    else:
+        _, d, h, w = volume.shape
+        
+    d_start = d//2 - size//2
+    h_start = h//2 - size//2
+    w_start = w//2 - size//2
+    
+    d_end = d_start + size
+    h_end = h_start + size
+    w_end = w_start + size
+    
+    if len(volume.shape) == 3:
+        return volume[d_start:d_end, h_start:h_end, w_start:w_end]
+    else:
+        return volume[:, d_start:d_end, h_start:h_end, w_start:w_end]
 
-    def __len__(self):
-        return len(self.ids)
+def get_loaders(data_dict, lowres=False):
+    print(f"data_dict: {len(data_dict)}")
 
-    def __getitem__(self, idx):
-        ixi_id = self.ids[idx]
-        features = np.load(os.path.join(self.features_dir, f"IXI{ixi_id:03d}.npy"))
-        subject_data = self.ixi_data[self.ixi_data['IXI_ID'] == ixi_id].iloc[0]
-        sex = subject_data['SEX_ID (1=m, 2=f)']
-        return torch.FloatTensor(features), torch.tensor(sex - 1)  # Adjusting sex to be 0 or 1
+    test_transform = mn.transforms.Compose(
+        transforms=[
+            mn.transforms.LoadImageD(keys=["image"], image_only=True),
+            mn.transforms.EnsureChannelFirstD(keys=["image"]),
+            mn.transforms.OrientationD(keys=["image"], axcodes="RAS"),
+            mn.transforms.SpacingD(
+                keys=["image"],
+                pixdim=1 if not lowres else 2,
+            ),
+            mn.transforms.CropForegroundD(keys=["image"], source_key="image"),
+            mn.transforms.ToTensorD(keys=["image"], dtype=torch.float32),
+            mn.transforms.LambdaD(
+                keys=["image"],
+                func=mn.transforms.SignalFillEmpty(),
+            ),
+            mn.transforms.ScaleIntensityRangePercentilesD(
+                keys=["image"],
+                lower=0.5, upper=99.5, b_min=0, b_max=1,
+                clip=True, channel_wise=True,
+            ),
+            mn.transforms.HistogramNormalizeD(keys="image", min=0, max=1),
+            mn.transforms.NormalizeIntensityD(
+                keys="image", nonzero=False, channel_wise=True
+            ),
+            mn.transforms.ToTensorD(keys=["image"], dtype=torch.float32),
+            mn.transforms.LambdaD(keys=["image"], func=lambda x: get_center_crop(x, size=96)),
+        ]
+    )
 
-def get_loaders(features_dir, ixi_data, ids):
-    dataset = IXIDataset(features_dir, ixi_data, ids)
-    loader = DataLoader(dataset, batch_size=32, shuffle=False, num_workers=8)
+    data = mn.data.Dataset(data_dict, transform=test_transform)
+    loader = DataLoader(data, batch_size=32, shuffle=False, num_workers=8)
     return loader
 
 def run_model(args, device):
@@ -52,8 +88,8 @@ def run_model(args, device):
         net = model.ViTClassifier(
             spatial_dims=3,
             in_channels=1,
-            out_channels=2,  # binary classification for sex
-            img_size=(96 if args.lowres else 192),
+            out_channels=2,
+            img_size=96,  # Always use 96 since we're center cropping
             hidden_size=768,
             mlp_dim=3072,
             num_heads=12,
@@ -77,46 +113,133 @@ def run_model(args, device):
 
     # Load IXI data
     ixi_data = pd.read_excel('/home/lchalcroft/Data/IXI/IXI.xls')
-    all_files = [f for f in os.listdir(args.features_dir) if f.endswith('.npy')]
-    all_ids = sorted([int(f.split('.')[0][3:]) for f in all_files])
-    valid_ids = [id for id in all_ids if id in ixi_data['IXI_ID'].values]
+    
+    # Load and prepare data based on modality
+    guys_img_list = glob.glob(f"/home/lchalcroft/Data/IXI/guys/{args.modality}/preprocessed/p_IXI*-{args.modality.upper()}.nii.gz")
+    guys_img_list.sort()
+    
+    # Split data following same ratios as training
+    total_samples = len(guys_img_list)
+    train_size = int(0.7 * total_samples)
+    val_size = int(0.1 * total_samples)
+    # Only use test portion
+    guys_img_list = guys_img_list[train_size+val_size:]
+    
+    # Filter out subjects with missing/NaN age values (to match training)
+    guys_test_dict = []
+    for f in guys_img_list:
+        ixi_id = int(os.path.basename(f).split("-")[0][5:])
+        age = ixi_data.loc[ixi_data["IXI_ID"] == ixi_id]["AGE"].values
+        if len(age) > 0 and not np.isnan(age[0]):
+            guys_test_dict.append({
+                "image": f,
+                "file": f,
+                "dataset": "IXI",
+                "site": "guys",
+                "modality": f"{args.modality.upper()}w",
+                "IXI_ID": ixi_id,
+                # Convert sex from 1/2 to 0/1 for binary classification
+                "sex": ixi_data[ixi_data['IXI_ID'] == ixi_id]['SEX_ID (1=m, 2=f)'].iloc[0] - 1
+            })
 
-    test_loader = get_loaders(args.features_dir, ixi_data, valid_ids)
+    # Do the same for other sites
+    hh_img_list = glob.glob(f"/home/lchalcroft/Data/IXI/hh/{args.modality}/preprocessed/p_IXI*-{args.modality.upper()}.nii.gz")
+    hh_img_list.sort()
+    
+    hh_test_dict = []
+    for f in hh_img_list:
+        ixi_id = int(os.path.basename(f).split("-")[0][5:])
+        age = ixi_data.loc[ixi_data["IXI_ID"] == ixi_id]["AGE"].values
+        if len(age) > 0 and not np.isnan(age[0]):
+            hh_test_dict.append({
+                "image": f,
+                "file": f,
+                "dataset": "IXI",
+                "site": "hh",
+                "modality": f"{args.modality.upper()}w",
+                "IXI_ID": ixi_id,
+                "sex": ixi_data[ixi_data['IXI_ID'] == ixi_id]['SEX_ID (1=m, 2=f)'].iloc[0] - 1
+            })
+    
+    iop_img_list = glob.glob(f"/home/lchalcroft/Data/IXI/iop/{args.modality}/preprocessed/p_IXI*-{args.modality.upper()}.nii.gz")
+    iop_img_list.sort()
+
+    iop_test_dict = []
+    for f in iop_img_list:
+        ixi_id = int(os.path.basename(f).split("-")[0][5:])
+        age = ixi_data.loc[ixi_data["IXI_ID"] == ixi_id]["AGE"].values
+        if len(age) > 0 and not np.isnan(age[0]):
+            iop_test_dict.append({
+                "image": f,
+                "file": f,
+                "dataset": "IXI",
+                "site": "iop",
+                "modality": f"{args.modality.upper()}w",
+                "IXI_ID": ixi_id,
+                "sex": ixi_data[ixi_data['IXI_ID'] == ixi_id]['SEX_ID (1=m, 2=f)'].iloc[0] - 1
+            })
+
+    print(f"First subject in guys data: {guys_test_dict[0]['file']}")
+    print(f"First subject in hh data: {hh_test_dict[0]['file']}")
+    print(f"First subject in iop data: {iop_test_dict[0]['file']}")
+    
+    test_dict = guys_test_dict + hh_test_dict + iop_test_dict
+    test_loader = get_loaders(test_dict, lowres=args.lowres)
 
     all_preds = []
     all_labels = []
     results = []
 
     with torch.no_grad():
-        for features, labels in tqdm(test_loader, desc="Testing", total=len(test_loader)):
-            features = features.to(device)
-            labels = labels.to(device)
+        for batch in tqdm(test_loader, desc="Testing", total=len(test_loader)):
+            images = batch["image"].to(device)
+            labels = batch["sex"].to(device)
             
             with torch.cuda.amp.autocast() if args.amp else nullcontext():
-                outputs = net(features)
+                outputs = net(images)
                 preds = torch.argmax(outputs, dim=1)
             
             all_preds.extend(preds.cpu().numpy())
             all_labels.extend(labels.cpu().numpy())
+            
+            # Add individual results
+            for i in range(len(preds)):
+                results.append({
+                    'file': batch["file"][i],
+                    'dataset': batch["dataset"][i],
+                    'modality': batch["modality"][i],
+                    'site': batch["site"][i],
+                    'IXI_ID': batch["IXI_ID"][i].item(),
+                    'true_sex': labels[i].item(),
+                    'pred_sex': preds[i].item(),
+                    'correct': (labels[i] == preds[i]).item()
+                })
 
+    # Calculate overall metrics
     accuracy = accuracy_score(all_labels, all_preds)
     precision = precision_score(all_labels, all_preds)
     recall = recall_score(all_labels, all_preds)
     f1 = f1_score(all_labels, all_preds)
 
-    results = {
+    # Save detailed results
+    df = pd.DataFrame(results)
+    df.to_csv(os.path.join(odir, f'sex_classification_results_{args.modality}_detailed.csv'), index=False)
+
+    # Save summary metrics
+    summary = pd.DataFrame({
+        "modality": [args.modality],
         "accuracy": [accuracy],
         "precision": [precision],
         "recall": [recall],
         "f1_score": [f1]
-    }
+    })
+    summary.to_csv(os.path.join(odir, f'sex_classification_results_{args.modality}_summary.csv'), index=False)
 
-    # Save results to CSV
-    df = pd.DataFrame(results)
-    df.to_csv(os.path.join(odir, 'sex_classification_results.csv'), index=False)
-
-    print("\nResults Summary:")
-    print(df)
+    # Print summary statistics
+    print(f"\nResults Summary for {args.modality}:")
+    print(summary)
+    print("\nResults by site:")
+    print(df.groupby('site')['correct'].mean())
 
 def set_up():
     parser = argparse.ArgumentParser(argparse.ArgumentDefaultsHelpFormatter)
@@ -128,11 +251,16 @@ def set_up():
         choices=["cnn", "vit"],
         default="cnn"
     )
-    parser.add_argument("--features_dir", type=str, help="Directory containing feature files.")
-    parser.add_argument("--output_dir", type=str, help="Directory to save the results CSV.")
+    parser.add_argument(
+        "--modality",
+        type=str,
+        help="Modality to test. Options: [t1, t2, pd].",
+        choices=["t1", "t2", "pd"],
+        required=True
+    )
     parser.add_argument("--amp", default=False, action="store_true", help="Use automatic mixed precision.")
     parser.add_argument("--device", type=str, default=None, help="Device to use. If not specified then will check for CUDA.")
-    parser.add_argument("--lowres", default=False, action="store_true", help="Use low resolution features.")
+    parser.add_argument("--lowres", default=False, action="store_true", help="Use low resolution images.")
     args = parser.parse_args()
 
     device = (
