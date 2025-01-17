@@ -116,7 +116,7 @@ def run_model(args, device):
     )
     print()
 
-    net.load_state_dict(checkpoint["model"], strict=False)
+    net.load_state_dict(checkpoint["encoder"], strict=False)
     net.eval()
 
     checkpoint = torch.load(args.classifier_weights, map_location=device)
