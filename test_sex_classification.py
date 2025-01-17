@@ -1,3 +1,4 @@
+from contextlib import nullcontext
 import glob
 import os
 import model
@@ -36,9 +37,45 @@ def get_loaders(features_dir, ixi_data, ids):
     return loader
 
 def run_model(args, device):
-    model = torch.load(args.weights, map_location=device)
-    model.eval()
+    if args.net == "cnn":
+        net = model.CNNClassifier(
+            spatial_dims=3,
+            in_channels=1,
+            out_channels=2,  # binary classification for sex
+            features=(64, 128, 256, 512, 768, 32),
+            act="GELU",
+            norm="instance",
+            bias=True,
+            dropout=0.2,
+        ).to(device)
+    elif args.net == "vit":
+        net = model.ViTClassifier(
+            spatial_dims=3,
+            in_channels=1,
+            out_channels=2,  # binary classification for sex
+            img_size=(96 if args.lowres else 192),
+            hidden_size=768,
+            mlp_dim=3072,
+            num_heads=12,
+            dropout_rate=0.2,
+            qkv_bias=True,
+            save_attn=False,
+        ).to(device)
 
+    checkpoint = torch.load(args.weights, map_location=device)
+    print(
+        "\nResuming from epoch #{} with WandB ID {}".format(
+            checkpoint["epoch"], checkpoint["wandb"]
+        )
+    )
+    print()
+
+    net.load_state_dict(checkpoint["model"], strict=False)
+    net.eval()
+
+    odir = os.path.dirname(args.weights)
+
+    # Load IXI data
     ixi_data = pd.read_excel('/home/lchalcroft/Data/IXI/IXI.xls')
     all_files = [f for f in os.listdir(args.features_dir) if f.endswith('.npy')]
     all_ids = sorted([int(f.split('.')[0][3:]) for f in all_files])
@@ -48,13 +85,17 @@ def run_model(args, device):
 
     all_preds = []
     all_labels = []
+    results = []
 
     with torch.no_grad():
         for features, labels in tqdm(test_loader, desc="Testing", total=len(test_loader)):
             features = features.to(device)
             labels = labels.to(device)
-            outputs = model(features)
-            preds = torch.argmax(outputs, dim=1)
+            
+            with torch.cuda.amp.autocast() if args.amp else nullcontext():
+                outputs = net(features)
+                preds = torch.argmax(outputs, dim=1)
+            
             all_preds.extend(preds.cpu().numpy())
             all_labels.extend(labels.cpu().numpy())
 
@@ -72,7 +113,7 @@ def run_model(args, device):
 
     # Save results to CSV
     df = pd.DataFrame(results)
-    df.to_csv(os.path.join(args.output_dir, 'sex_classification_results.csv'), index=False)
+    df.to_csv(os.path.join(odir, 'sex_classification_results.csv'), index=False)
 
     print("\nResults Summary:")
     print(df)
@@ -80,9 +121,18 @@ def run_model(args, device):
 def set_up():
     parser = argparse.ArgumentParser(argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--weights", type=str, help="Path to model weights.")
+    parser.add_argument(
+        "--net", 
+        type=str, 
+        help="Network to use. Options: [cnn, vit]. Defaults to cnn.", 
+        choices=["cnn", "vit"],
+        default="cnn"
+    )
     parser.add_argument("--features_dir", type=str, help="Directory containing feature files.")
     parser.add_argument("--output_dir", type=str, help="Directory to save the results CSV.")
+    parser.add_argument("--amp", default=False, action="store_true", help="Use automatic mixed precision.")
     parser.add_argument("--device", type=str, default=None, help="Device to use. If not specified then will check for CUDA.")
+    parser.add_argument("--lowres", default=False, action="store_true", help="Use low resolution features.")
     args = parser.parse_args()
 
     device = (
