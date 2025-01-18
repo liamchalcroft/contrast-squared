@@ -213,7 +213,8 @@ def run_model(args, device):
                     hue=site_labels, style=modality_labels, s=100)  # Larger points
     plt.axis('off')  # Remove axes
     plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0,
-              fontsize=12, title_fontsize=14)  # Larger, outside legend
+              fontsize=16, title_fontsize=18,  # Increased font sizes
+              markerscale=2)  # Larger legend markers
     plt.tight_layout()
     plt.savefig(os.path.join(fig_dir, f'tsne_by_site_{fname}.png'),
                 bbox_inches='tight', dpi=300)
@@ -225,7 +226,8 @@ def run_model(args, device):
                     hue=modality_labels, style=site_labels, s=100)  # Larger points
     plt.axis('off')  # Remove axes
     plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0,
-              fontsize=12, title_fontsize=14)  # Larger, outside legend
+              fontsize=16, title_fontsize=18,  # Increased font sizes
+              markerscale=2)  # Larger legend markers
     plt.tight_layout()
     plt.savefig(os.path.join(fig_dir, f'tsne_by_modality_{fname}.png'),
                 bbox_inches='tight', dpi=300)
