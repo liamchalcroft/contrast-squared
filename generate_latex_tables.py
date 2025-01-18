@@ -73,13 +73,16 @@ def create_latex_table(all_data, metric, task):
     caption += "Values show mean ± std, with \\textbf{bold} and \\underline{underlined} indicating best and second-best results. "
     caption += "GST represents the training domain."
     
+    # Create tabular format with vertical lines between percentage groups
+    tabular_format = "l" + ("c" * len(MODEL_ORDER) + "|") * (len(PERCENTAGES) - 1) + "c" * len(MODEL_ORDER)
+    
     latex_lines = [
         "\\begin{table}[htbp]",
         "\\centering",
         f"\\caption{{{caption}}}",
         f"\\label{{tab:{task}_{metric.lower()}_results}}",
         "\\resizebox{\\textwidth}{!}{",
-        "\\begin{tabular}{l" + "c" * (len(PERCENTAGES) * len(MODEL_ORDER)) + "}",
+        f"\\begin{{tabular}}{{{tabular_format}}}",
         "\\toprule"
     ]
 
