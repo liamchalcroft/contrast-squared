@@ -202,19 +202,9 @@ def run_model(args, device):
                 preds = classifier(features)
                 probs = preds.softmax(dim=1)
                 preds = probs.argmax(dim=1)
-                print(f"probs: {probs}")
-                print(f"preds: {preds}")
-                print(f"labels: {labels}")
             
             all_preds.extend(preds.cpu().numpy())
             all_labels.extend(labels.cpu().numpy())
-
-            print(batch["file"])
-            print(batch["dataset"])
-            print(batch["site"])
-            print(batch["modality"])
-            print(labels.shape)
-            print(preds.shape)
             
             # Add individual results
             results.append({
