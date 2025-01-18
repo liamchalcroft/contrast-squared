@@ -19,27 +19,20 @@ SITE_NAMES = {
 }
 
 def get_results_df(results_dir):
-    # Check for any modality's summary file
-    modalities = ['t1', 't2', 'pd']
-    df_list = []
-    
-    for modality in modalities:
-        results_file = os.path.join(results_dir, f"sex_classification_results_{modality}_summary.csv")
-        if os.path.exists(results_file):
-            df = pd.read_csv(results_file)
-            print(f"results_dir: {results_dir}")
-            run_name = results_dir.split("/")[0]
-            print(f"run_name: {run_name}")
-            data_pc = int(run_name.split("pc")[1])
-            df["% Training Data"] = data_pc
-            method = run_name.split("simclr-")[1].split("-pc")[0]
-            df["Method"] = MODEL_NAMES.get(method.upper(), method.upper())
-            df_list.append(df)
-    
-    if df_list:
-        return pd.concat(df_list, ignore_index=True)
+    results_file = os.path.join(results_dir, "sex_classification_results_*_summary.csv")
+    results_files = glob.glob(results_file)
+    if len(results_files) == 1:
+        df = pd.read_csv(results_files[0])
+        print(f"results_dir: {results_dir}")
+        run_name = results_dir.split("/")[0]
+        print(f"run_name: {run_name}")
+        data_pc = int(run_name.split("pc")[1])
+        df["% Training Data"] = data_pc
+        method = run_name.split("simclr-")[1].split("-pc")[0]
+        df["Method"] = MODEL_NAMES.get(method.upper(), method.upper())
+        return df
     else:
-        print(f"No results files found in: {results_dir}")
+        print(f"Results file not found: {results_file}")
         return None
 
 def spider_plot(results_df, metric="accuracy"):
