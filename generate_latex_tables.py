@@ -69,10 +69,9 @@ def create_latex_table(all_data, metric, task):
     }
     
     # Create caption text
-    caption = f"Quantitative evaluation of {task_descriptions.get(task, task)} performance using {metric_descriptions.get(metric, metric)}. "
-    caption += "Values are reported as mean ± standard deviation. "
-    caption += "For each dataset and training data percentage, the best performing model is shown in \\textbf{bold} and the second-best is \\underline{underlined}. "
-    caption += "Results are grouped by domain, with GST being the training domain and other sites representing out-of-domain generalization."
+    caption = f"{task_descriptions.get(task, task)} performance using {metric_descriptions.get(metric, metric)}. "
+    caption += "Values show mean ± std, with \\textbf{bold} and \\underline{underlined} indicating best and second-best results. "
+    caption += "GST represents the training domain."
     
     latex_lines = [
         "\\begin{table}[htbp]",
@@ -151,6 +150,7 @@ def create_latex_table(all_data, metric, task):
 
     latex_lines.extend([
         "\\bottomrule",
+        "\\end{tabular}",
         "}",  # Close resizebox
         "\\end{table}"
     ])
