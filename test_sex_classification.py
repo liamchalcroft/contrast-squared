@@ -200,7 +200,9 @@ def run_model(args, device):
                 outputs = net(images)
                 features = outputs.view(outputs.shape[0], outputs.shape[1], -1).mean(dim=-1)
                 preds = classifier(features)
-                preds = preds.softmax(dim=1).argmax(dim=1)
+                probs = preds.softmax(dim=1)
+                preds = probs.argmax(dim=1)
+                print(f"probs: {probs}")
                 print(f"preds: {preds}")
                 print(f"labels: {labels}")
             
