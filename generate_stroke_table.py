@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 
 MODEL_ORDER = ['Baseline', 'Sequence-augmented', 'Sequence-invariant']
-SITES = ['ISLES']
+SITES = ['ARC']
 MODALITIES = ['T1w', 'T2w', 'FLAIR']
 
 # Define shortened model names
