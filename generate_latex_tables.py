@@ -54,13 +54,25 @@ def create_latex_table(all_data, metric, task):
     """Create a LaTeX table for a given metric"""
     print(f"\nCreating table for {task} - {metric}")
     
-    total_cols = len(PERCENTAGES) * len(MODEL_ORDER) + 1
+    # Create descriptive caption based on metric
+    metric_descriptions = {
+        'DSC': 'Dice Similarity Coefficient (higher is better)',
+        'HD95': '95th percentile Hausdorff Distance in mm (lower is better)',
+        'PSNR': 'Peak Signal-to-Noise Ratio in dB (higher is better)',
+        'MSE': 'Mean Squared Error (lower is better)'
+    }
+    
+    task_descriptions = {
+        'healthy_segmentation': 'healthy brain tissue segmentation',
+        'stroke_segmentation': 'stroke lesion segmentation',
+        'denoise': 'image denoising'
+    }
     
     latex_lines = [
         "\\begin{table}[htbp]",
         "\\centering",
         "\\resizebox{\\textwidth}{!}{",
-        "\\begin{tabular}{l" + "c" * (total_cols-1) + "}",
+        "\\begin{tabular}{l" + "c" * (len(PERCENTAGES) * len(MODEL_ORDER)) + "}",
         "\\toprule"
     ]
 
@@ -71,7 +83,7 @@ def create_latex_table(all_data, metric, task):
     
     model_line = "& " + " & ".join(MODEL_ORDER * len(PERCENTAGES)) + " \\\\"
     latex_lines.extend([
-        f"\\cmidrule(lr){{2-{total_cols}}}",
+        f"\\cmidrule(lr){{2-{len(PERCENTAGES) * len(MODEL_ORDER)}}}",
         model_line,
         "\\midrule"
     ])
@@ -96,7 +108,7 @@ def create_latex_table(all_data, metric, task):
             current_domain = domain
             if domain == "Out of Domain":
                 latex_lines.append("\\midrule")  # Single rule for out of domain
-            latex_lines.append(f"\\multicolumn{{{total_cols}}}{{l}}{{\\textit{{{domain}}}}} \\\\")
+            latex_lines.append(f"\\multicolumn{{{len(PERCENTAGES) * len(MODEL_ORDER)}}}{{l}}{{\\textit{{{domain}}}}} \\\\")
             latex_lines.append("\\midrule")
         
         row_values = []
@@ -131,8 +143,12 @@ def create_latex_table(all_data, metric, task):
 
     latex_lines.extend([
         "\\bottomrule",
-        "\\end{tabular}",
-        "}",
+        "}",  # Close resizebox
+        f"\\caption{{Quantitative evaluation of {task_descriptions.get(task, task)} performance using {metric_descriptions.get(metric, metric)}. "
+        "Values are reported as mean ± standard deviation. "
+        "For each dataset and training data percentage, the best performing model is shown in \\textbf{bold} and the second-best is \\underline{underlined}. "
+        "Results are grouped by domain, with GST being the training domain and other sites representing out-of-domain generalization.}}",
+        f"\\label{{tab:{task}_{metric.lower()}_results}}",
         "\\end{table}"
     ])
 
