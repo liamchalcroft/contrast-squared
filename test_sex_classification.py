@@ -9,7 +9,7 @@ import numpy as np
 from contextlib import nullcontext
 from tqdm import tqdm
 from torch.utils.data import DataLoader
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_curve, auc
 import pandas as pd
 import warnings
 
@@ -212,12 +212,13 @@ def run_model(args, device):
                 results.append({
                     'file': batch["file"][i],
                     'dataset': batch["dataset"][i],
-                    'modality': batch["modality"][i],
                     'site': batch["site"][i],
-                    'IXI_ID': batch["IXI_ID"][i].item(),
+                    'modality': batch["modality"][i],
                     'true_sex': labels[i].item(),
                     'pred_sex': preds[i].item(),
-                    'correct': (labels[i] == preds[i]).item()
+                    'correct': (labels[i] == preds[i]).item(),
+                    'prob_male': preds[i][0].item(),
+                    'prob_female': preds[i][1].item()
                 })
 
     # Calculate overall metrics
@@ -226,9 +227,21 @@ def run_model(args, device):
     recall = recall_score(all_labels, all_preds)
     f1 = f1_score(all_labels, all_preds)
 
-    # Save detailed results
+    # Calculate ROC curve metrics
+    fpr, tpr, thresholds = roc_curve(all_labels, [r['prob_female'] for r in results])
+    roc_auc = auc(fpr, tpr)
+
+    # Save detailed results with probabilities
     df = pd.DataFrame(results)
-    df.to_csv(os.path.join(odir, f'sex_classification_results_{args.modality}_detailed.csv'), index=False)
+    df.to_csv(os.path.join(odir, f'sex_classification_results_detailed.csv'), index=False)
+
+    # Save ROC curve data
+    roc_df = pd.DataFrame({
+        'fpr': fpr,
+        'tpr': tpr,
+        'thresholds': thresholds
+    })
+    roc_df.to_csv(os.path.join(odir, f'sex_classification_results_roc.csv'), index=False)
 
     # Save summary metrics
     summary = pd.DataFrame({
@@ -236,9 +249,10 @@ def run_model(args, device):
         "accuracy": [accuracy],
         "precision": [precision],
         "recall": [recall],
-        "f1_score": [f1]
+        "f1_score": [f1],
+        "auc_roc": [roc_auc]
     })
-    summary.to_csv(os.path.join(odir, f'sex_classification_results_{args.modality}_summary.csv'), index=False)
+    summary.to_csv(os.path.join(odir, f'sex_classification_results_summary.csv'), index=False)
 
     # Print summary statistics
     print(f"\nResults Summary for {args.modality}:")
