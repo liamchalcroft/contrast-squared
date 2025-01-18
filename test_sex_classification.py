@@ -211,13 +211,15 @@ def run_model(args, device):
             print(batch["dataset"])
             print(batch["site"])
             print(batch["modality"])
+            print(labels.shape)
+            print(preds.shape)
             
             # Add individual results
             results.append({
-                'file': batch["file"],
-                'dataset': batch["dataset"],
-                'site': batch["site"],
-                'modality': batch["modality"],
+                'file': batch["file"][0],
+                'dataset': batch["dataset"][0],
+                'site': batch["site"][0],
+                'modality': batch["modality"][0],
                 'true_sex': labels.item(),
                 'pred_sex': preds.item(),
                 'correct': (labels == preds).item(),
