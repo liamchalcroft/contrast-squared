@@ -50,7 +50,7 @@ def get_loaders(data_dict, lowres=False):
     )
 
     data = mn.data.Dataset(data_dict, transform=test_transform)
-    loader = DataLoader(data, batch_size=32, shuffle=False, num_workers=8)
+    loader = DataLoader(data, batch_size=1, shuffle=False, num_workers=8)
     return loader
 
 def run_model(args, device):
@@ -195,8 +195,6 @@ def run_model(args, device):
         for batch in tqdm(test_loader, desc="Testing", total=len(test_loader)):
             images = batch["image"].to(device)
             labels = batch["sex"].to(device)
-            print(f"Images shape: {images.shape}")
-            print(f"Labels shape: {labels.shape}")
             
             with torch.cuda.amp.autocast() if args.amp else nullcontext():
                 outputs = net(images)
