@@ -89,6 +89,8 @@ def main():
 
         # Combine data from all percentages
         metrics = all_data[PERCENTAGES[0]].columns.get_level_values(0).unique()
+
+        print(all_data.head())
         
         # Generate table for each metric
         for metric in metrics:
