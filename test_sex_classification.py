@@ -16,25 +16,6 @@ import warnings
 logging.getLogger("monai").setLevel(logging.ERROR)
 warnings.filterwarnings("ignore", category=FutureWarning, module="pandas")
 
-def get_center_crop(volume, size=96):
-    """Extract a center crop of given size from a 3D volume."""
-    if len(volume.shape) == 3:
-        d, h, w = volume.shape
-    else:
-        _, d, h, w = volume.shape
-        
-    d_start = d//2 - size//2
-    h_start = h//2 - size//2
-    w_start = w//2 - size//2
-    
-    d_end = d_start + size
-    h_end = h_start + size
-    w_end = w_start + size
-    
-    if len(volume.shape) == 3:
-        return volume[d_start:d_end, h_start:h_end, w_start:w_end]
-    else:
-        return volume[:, d_start:d_end, h_start:h_end, w_start:w_end]
 
 def get_loaders(data_dict, lowres=False):
     print(f"data_dict: {len(data_dict)}")
@@ -63,8 +44,8 @@ def get_loaders(data_dict, lowres=False):
             mn.transforms.NormalizeIntensityD(
                 keys="image", nonzero=False, channel_wise=True
             ),
+            mn.transforms.CenterCropD(keys=["image"], size=48 if lowres else 96),
             mn.transforms.ToTensorD(keys=["image"], dtype=torch.float32),
-            mn.transforms.LambdaD(keys=["image"], func=lambda x: get_center_crop(x, size=96)),
         ]
     )
 
@@ -214,6 +195,8 @@ def run_model(args, device):
         for batch in tqdm(test_loader, desc="Testing", total=len(test_loader)):
             images = batch["image"].to(device)
             labels = batch["sex"].to(device)
+            print(f"Images shape: {images.shape}")
+            print(f"Labels shape: {labels.shape}")
             
             with torch.cuda.amp.autocast() if args.amp else nullcontext():
                 outputs = net(images)
