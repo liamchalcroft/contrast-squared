@@ -4,6 +4,7 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 import numpy as np
+from sklearn.metrics import roc_curve, auc
 
 MODEL_ORDER = ['MPRAGE', 'BLOCH', 'BLOCH-PAIRED']
 MODEL_NAMES = {
@@ -19,10 +20,9 @@ SITE_NAMES = {
 }
 
 def get_results_df(results_dir):
-    results_file = os.path.join(results_dir, "sex_classification_results_*_summary.csv")
-    results_files = glob.glob(results_file)
-    if len(results_files) == 1:
-        df = pd.read_csv(results_files[0])
+    results_file = os.path.join(results_dir, "sex_classification_results_detailed.csv")
+    if os.path.exists(results_file):
+        df = pd.read_csv(results_file)
         print(df.head())
         print(f"results_dir: {results_dir}")
         run_name = results_dir.split("/")[0]
@@ -79,6 +79,34 @@ def spider_plot(results_df, metric="accuracy"):
     plt.title(f"Mean {metric.title()} by Modality Dataset and Method")
     plt.tight_layout()
     return fig
+
+def plot_roc_curves(results_df, output_dir):
+    plt.figure(figsize=(10, 10))
+    
+    # Plot ROC curve for each modality
+    for modality in results_df['modality'].unique():
+        mod_data = results_df[results_df['modality'] == modality]
+        fpr, tpr, _ = roc_curve(mod_data['true_sex'], mod_data['prob_female'])
+        roc_auc = auc(fpr, tpr)
+        
+        plt.plot(
+            fpr, tpr,
+            label=f'{modality.upper()} (AUC = {roc_auc:.3f})',
+            lw=2
+        )
+    
+    # Add diagonal line representing random classifier
+    plt.plot([0, 1], [0, 1], 'k--', lw=2, label='Random (AUC = 0.5)')
+    
+    plt.xlim([0.0, 1.0])
+    plt.ylim([0.0, 1.05])
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title('Receiver Operating Characteristic (ROC) Curve')
+    plt.legend(loc="lower right")
+    plt.grid(True)
+    plt.savefig(os.path.join(output_dir, 'roc_curves.png'), dpi=300, bbox_inches='tight')
+    plt.close()
 
 # Set style for fancy plots
 plt.style.use("seaborn-v0_8-whitegrid")
@@ -203,5 +231,8 @@ for percentage in training_percentages:
     # Print summary for this percentage
     print(f"\nResults Summary for {percentage}% Training Data:")
     print(summary_stats)
+
+    # Add ROC curve plot
+    plot_roc_curves(percentage_df, percentage_dir)
 
 print(f"\nPlots saved in: {plot_dir}") 
