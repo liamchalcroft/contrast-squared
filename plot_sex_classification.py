@@ -23,6 +23,7 @@ def get_results_df(results_dir):
     results_files = glob.glob(results_file)
     if len(results_files) == 1:
         df = pd.read_csv(results_files[0])
+        print(df.head())
         print(f"results_dir: {results_dir}")
         run_name = results_dir.split("/")[0]
         print(f"run_name: {run_name}")
