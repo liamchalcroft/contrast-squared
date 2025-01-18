@@ -5,6 +5,16 @@ import numpy as np
 TASKS = ['healthy_segmentation', 'denoise', 'stroke_segmentation']
 PERCENTAGES = ['1pc', '10pc', '100pc']
 MODEL_ORDER = ['Baseline', 'Sequence-augmented', 'Sequence-invariant']
+SITES = ['GST', 'HH', 'IOP']
+MODALITIES = ['T1w', 'T2w', 'PDw']
+
+# Define which metrics should be minimized vs maximized
+METRIC_ORDERING = {
+    'DSC': 'maximize',
+    'PSNR': 'maximize',
+    'MSE': 'minimize',
+    'HD95': 'minimize'
+}
 
 def format_mean_std(mean, std, is_best=False, is_second=False):
     """Format mean ± std with appropriate precision and highlighting"""
@@ -25,13 +35,16 @@ def format_mean_std(mean, std, is_best=False, is_second=False):
     
     return formatted
 
-def get_ranking_indices(values):
+def get_ranking_indices(values, metric):
     """Get indices of best and second best values, handling NaN"""
     valid_indices = [i for i, v in enumerate(values) if not np.isnan(v)]
     if not valid_indices:
         return None, None
     
-    sorted_indices = sorted(valid_indices, key=lambda i: values[i], reverse=True)
+    # Determine sort order based on metric
+    reverse = METRIC_ORDERING.get(metric, 'maximize') == 'maximize'
+    
+    sorted_indices = sorted(valid_indices, key=lambda i: values[i], reverse=reverse)
     best_idx = sorted_indices[0] if len(sorted_indices) > 0 else None
     second_idx = sorted_indices[1] if len(sorted_indices) > 1 else None
     
@@ -41,38 +54,53 @@ def create_latex_table(all_data, metric, task):
     """Create a LaTeX table for a given metric"""
     print(f"\nCreating table for {task} - {metric}")
     
-    total_cols = len(PERCENTAGES) * len(MODEL_ORDER) + 1
+    total_cols = len(PERCENTAGES) * len(MODEL_ORDER) + 2  # +2 for dataset and domain columns
     
     latex_lines = [
         "\\begin{table}[htbp]",
         "\\centering",
         "\\resizebox{\\textwidth}{!}{",
-        "\\begin{tabular}{l" + "c" * (total_cols-1) + "}",
+        "\\begin{tabular}{ll" + "c" * (total_cols-2) + "}",  # Added another l for domain column
         "\\toprule"
     ]
 
-    header = ["& \\multicolumn{" + str(len(MODEL_ORDER)) + "}{c}{" + str(int(pc.replace('pc',''))) + "\\%}" 
+    header = ["& & \\multicolumn{" + str(len(MODEL_ORDER)) + "}{c}{" + str(int(pc.replace('pc',''))) + "\\%}" 
              for pc in PERCENTAGES]
-    latex_lines.append("Dataset " + " ".join(header) + " \\\\")
+    latex_lines.append("Domain & Dataset " + " ".join(header) + " \\\\")
     
-    model_line = "& " + " & ".join(MODEL_ORDER * len(PERCENTAGES)) + " \\\\"
+    model_line = "& & " + " & ".join(MODEL_ORDER * len(PERCENTAGES)) + " \\\\"
     latex_lines.extend([
-        f"\\cmidrule(lr){{2-{total_cols}}}",
+        f"\\cmidrule(lr){{3-{total_cols}}}",
         model_line,
         "\\midrule"
     ])
 
     print("\nProcessing datasets:")
-    datasets = all_data[PERCENTAGES[-1]].index.get_level_values(0).unique()
-    for dataset in datasets:
+    # Create ordered list of datasets
+    ordered_datasets = []
+    for site in SITES:
+        for modality in MODALITIES:
+            ordered_datasets.append(f"{site} [{modality}]")
+    
+    current_domain = None
+    for dataset in ordered_datasets:
+        if dataset not in all_data[PERCENTAGES[-1]].index.get_level_values(0).unique():
+            continue
+            
         print(f"\nDataset: {dataset}")
         row_values = []
+        
+        # Add domain label if it changes
+        domain_label = "In Domain" if "GST" in dataset else "Out of Domain"
+        if domain_label != current_domain:
+            current_domain = domain_label
+        else:
+            domain_label = ""  # Empty for subsequent rows in same domain
         
         for pc in PERCENTAGES:
             print(f"  Processing {pc}")
             df = all_data[pc]
             
-            # Get values for all models for this dataset and percentage
             values = []
             for model in MODEL_ORDER:
                 try:
@@ -81,10 +109,8 @@ def create_latex_table(all_data, metric, task):
                 except:
                     values.append(np.nan)
             
-            # Determine best and second best
-            best_idx, second_idx = get_ranking_indices(values)
+            best_idx, second_idx = get_ranking_indices(values, metric)
             
-            # Format each model's value with appropriate highlighting
             for i, model in enumerate(MODEL_ORDER):
                 try:
                     mean = df.loc[dataset].loc[model][(metric, 'mean')]
@@ -98,7 +124,7 @@ def create_latex_table(all_data, metric, task):
                     print(f"    Error for {model}: {str(e)}")
                     row_values.append("---")
                     
-        latex_lines.append(dataset + " & " + " & ".join(row_values) + " \\\\")
+        latex_lines.append(f"{domain_label} & {dataset} & " + " & ".join(row_values) + " \\\\")
 
     latex_lines.extend([
         "\\bottomrule",
