@@ -44,7 +44,7 @@ def get_loaders(data_dict, lowres=False):
             mn.transforms.NormalizeIntensityD(
                 keys="image", nonzero=False, channel_wise=True
             ),
-            mn.transforms.CenterCropD(keys=["image"], size=48 if lowres else 96),
+            mn.transforms.CenterSpatialCropD(keys=["image"], roi_size=(48, 48, 48) if lowres else (96, 96, 96)),
             mn.transforms.ToTensorD(keys=["image"], dtype=torch.float32),
         ]
     )
