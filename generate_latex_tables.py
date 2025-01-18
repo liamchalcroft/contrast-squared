@@ -54,6 +54,13 @@ def create_latex_table(all_data, metric, task):
     """Create a LaTeX table for a given metric"""
     print(f"\nCreating table for {task} - {metric}")
     
+    # Define shortened model names
+    MODEL_NAMES = {
+        'Baseline': 'Base',
+        'Sequence-augmented': 'Seq-aug',
+        'Sequence-invariant': 'Seq-inv'
+    }
+    
     # Create descriptive caption based on metric
     metric_descriptions = {
         'DSC': 'Dice Similarity Coefficient (higher is better)',
@@ -86,12 +93,14 @@ def create_latex_table(all_data, metric, task):
         "\\toprule"
     ]
 
-    # Create more descriptive percentage headers
-    header = ["& \\multicolumn{" + str(len(MODEL_ORDER)) + "}{c}{" + str(int(pc.replace('pc',''))) + "\\% Training Data}" 
+    # Create more descriptive percentage headers with bold
+    header = ["& \\multicolumn{" + str(len(MODEL_ORDER)) + "}{c}{\\textbf{" + str(int(pc.replace('pc',''))) + "\\% Training Data}}" 
              for pc in PERCENTAGES]
     latex_lines.append(" " + " ".join(header) + " \\\\")
     
-    model_line = "& " + " & ".join(MODEL_ORDER * len(PERCENTAGES)) + " \\\\"
+    # Add bold to shortened model names
+    bold_models = [f"\\textbf{{{MODEL_NAMES[model]}}}" for model in MODEL_ORDER]
+    model_line = "& " + " & ".join(bold_models * len(PERCENTAGES)) + " \\\\"
     latex_lines.extend([
         f"\\cmidrule(lr){{2-{len(PERCENTAGES) * len(MODEL_ORDER) + 1}}}",
         model_line,
@@ -99,7 +108,6 @@ def create_latex_table(all_data, metric, task):
     ])
 
     print("\nProcessing datasets:")
-    # Create ordered list of datasets
     ordered_datasets = []
     for site in SITES:
         for modality in MODALITIES:
@@ -117,9 +125,12 @@ def create_latex_table(all_data, metric, task):
         if domain != current_domain:
             current_domain = domain
             if domain == "Out of Domain":
-                latex_lines.append("\\midrule")  # Single rule for out of domain
-            latex_lines.append(f"\\multicolumn{{{len(PERCENTAGES) * len(MODEL_ORDER)}}}{{l}}{{\\textit{{{domain}}}}} \\\\")
+                latex_lines.append("\\midrule")
+            latex_lines.append(f"\\multicolumn{{{total_cols}}}{{l}}{{\\textbf{{{domain}}}}} \\\\")
             latex_lines.append("\\midrule")
+        
+        # Make dataset names bold
+        bold_dataset = f"\\textbf{{{dataset}}}"
         
         row_values = []
         for pc in PERCENTAGES:
@@ -149,12 +160,12 @@ def create_latex_table(all_data, metric, task):
                     print(f"    Error for {model}: {str(e)}")
                     row_values.append("---")
                     
-        latex_lines.append(f"{dataset} & " + " & ".join(row_values) + " \\\\")
+        latex_lines.append(f"{bold_dataset} & " + " & ".join(row_values) + " \\\\")
 
     latex_lines.extend([
         "\\bottomrule",
         "\\end{tabular}",
-        "}",  # Close resizebox
+        "}",
         "\\end{table}"
     ])
 
