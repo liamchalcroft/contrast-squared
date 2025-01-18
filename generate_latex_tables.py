@@ -19,6 +19,13 @@ def format_mean_std(mean, std):
 
 def create_latex_table(data, metric, task):
     """Create a LaTeX table for a given metric"""
+    print(f"\nCreating table for {task} - {metric}")
+    print("Data shape:", data.shape)
+    print("Data index levels:", data.index.names)
+    print("Data columns:", data.columns.names)
+    print("\nFirst few rows of data:")
+    print(data.head())
+    
     # Start the table
     latex_lines = [
         "\\begin{table}[htbp]",
@@ -43,15 +50,21 @@ def create_latex_table(data, metric, task):
     ])
 
     # Add data rows
+    print("\nProcessing datasets:")
     for dataset in data.index.get_level_values(0).unique():
+        print(f"\nDataset: {dataset}")
         row_values = []
         for pc in PERCENTAGES:
+            print(f"  Processing {pc}")
             for model in MODEL_ORDER:
                 try:
                     mean = data.loc[(dataset, model), (metric, 'mean')][pc]
                     std = data.loc[(dataset, model), (metric, 'std')][pc]
-                    row_values.append(format_mean_std(mean, std))
-                except:
+                    formatted = format_mean_std(mean, std)
+                    print(f"    {model}: {formatted}")
+                    row_values.append(formatted)
+                except Exception as e:
+                    print(f"    Error for {model}: {str(e)}")
                     row_values.append("---")
         latex_lines.append(dataset + " & " + " & ".join(row_values) + " \\\\")
 
@@ -66,6 +79,7 @@ def create_latex_table(data, metric, task):
 
 def main():
     for task in TASKS:
+        print(f"\nProcessing task: {task}")
         task_dir = os.path.join('plots', task)
         if not os.path.exists(task_dir):
             print(f"No results directory found for {task}")
@@ -78,7 +92,10 @@ def main():
         for pc in PERCENTAGES:
             stats_file = os.path.join(task_dir, pc, 'summary_statistics.csv')
             if os.path.exists(stats_file):
+                print(f"\nLoading {stats_file}")
                 df = pd.read_csv(stats_file, header=[0,1,2], index_col=[0,1])
+                print("DataFrame shape:", df.shape)
+                print("DataFrame columns:", df.columns)
                 all_data[pc] = df
             else:
                 print(f"No summary statistics found for {task} {pc}")
@@ -89,8 +106,7 @@ def main():
 
         # Combine data from all percentages
         metrics = all_data[PERCENTAGES[0]].columns.get_level_values(0).unique()
-
-        print(all_data)
+        print(f"\nMetrics found: {metrics}")
         
         # Generate table for each metric
         for metric in metrics:
