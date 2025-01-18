@@ -225,8 +225,8 @@ def run_model(args, device):
                 'true_sex': labels.item(),
                 'pred_sex': preds.item(),
                 'correct': (labels == preds).item(),
-                'prob_male': preds[0].item(),
-                'prob_female': preds[1].item()
+                'prob_male': probs[:, 0].item(),
+                'prob_female': probs[:, 1].item()
             })
 
     # Calculate overall metrics
