@@ -207,6 +207,23 @@ def run_model(args, device):
 
     fname = os.path.dirname(args.weights).split('/')[-1]
         
+    # Define name mappings
+    SITE_NAMES = {
+        'guys': 'GST',
+        'hh': 'HH',
+        'iop': 'IOP',
+    }
+    
+    MODALITY_NAMES = {
+        't1': 'T1w',
+        't2': 'T2w',
+        'pd': 'PDw',
+    }
+    
+    # Map the labels to their standardized names
+    site_labels = [SITE_NAMES.get(site, site) for site in site_labels]
+    modality_labels = [MODALITY_NAMES.get(mod, mod) for mod in modality_labels]
+    
     # Plot by site
     plt.figure(figsize=(10, 10))  # Square figure
     sns.scatterplot(x=tsne_results[:, 0], y=tsne_results[:, 1], 
