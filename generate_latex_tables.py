@@ -72,9 +72,9 @@ def create_latex_table(all_data, metric, task):
     }
     
     task_descriptions = {
-        'healthy_segmentation': 'healthy brain tissue segmentation',
-        'stroke_segmentation': 'stroke lesion segmentation',
-        'denoise': 'image denoising'
+        'healthy_segmentation': 'Healthy brain tissue segmentation',
+        'stroke_segmentation': 'Stroke lesion segmentation',
+        'denoise': 'Image denoising'
     }
     
     # Create caption text
