@@ -54,19 +54,20 @@ def create_latex_table(all_data, metric, task):
     """Create a LaTeX table for a given metric"""
     print(f"\nCreating table for {task} - {metric}")
     
-    total_cols = len(PERCENTAGES) * len(MODEL_ORDER) + 1  # +1 for dataset column
+    total_cols = len(PERCENTAGES) * len(MODEL_ORDER) + 1
     
     latex_lines = [
         "\\begin{table}[htbp]",
         "\\centering",
+        "\\rowcolors{3}{white}{gray!10}",  # Start alternating colors after headers
         "\\resizebox{\\textwidth}{!}{",
-        "\\begin{tabular}{l" + "c" * (total_cols-1) + "}",
+        "\\begin{tabular}{l" + ("c" * (len(MODEL_ORDER)) + "|") * len(PERCENTAGES) + "}",
         "\\toprule"
     ]
 
-    header = ["& \\multicolumn{" + str(len(MODEL_ORDER)) + "}{c}{" + str(int(pc.replace('pc',''))) + "\\%}" 
+    header = ["& \\multicolumn{" + str(len(MODEL_ORDER)) + "}{c|}{" + str(int(pc.replace('pc',''))) + "\\%}" 
              for pc in PERCENTAGES]
-    latex_lines.append("Dataset " + " ".join(header) + " \\\\")
+    latex_lines.append("Dataset " + " ".join(header[:-1]) + " & \\multicolumn{" + str(len(MODEL_ORDER)) + "}{c}{" + str(int(PERCENTAGES[-1].replace('pc',''))) + "\\%} \\\\")
     
     model_line = "& " + " & ".join(MODEL_ORDER * len(PERCENTAGES)) + " \\\\"
     latex_lines.extend([
@@ -91,11 +92,18 @@ def create_latex_table(all_data, metric, task):
         
         # Add domain header if domain changes
         domain = "In Domain" if "GST" in dataset else "Out of Domain"
+        site = dataset.split()[0]
+        
         if domain != current_domain:
             current_domain = domain
-            # Add empty row with domain label spanning all columns
-            latex_lines.append(f"\\multicolumn{{{total_cols}}}{{l}}{{\\textit{{{domain}}}}} \\\\")
             latex_lines.append("\\midrule")
+            latex_lines.append(f"\\multicolumn{{{total_cols}}}{{l}}{{\\textbf{{\\large {domain}}}}} \\\\[0.5em]")
+            latex_lines.append("\\midrule")
+        elif site != current_site and current_site is not None:
+            # Add small space between different sites within Out of Domain
+            latex_lines.append("\\addlinespace[0.5em]")
+        
+        current_site = site
         
         row_values = []
         for pc in PERCENTAGES:
