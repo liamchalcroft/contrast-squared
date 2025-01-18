@@ -54,24 +54,23 @@ def create_latex_table(all_data, metric, task):
     """Create a LaTeX table for a given metric"""
     print(f"\nCreating table for {task} - {metric}")
     
-    total_cols = len(PERCENTAGES) * len(MODEL_ORDER) + 1
+    total_cols = len(PERCENTAGES) * len(MODEL_ORDER) + 2  # +2 for dataset and domain columns
     
     latex_lines = [
         "\\begin{table}[htbp]",
         "\\centering",
-        "\\rowcolors{3}{white}{gray!10}",  # Start alternating colors after headers
         "\\resizebox{\\textwidth}{!}{",
-        "\\begin{tabular}{l" + ("c" * (len(MODEL_ORDER)) + "|") * len(PERCENTAGES) + "}",
+        "\\begin{tabular}{ll" + "c" * (total_cols-2) + "}",  # Added another l for domain column
         "\\toprule"
     ]
 
-    header = ["& \\multicolumn{" + str(len(MODEL_ORDER)) + "}{c|}{" + str(int(pc.replace('pc',''))) + "\\%}" 
+    header = ["& & \\multicolumn{" + str(len(MODEL_ORDER)) + "}{c}{" + str(int(pc.replace('pc',''))) + "\\%}" 
              for pc in PERCENTAGES]
-    latex_lines.append("Dataset " + " ".join(header[:-1]) + " & \\multicolumn{" + str(len(MODEL_ORDER)) + "}{c}{" + str(int(PERCENTAGES[-1].replace('pc',''))) + "\\%} \\\\")
+    latex_lines.append("Domain & Dataset " + " ".join(header) + " \\\\")
     
-    model_line = "& " + " & ".join(MODEL_ORDER * len(PERCENTAGES)) + " \\\\"
+    model_line = "& & " + " & ".join(MODEL_ORDER * len(PERCENTAGES)) + " \\\\"
     latex_lines.extend([
-        f"\\cmidrule(lr){{2-{total_cols}}}",
+        f"\\cmidrule(lr){{3-{total_cols}}}",
         model_line,
         "\\midrule"
     ])
@@ -89,23 +88,15 @@ def create_latex_table(all_data, metric, task):
             continue
             
         print(f"\nDataset: {dataset}")
-        
-        # Add domain header if domain changes
-        domain = "In Domain" if "GST" in dataset else "Out of Domain"
-        site = dataset.split()[0]
-        
-        if domain != current_domain:
-            current_domain = domain
-            latex_lines.append("\\midrule")
-            latex_lines.append(f"\\multicolumn{{{total_cols}}}{{l}}{{\\textbf{{\\large {domain}}}}} \\\\[0.5em]")
-            latex_lines.append("\\midrule")
-        elif site != current_site and current_site is not None:
-            # Add small space between different sites within Out of Domain
-            latex_lines.append("\\addlinespace[0.5em]")
-        
-        current_site = site
-        
         row_values = []
+        
+        # Add domain label if it changes
+        domain_label = "In Domain" if "GST" in dataset else "Out of Domain"
+        if domain_label != current_domain:
+            current_domain = domain_label
+        else:
+            domain_label = ""  # Empty for subsequent rows in same domain
+        
         for pc in PERCENTAGES:
             print(f"  Processing {pc}")
             df = all_data[pc]
@@ -133,7 +124,7 @@ def create_latex_table(all_data, metric, task):
                     print(f"    Error for {model}: {str(e)}")
                     row_values.append("---")
                     
-        latex_lines.append(f"{dataset} & " + " & ".join(row_values) + " \\\\")
+        latex_lines.append(f"{domain_label} & {dataset} & " + " & ".join(row_values) + " \\\\")
 
     latex_lines.extend([
         "\\bottomrule",
