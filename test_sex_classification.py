@@ -201,6 +201,8 @@ def run_model(args, device):
                 features = outputs.view(outputs.shape[0], outputs.shape[1], -1).mean(dim=-1)
                 preds = classifier(features)
                 preds = preds.softmax(dim=1).argmax(dim=1)
+                print(f"preds: {preds}")
+                print(f"labels: {labels}")
             
             all_preds.extend(preds.cpu().numpy())
             all_labels.extend(labels.cpu().numpy())
