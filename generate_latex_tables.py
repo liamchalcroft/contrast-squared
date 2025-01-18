@@ -90,16 +90,12 @@ def main():
         # Combine data from all percentages
         metrics = all_data[PERCENTAGES[0]].columns.get_level_values(0).unique()
         
-        # Create output directory
-        output_dir = os.path.join('tables', task)
-        os.makedirs(output_dir, exist_ok=True)
-
         # Generate table for each metric
         for metric in metrics:
             latex_table = create_latex_table(all_data[PERCENTAGES[0]], metric, task)
             
-            # Save table to file
-            output_file = os.path.join(output_dir, f'{metric.lower()}_table.txt')
+            # Save table to file in the same directory as the plots
+            output_file = os.path.join(task_dir, f'{metric.lower()}_table.txt')
             with open(output_file, 'w') as f:
                 f.write(latex_table)
             print(f"Generated table for {task} {metric}")
