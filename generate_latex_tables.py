@@ -54,7 +54,7 @@ def create_latex_table(all_data, metric, task):
     """Create a LaTeX table for a given metric"""
     print(f"\nCreating table for {task} - {metric}")
     
-    total_cols = len(PERCENTAGES) * len(MODEL_ORDER) + 1  # +1 for dataset column
+    total_cols = len(PERCENTAGES) * len(MODEL_ORDER) + 1
     
     latex_lines = [
         "\\begin{table}[htbp]",
@@ -64,7 +64,8 @@ def create_latex_table(all_data, metric, task):
         "\\toprule"
     ]
 
-    header = ["& \\multicolumn{" + str(len(MODEL_ORDER)) + "}{c}{" + str(int(pc.replace('pc',''))) + "\\%}" 
+    # Create more descriptive percentage headers
+    header = ["& \\multicolumn{" + str(len(MODEL_ORDER)) + "}{c}{" + str(int(pc.replace('pc',''))) + "\\% Training Data}" 
              for pc in PERCENTAGES]
     latex_lines.append("Dataset " + " ".join(header) + " \\\\")
     
@@ -93,7 +94,8 @@ def create_latex_table(all_data, metric, task):
         domain = "In Domain" if "GST" in dataset else "Out of Domain"
         if domain != current_domain:
             current_domain = domain
-            # Add empty row with domain label spanning all columns
+            if domain == "Out of Domain":
+                latex_lines.append("\\midrule\\midrule")  # Double rule for out of domain
             latex_lines.append(f"\\multicolumn{{{total_cols}}}{{l}}{{\\textit{{{domain}}}}} \\\\")
             latex_lines.append("\\midrule")
         
