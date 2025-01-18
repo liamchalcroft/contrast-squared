@@ -29,8 +29,9 @@ def create_latex_table(data, metric, task):
         "\\toprule"
     ]
 
-    # Create the header
-    header = ["& \\multicolumn{" + str(len(MODEL_ORDER)) + "}{c}{" + pc + "\\%}" for pc in [100, 10, 1]]
+    # Create the header - convert integers to strings
+    header = ["& \\multicolumn{" + str(len(MODEL_ORDER)) + "}{c}{" + str(pc) + "\\%}" 
+             for pc in [100, 10, 1]]
     latex_lines.append("Dataset " + " ".join(header) + " \\\\")
     
     # Add model names
