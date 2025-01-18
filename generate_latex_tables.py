@@ -17,14 +17,9 @@ def format_mean_std(mean, std):
     else:
         return f"{mean:.1f} ± {std:.1f}"
 
-def create_latex_table(data, metric, task):
+def create_latex_table(all_data, metric, task):
     """Create a LaTeX table for a given metric"""
     print(f"\nCreating table for {task} - {metric}")
-    print("Data shape:", data.shape)
-    print("Data index levels:", data.index.names)
-    print("Data columns:", data.columns.names)
-    print("\nFirst few rows of data:")
-    print(data.head())
     
     # Start the table
     latex_lines = [
@@ -36,7 +31,7 @@ def create_latex_table(data, metric, task):
         "\\toprule"
     ]
 
-    # Create the header - convert integers to strings
+    # Create the header
     header = ["& \\multicolumn{" + str(len(MODEL_ORDER)) + "}{c}{" + str(pc) + "\\%}" 
              for pc in [100, 10, 1]]
     latex_lines.append("Dataset " + " ".join(header) + " \\\\")
@@ -51,15 +46,17 @@ def create_latex_table(data, metric, task):
 
     # Add data rows
     print("\nProcessing datasets:")
-    for dataset in data.index.get_level_values(0).unique():
+    datasets = all_data[PERCENTAGES[0]].index.get_level_values(0).unique()
+    for dataset in datasets:
         print(f"\nDataset: {dataset}")
         row_values = []
         for pc in PERCENTAGES:
             print(f"  Processing {pc}")
+            df = all_data[pc]
             for model in MODEL_ORDER:
                 try:
-                    mean = data.loc[(dataset, model), (metric, 'mean')][pc]
-                    std = data.loc[(dataset, model), (metric, 'std')][pc]
+                    mean = df.loc[dataset].loc[model][(metric, 'mean')]
+                    std = df.loc[dataset].loc[model][(metric, 'std')]
                     formatted = format_mean_std(mean, std)
                     print(f"    {model}: {formatted}")
                     row_values.append(formatted)
@@ -93,7 +90,7 @@ def main():
             stats_file = os.path.join(task_dir, pc, 'summary_statistics.csv')
             if os.path.exists(stats_file):
                 print(f"\nLoading {stats_file}")
-                df = pd.read_csv(stats_file, header=[0,1,2], index_col=[0,1])
+                df = pd.read_csv(stats_file, header=[0,1], index_col=[0,1])
                 print("DataFrame shape:", df.shape)
                 print("DataFrame columns:", df.columns)
                 all_data[pc] = df
@@ -104,13 +101,13 @@ def main():
         if not all_data:
             continue
 
-        # Combine data from all percentages
+        # Get metrics from the first percentage's data
         metrics = all_data[PERCENTAGES[0]].columns.get_level_values(0).unique()
         print(f"\nMetrics found: {metrics}")
         
         # Generate table for each metric
         for metric in metrics:
-            latex_table = create_latex_table(all_data[PERCENTAGES[0]], metric, task)
+            latex_table = create_latex_table(all_data, metric, task)
             
             # Save table to file in the same directory as the plots
             output_file = os.path.join(task_dir, f'{metric.lower()}_table.txt')
