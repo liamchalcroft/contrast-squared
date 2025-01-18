@@ -93,7 +93,7 @@ def create_latex_table(all_data, metric, task):
     
     model_line = "& " + " & ".join(MODEL_ORDER * len(PERCENTAGES)) + " \\\\"
     latex_lines.extend([
-        f"\\cmidrule(lr){{2-{len(PERCENTAGES) * len(MODEL_ORDER)}}}",
+        f"\\cmidrule(lr){{2-{len(PERCENTAGES) * len(MODEL_ORDER) + 1}}}",
         model_line,
         "\\midrule"
     ])
