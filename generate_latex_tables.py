@@ -54,6 +54,8 @@ def create_latex_table(all_data, metric, task):
     """Create a LaTeX table for a given metric"""
     print(f"\nCreating table for {task} - {metric}")
     
+    total_cols = len(PERCENTAGES) * len(MODEL_ORDER) + 1  # +1 for dataset column
+    
     # Define shortened model names
     MODEL_NAMES = {
         'Baseline': 'Base',
