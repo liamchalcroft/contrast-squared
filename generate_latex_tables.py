@@ -68,9 +68,17 @@ def create_latex_table(all_data, metric, task):
         'denoise': 'image denoising'
     }
     
+    # Create caption text
+    caption = f"Quantitative evaluation of {task_descriptions.get(task, task)} performance using {metric_descriptions.get(metric, metric)}. "
+    caption += "Values are reported as mean ± standard deviation. "
+    caption += "For each dataset and training data percentage, the best performing model is shown in \\textbf{bold} and the second-best is \\underline{underlined}. "
+    caption += "Results are grouped by domain, with GST being the training domain and other sites representing out-of-domain generalization."
+    
     latex_lines = [
         "\\begin{table}[htbp]",
         "\\centering",
+        f"\\caption{{{caption}}}",
+        f"\\label{{tab:{task}_{metric.lower()}_results}}",
         "\\resizebox{\\textwidth}{!}{",
         "\\begin{tabular}{l" + "c" * (len(PERCENTAGES) * len(MODEL_ORDER)) + "}",
         "\\toprule"
@@ -144,11 +152,6 @@ def create_latex_table(all_data, metric, task):
     latex_lines.extend([
         "\\bottomrule",
         "}",  # Close resizebox
-        f"\\caption{{Quantitative evaluation of {task_descriptions.get(task, task)} performance using {metric_descriptions.get(metric, metric)}. "
-        "Values are reported as mean ± standard deviation. "
-        "For each dataset and training data percentage, the best performing model is shown in \\textbf{bold} and the second-best is \\underline{underlined}. "
-        "Results are grouped by domain, with GST being the training domain and other sites representing out-of-domain generalization.}}",
-        f"\\label{{tab:{task}_{metric.lower()}_results}}",
         "\\end{table}"
     ])
 
