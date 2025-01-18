@@ -206,20 +206,24 @@ def run_model(args, device):
             
             all_preds.extend(preds.cpu().numpy())
             all_labels.extend(labels.cpu().numpy())
+
+            print(batch["file"])
+            print(batch["dataset"])
+            print(batch["site"])
+            print(batch["modality"])
             
             # Add individual results
-            for i in range(len(preds)):
-                results.append({
-                    'file': batch["file"][i],
-                    'dataset': batch["dataset"][i],
-                    'site': batch["site"][i],
-                    'modality': batch["modality"][i],
-                    'true_sex': labels[i].item(),
-                    'pred_sex': preds[i].item(),
-                    'correct': (labels[i] == preds[i]).item(),
-                    'prob_male': preds[i][0].item(),
-                    'prob_female': preds[i][1].item()
-                })
+            results.append({
+                'file': batch["file"],
+                'dataset': batch["dataset"],
+                'site': batch["site"],
+                'modality': batch["modality"],
+                'true_sex': labels.item(),
+                'pred_sex': preds.item(),
+                'correct': (labels == preds).item(),
+                'prob_male': preds[0].item(),
+                'prob_female': preds[1].item()
+            })
 
     # Calculate overall metrics
     accuracy = accuracy_score(all_labels, all_preds)
