@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 
 TASKS = ['healthy_segmentation', 'denoise', 'stroke_segmentation']
-PERCENTAGES = ['100pc', '10pc', '1pc']
+PERCENTAGES = ['1pc', '10pc', '100pc']
 MODEL_ORDER = ['Baseline', 'Sequence-augmented', 'Sequence-invariant']
 
 def format_mean_std(mean, std):
@@ -21,36 +21,38 @@ def create_latex_table(all_data, metric, task):
     """Create a LaTeX table for a given metric"""
     print(f"\nCreating table for {task} - {metric}")
     
+    # Calculate total number of columns
+    total_cols = len(PERCENTAGES) * len(MODEL_ORDER) + 1  # +1 for dataset column
+    
     # Start the table
     latex_lines = [
         "\\begin{table}[htbp]",
         "\\centering",
-        "\\caption{" + f"{metric} results for {task.replace('_', ' ').title()}" + "}",
-        "\\label{tab:" + f"{task}_{metric.lower()}" + "}",
-        "\\begin{tabular}{l" + "c" * len(PERCENTAGES) * len(MODEL_ORDER) + "}",
+        "\\resizebox{\\textwidth}{!}{",  # Add resizebox
+        "\\begin{tabular}{l" + "c" * (total_cols-1) + "}",
         "\\toprule"
     ]
 
-    # Create the header
-    header = ["& \\multicolumn{" + str(len(MODEL_ORDER)) + "}{c}{" + str(pc) + "\\%}" 
-             for pc in [100, 10, 1]]
+    # Create the header with reversed percentages
+    header = ["& \\multicolumn{" + str(len(MODEL_ORDER)) + "}{c}{" + str(int(pc.replace('pc',''))) + "\\%}" 
+             for pc in PERCENTAGES]
     latex_lines.append("Dataset " + " ".join(header) + " \\\\")
     
     # Add model names
     model_line = "& " + " & ".join(MODEL_ORDER * len(PERCENTAGES)) + " \\\\"
     latex_lines.extend([
-        "\\cmidrule(lr){2-" + str(len(MODEL_ORDER) + 1) + "}",
+        f"\\cmidrule(lr){{2-{total_cols}}}",  # Single cmidrule across all columns
         model_line,
         "\\midrule"
     ])
 
     # Add data rows
     print("\nProcessing datasets:")
-    datasets = all_data[PERCENTAGES[0]].index.get_level_values(0).unique()
+    datasets = all_data[PERCENTAGES[-1]].index.get_level_values(0).unique()
     for dataset in datasets:
         print(f"\nDataset: {dataset}")
         row_values = []
-        for pc in PERCENTAGES:
+        for pc in PERCENTAGES:  # Using reversed order
             print(f"  Processing {pc}")
             df = all_data[pc]
             for model in MODEL_ORDER:
@@ -69,6 +71,7 @@ def create_latex_table(all_data, metric, task):
     latex_lines.extend([
         "\\bottomrule",
         "\\end{tabular}",
+        "}",  # Close resizebox
         "\\end{table}"
     ])
 
