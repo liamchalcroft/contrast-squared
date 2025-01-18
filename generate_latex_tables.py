@@ -63,6 +63,14 @@ def create_latex_table(all_data, metric, task):
         'Sequence-invariant': 'Seq-inv'
     }
     
+    # Define sites and modalities based on task
+    if task == 'stroke_segmentation':
+        SITES = ['ARC']
+        MODALITIES = ['T1w', 'T2w', 'FLAIR']
+    else:
+        SITES = ['GST', 'HH', 'IOP']
+        MODALITIES = ['T1w', 'T2w', 'PDw']
+    
     # Create descriptive caption based on metric
     metric_descriptions = {
         'DSC': 'Dice Similarity Coefficient (higher is better)',
