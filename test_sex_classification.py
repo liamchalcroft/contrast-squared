@@ -97,7 +97,7 @@ def run_model(args, device):
     )
     print()
 
-    net.load_state_dict(checkpoint["encoder"], strict=False)
+    net.load_state_dict(checkpoint["encoder"], strict=True)
     net.eval()
 
     checkpoint = torch.load(args.classifier_weights, map_location=device)
@@ -107,7 +107,7 @@ def run_model(args, device):
         )
     )
     print()
-    classifier.load_state_dict(checkpoint["model"], strict=False)
+    classifier.load_state_dict(checkpoint["model"], strict=True)
     classifier.eval()
 
     odir = os.path.dirname(args.classifier_weights)
