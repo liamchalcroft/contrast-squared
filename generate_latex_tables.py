@@ -67,7 +67,7 @@ def create_latex_table(all_data, metric, task):
     # Create more descriptive percentage headers
     header = ["& \\multicolumn{" + str(len(MODEL_ORDER)) + "}{c}{" + str(int(pc.replace('pc',''))) + "\\% Training Data}" 
              for pc in PERCENTAGES]
-    latex_lines.append("Dataset " + " ".join(header) + " \\\\")
+    latex_lines.append(" " + " ".join(header) + " \\\\")
     
     model_line = "& " + " & ".join(MODEL_ORDER * len(PERCENTAGES)) + " \\\\"
     latex_lines.extend([
@@ -95,7 +95,7 @@ def create_latex_table(all_data, metric, task):
         if domain != current_domain:
             current_domain = domain
             if domain == "Out of Domain":
-                latex_lines.append("\\midrule\\midrule")  # Double rule for out of domain
+                latex_lines.append("\\midrule")  # Single rule for out of domain
             latex_lines.append(f"\\multicolumn{{{total_cols}}}{{l}}{{\\textit{{{domain}}}}} \\\\")
             latex_lines.append("\\midrule")
         
