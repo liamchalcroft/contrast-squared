@@ -37,5 +37,5 @@ def export_encoder(path_to_checkpoint, output_path):
 
 # Export each variant
 export_encoder('3d-cnn-simclr-mprage/checkpoint.pt', 'base_encoder.pt')
-export_encoder('3d-cnn-simclr-bloch/checkpoint_best.pt', 'seqaug_encoder.pt')
-export_encoder('3d-cnn-simclr-bloch-paired/checkpoint_best.pt', 'seqinv_encoder.pt')
+export_encoder('3d-cnn-simclr-bloch/checkpoint.pt', 'seqaug_encoder.pt')
+export_encoder('3d-cnn-simclr-bloch-paired/checkpoint.pt', 'seqinv_encoder.pt')
