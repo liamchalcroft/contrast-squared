@@ -13,10 +13,10 @@ def export_encoder(path_to_checkpoint, output_path):
     encoder_state_dict = OrderedDict()
     for k, v in full_state_dict.items():
         # Assuming your encoder weights start with 'encoder.'
-        if k.startswith('encoder.'):
+        if k.startswith('_orig_mod.'):
             # Remove the 'encoder.' prefix for cleaner loading
-            new_key = k.replace('encoder.', '')
-            encoder_state_dict[new_key] = v
+            k = k.replace('_orig_mod.', '')
+        encoder_state_dict[k] = v
     
     # Create metadata/config
     config = {
