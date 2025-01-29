@@ -2,7 +2,7 @@
 
 
 # MPRAGE
-python ../train_seg_healthy.py \
+python ../src/train_seg_healthy.py \
     --name spm-t1-cnn-simclr-mprage-pc1 \
     --net cnn \
     --modality t1 \
@@ -13,7 +13,7 @@ python ../train_seg_healthy.py \
     --debug \
     --resume
 
-python ../train_seg_healthy.py \
+python ../src/train_seg_healthy.py \
     --name spm-t2-cnn-simclr-mprage-pc1 \
     --net cnn \
     --modality t2 \
@@ -24,7 +24,7 @@ python ../train_seg_healthy.py \
     --debug \
     --resume
 
-python ../train_seg_healthy.py \
+python ../src/train_seg_healthy.py \
     --name spm-pd-cnn-simclr-mprage-pc1 \
     --net cnn \
     --modality pd \
@@ -37,7 +37,7 @@ python ../train_seg_healthy.py \
 
 
 # BLOCH
-python ../train_seg_healthy.py \
+python ../src/train_seg_healthy.py \
     --name spm-t1-cnn-simclr-bloch-pc1 \
     --net cnn \
     --modality t1 \
@@ -48,7 +48,7 @@ python ../train_seg_healthy.py \
     --debug \
     --resume
 
-python ../train_seg_healthy.py \
+python ../src/train_seg_healthy.py \
     --name spm-t2-cnn-simclr-bloch-pc1 \
     --net cnn \
     --modality t2 \
@@ -59,7 +59,7 @@ python ../train_seg_healthy.py \
     --debug \
     --resume
 
-python ../train_seg_healthy.py \
+python ../src/train_seg_healthy.py \
     --name spm-pd-cnn-simclr-bloch-pc1 \
     --net cnn \
     --modality pd \
@@ -72,7 +72,7 @@ python ../train_seg_healthy.py \
 
 
 # BLOCH PAIRED
-python ../train_seg_healthy.py \
+python ../src/train_seg_healthy.py \
     --name spm-t1-cnn-simclr-bloch-paired-pc1 \
     --net cnn \
     --modality t1 \
@@ -83,7 +83,7 @@ python ../train_seg_healthy.py \
     --debug \
     --resume
 
-python ../train_seg_healthy.py \
+python ../src/train_seg_healthy.py \
     --name spm-t2-cnn-simclr-bloch-paired-pc1 \
     --net cnn \
     --modality t2 \
@@ -94,7 +94,7 @@ python ../train_seg_healthy.py \
     --debug \
     --resume
 
-python ../train_seg_healthy.py \
+python ../src/train_seg_healthy.py \
     --name spm-pd-cnn-simclr-bloch-paired-pc1 \
     --net cnn \
     --modality pd \

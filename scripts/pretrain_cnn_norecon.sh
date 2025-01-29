@@ -1,6 +1,6 @@
 #! /bin/bash
 
-python ../pretrain_3d.py \
+python ../src/pretrain_3d.py \
     --name 3d-cnn-simclr-mprage-norecon \
     --batch_size 8 \
     --epochs 300 \
@@ -15,7 +15,7 @@ python ../pretrain_3d.py \
     --debug \
     --resume
 
-python ../pretrain_3d.py \
+python ../src/pretrain_3d.py \
     --name 3d-cnn-simclr-bloch-norecon \
     --batch_size 8 \
     --epochs 300 \
@@ -30,7 +30,7 @@ python ../pretrain_3d.py \
     --debug \
     --resume
 
-python ../pretrain_3d.py \
+python ../src/pretrain_3d.py \
     --name 3d-cnn-simclr-bloch-paired-norecon \
     --batch_size 8 \
     --epochs 300 \

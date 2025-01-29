@@ -2,7 +2,7 @@
 
 
 # MPRAGE
-python ../train_seg_stroke.py \
+python ../src/train_seg_stroke.py \
     --name stroke-t1-cnn-simclr-mprage-pc10 \
     --net cnn \
     --modality t1 \
@@ -13,7 +13,7 @@ python ../train_seg_stroke.py \
     --debug \
     --resume
 
-python ../train_seg_stroke.py \
+python ../src/train_seg_stroke.py \
     --name stroke-t2-cnn-simclr-mprage-pc10 \
     --net cnn \
     --modality t2 \
@@ -24,7 +24,7 @@ python ../train_seg_stroke.py \
     --debug \
     --resume
 
-python ../train_seg_stroke.py \
+python ../src/train_seg_stroke.py \
     --name stroke-flair-cnn-simclr-mprage-pc10 \
     --net cnn \
     --modality flair \
@@ -37,7 +37,7 @@ python ../train_seg_stroke.py \
 
 
 # BLOCH
-python ../train_seg_stroke.py \
+python ../src/train_seg_stroke.py \
     --name stroke-t1-cnn-simclr-bloch-pc10 \
     --net cnn \
     --modality t1 \
@@ -48,7 +48,7 @@ python ../train_seg_stroke.py \
     --debug \
     --resume
 
-python ../train_seg_stroke.py \
+python ../src/train_seg_stroke.py \
     --name stroke-t2-cnn-simclr-bloch-pc10 \
     --net cnn \
     --modality t2 \
@@ -59,7 +59,7 @@ python ../train_seg_stroke.py \
     --debug \
     --resume
 
-python ../train_seg_stroke.py \
+python ../src/train_seg_stroke.py \
     --name stroke-flair-cnn-simclr-bloch-pc10 \
     --net cnn \
     --modality flair \
@@ -72,7 +72,7 @@ python ../train_seg_stroke.py \
 
 
 # BLOCH PAIRED
-python ../train_seg_stroke.py \
+python ../src/train_seg_stroke.py \
     --name stroke-t1-cnn-simclr-bloch-paired-pc10 \
     --net cnn \
     --modality t1 \
@@ -83,7 +83,7 @@ python ../train_seg_stroke.py \
     --debug \
     --resume
 
-python ../train_seg_stroke.py \
+python ../src/train_seg_stroke.py \
     --name stroke-t2-cnn-simclr-bloch-paired-pc10 \
     --net cnn \
     --modality t2 \
@@ -94,7 +94,7 @@ python ../train_seg_stroke.py \
     --debug \
     --resume
 
-python ../train_seg_stroke.py \
+python ../src/train_seg_stroke.py \
     --name stroke-flair-cnn-simclr-bloch-paired-pc10 \
     --net cnn \
     --modality flair \

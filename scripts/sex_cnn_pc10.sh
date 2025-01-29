@@ -1,7 +1,7 @@
 #! /bin/bash
 
 # MPRAGE
-python ../train_classifier_sex.py \
+python ../src/train_classifier_sex.py \
     --name sex-t1-cnn-simclr-mprage-pc10 \
     --net cnn \
     --modality t1 \
@@ -12,7 +12,7 @@ python ../train_classifier_sex.py \
     --debug \
     --resume
 
-python ../train_classifier_sex.py \
+python ../src/train_classifier_sex.py \
     --name sex-t2-cnn-simclr-mprage-pc10 \
     --net cnn \
     --modality t2 \
@@ -23,7 +23,7 @@ python ../train_classifier_sex.py \
     --debug \
     --resume
 
-python ../train_classifier_sex.py \
+python ../src/train_classifier_sex.py \
     --name sex-pd-cnn-simclr-mprage-pc10 \
     --net cnn \
     --modality pd \
@@ -35,7 +35,7 @@ python ../train_classifier_sex.py \
     --resume
 
 # BLOCH
-python ../train_classifier_sex.py \
+python ../src/train_classifier_sex.py \
     --name sex-t1-cnn-simclr-bloch-pc10 \
     --net cnn \
     --modality t1 \
@@ -46,7 +46,7 @@ python ../train_classifier_sex.py \
     --debug \
     --resume
 
-python ../train_classifier_sex.py \
+python ../src/train_classifier_sex.py \
     --name sex-t2-cnn-simclr-bloch-pc10 \
     --net cnn \
     --modality t2 \
@@ -57,7 +57,7 @@ python ../train_classifier_sex.py \
     --debug \
     --resume
 
-python ../train_classifier_sex.py \
+python ../src/train_classifier_sex.py \
     --name sex-pd-cnn-simclr-bloch-pc10 \
     --net cnn \
     --modality pd \
@@ -69,7 +69,7 @@ python ../train_classifier_sex.py \
     --resume
 
 # BLOCH PAIRED
-python ../train_classifier_sex.py \
+python ../src/train_classifier_sex.py \
     --name sex-t1-cnn-simclr-bloch-paired-pc10 \
     --net cnn \
     --modality t1 \
@@ -80,7 +80,7 @@ python ../train_classifier_sex.py \
     --debug \
     --resume
 
-python ../train_classifier_sex.py \
+python ../src/train_classifier_sex.py \
     --name sex-t2-cnn-simclr-bloch-paired-pc10 \
     --net cnn \
     --modality t2 \
@@ -91,7 +91,7 @@ python ../train_classifier_sex.py \
     --debug \
     --resume
 
-python ../train_classifier_sex.py \
+python ../src/train_classifier_sex.py \
     --name sex-pd-cnn-simclr-bloch-paired-pc10 \
     --net cnn \
     --modality pd \
