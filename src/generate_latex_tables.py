@@ -87,7 +87,7 @@ def create_latex_table(all_data, metric, task):
     
     # Create caption text
     caption = f"{task_descriptions.get(task, task)} performance using {metric_descriptions.get(metric, metric)}. "
-    caption += "Values show mean ± std, with \\textbf{bold} and \\underline{underlined} indicating best and second-best results. "
+    caption += "Values show mean ± standard error, with \\textbf{bold} and \\underline{underlined} indicating best and second-best results. "
     caption += "GST represents the training domain."
     
     # Create tabular format with vertical lines between percentage groups
@@ -160,7 +160,7 @@ def create_latex_table(all_data, metric, task):
             for i, model in enumerate(MODEL_ORDER):
                 try:
                     mean = df.loc[dataset].loc[model][(metric, 'mean')]
-                    std = df.loc[dataset].loc[model][(metric, 'std')]
+                    std = df.loc[dataset].loc[model][(metric, 'sem')]
                     is_best = (i == best_idx)
                     is_second = (i == second_idx)
                     formatted = format_mean_std(mean, std, is_best, is_second)

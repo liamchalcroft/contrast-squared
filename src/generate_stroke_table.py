@@ -59,7 +59,7 @@ def create_stroke_table(dsc_data, hd_data):
     total_cols = len(MODEL_ORDER) * 2 + 1
     
     caption = "Stroke lesion segmentation performance using 100\\% training data. "
-    caption += "Values show mean ± std, with \\textbf{bold} and \\underline{underlined} indicating best and second-best results for each metric. "
+    caption += "Values show mean ± standard error, with \\textbf{bold} and \\underline{underlined} indicating best and second-best results for each metric. "
     caption += "DSC (higher is better) and HD95 in mm (lower is better) are shown for each model."
     
     latex_lines = [
@@ -126,7 +126,7 @@ def create_stroke_table(dsc_data, hd_data):
                 # Add DSC value
                 try:
                     mean = dsc_data.loc[dataset].loc[model][('DSC', 'mean')]
-                    std = dsc_data.loc[dataset].loc[model][('DSC', 'std')]
+                    std = dsc_data.loc[dataset].loc[model][('DSC', 'sem')]
                     is_best = (i == best_dsc)
                     is_second = (i == second_dsc)
                     formatted = format_mean_std(mean, std, is_best, is_second)
@@ -140,7 +140,7 @@ def create_stroke_table(dsc_data, hd_data):
                 # Add HD95 value
                 try:
                     mean = hd_data.loc[dataset].loc[model][('HD95', 'mean')]
-                    std = hd_data.loc[dataset].loc[model][('HD95', 'std')]
+                    std = hd_data.loc[dataset].loc[model][('HD95', 'sem')]
                     is_best = (i == best_hd)
                     is_second = (i == second_hd)
                     formatted = format_mean_std(mean, std, is_best, is_second)
