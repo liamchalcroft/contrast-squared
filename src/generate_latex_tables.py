@@ -26,7 +26,7 @@ def format_mean_std(mean, std, is_best=False, is_second=False):
     elif mean < 1:
         formatted = f"{mean:.3f} ± {std:.3f}"
     else:
-        formatted = f"{mean:.2f} ± {std:.2f}"
+        formatted = f"{mean:.1f} ± {std:.1f}"
     
     if is_best:
         formatted = "\\textbf{" + formatted + "}"
