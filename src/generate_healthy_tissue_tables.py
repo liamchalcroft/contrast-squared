@@ -7,7 +7,7 @@ SITES = ['GST', 'HH', 'IOP']
 MODALITIES = ['T1w', 'T2w', 'PDw']
 PERCENTAGES = ['1pc', '10pc', '100pc']
 # These default tissue types will be used if we can't detect them from the data
-DEFAULT_TISSUES = ['white_matter', 'gray_matter', 'csf']
+DEFAULT_TISSUES = ['white matter', 'gray matter', 'csf']
 
 # Define which metrics should be minimized vs maximized
 METRIC_ORDERING = {
@@ -49,17 +49,17 @@ def get_ranking_indices(values, metric):
     
     return best_idx, second_idx
 
-def create_tissue_table(all_data, tissue, metric, percentage):
-    """Create a LaTeX table for a specific tissue type"""
-    # Convert percentage to the format used in all_data keys (e.g., '1' -> '1pc')
-    pc_key = f"{percentage}pc"
-    
-    print(f"\nCreating table for {tissue} tissue - {metric} - {percentage}% Training Data")
-    print(f"Looking for data with key: {pc_key}")
+def create_combined_tissue_table(all_data, tissue, metric):
+    """Create a LaTeX table for a specific tissue type combining all percentages"""
+    print(f"\nCreating combined table for {tissue} tissue - {metric}")
     
     # Filter data for the specified tissue
     tissue_data = {}
-    for pc in all_data:
+    for pc in PERCENTAGES:
+        if pc not in all_data:
+            print(f"No data for percentage {pc}")
+            continue
+            
         try:
             # Try to find the tissue-specific results
             if 'Class' in all_data[pc].index.names:
@@ -75,10 +75,6 @@ def create_tissue_table(all_data, tissue, metric, percentage):
         print(f"No data found for {tissue}")
         return None
     
-    if pc_key not in tissue_data:
-        print(f"No data found for percentage {percentage}% (key: {pc_key})")
-        return None
-    
     # Define shortened model names
     MODEL_NAMES = {
         'Baseline': 'Base',
@@ -92,27 +88,39 @@ def create_tissue_table(all_data, tissue, metric, percentage):
         'HD95': '95th percentile Hausdorff Distance in mm (lower is better)'
     }
     
-    caption = f"{tissue.title()} segmentation performance using {metric_descriptions.get(metric, metric)} with {percentage}\\% training data. "
-    caption += "Values show mean ± standard error, with \\textbf{bold} and \\underline{underlined} indicating best and second-best results. "
+    caption = f"{tissue.title()} segmentation performance using {metric_descriptions.get(metric, metric)} across different training data percentages. "
+    caption += "Values show mean ± standard error, with \\textbf{bold} and \\underline{underlined} indicating best and second-best results for each dataset and percentage. "
     caption += "GST represents the training domain."
     
-    # Create tabular format
-    tabular_format = "l" + "c" * len(MODEL_ORDER)
+    # Calculate total columns (3 models per percentage + 1 for dataset)
+    total_cols = len(PERCENTAGES) * len(MODEL_ORDER) + 1
+    
+    # Create tabular format with vertical lines between percentage groups
+    tabular_format = "l" + ("c" * len(MODEL_ORDER) + "|") * (len(PERCENTAGES) - 1) + "c" * len(MODEL_ORDER)
     
     latex_lines = [
         "\\begin{table}[htbp]",
         "\\centering",
         f"\\caption{{{caption}}}",
-        f"\\label{{tab:healthy_{tissue.replace(' ', '_')}_{metric.lower()}_{percentage}_results}}",
+        f"\\label{{tab:healthy_{tissue.replace(' ', '_')}_{metric.lower()}_combined_results}}",
         "\\resizebox{\\textwidth}{!}{",
         f"\\begin{{tabular}}{{{tabular_format}}}",
         "\\toprule"
     ]
 
-    # Add model names header
+    # Create more descriptive percentage headers with bold
+    header = ["& \\multicolumn{" + str(len(MODEL_ORDER)) + "}{c}{\\textbf{" + str(int(pc.replace('pc',''))) + "\\% Training Data}}" 
+             for pc in PERCENTAGES]
+    latex_lines.append(" " + " ".join(header) + " \\\\")
+    
+    # Add bold to shortened model names
     bold_models = [f"\\textbf{{{MODEL_NAMES[model]}}}" for model in MODEL_ORDER]
-    latex_lines.append("Dataset & " + " & ".join(bold_models) + " \\\\")
-    latex_lines.append("\\midrule")
+    model_line = "& " + " & ".join(bold_models * len(PERCENTAGES)) + " \\\\"
+    latex_lines.extend([
+        f"\\cmidrule(lr){{2-{total_cols}}}",
+        model_line,
+        "\\midrule"
+    ])
 
     # Process datasets
     current_domain = None
@@ -121,10 +129,15 @@ def create_tissue_table(all_data, tissue, metric, percentage):
         for modality in MODALITIES:
             ordered_datasets.append(f"{site} [{modality}]")
     
-    pc_data = tissue_data[pc_key]  # Use the correct key format
-    
     for dataset in ordered_datasets:
-        if dataset not in pc_data.index.get_level_values(0).unique():
+        # Check if this dataset exists in any of the percentage data
+        dataset_exists = False
+        for pc in PERCENTAGES:
+            if pc in tissue_data and dataset in tissue_data[pc].index.get_level_values(0).unique():
+                dataset_exists = True
+                break
+                
+        if not dataset_exists:
             continue
             
         print(f"\nDataset: {dataset}")
@@ -135,35 +148,46 @@ def create_tissue_table(all_data, tissue, metric, percentage):
             current_domain = domain
             if domain == "Out of Domain":
                 latex_lines.append("\\midrule")
-            latex_lines.append(f"\\multicolumn{{{len(MODEL_ORDER) + 1}}}{{l}}{{\\textbf{{{domain}}}}} \\\\")
+            latex_lines.append(f"\\multicolumn{{{total_cols}}}{{l}}{{\\textbf{{{domain}}}}} \\\\")
             latex_lines.append("\\midrule")
         
         # Make dataset names bold
         bold_dataset = f"\\textbf{{{dataset}}}"
         
-        # Process values for each model
-        values = []
-        for model in MODEL_ORDER:
-            try:
-                mean = pc_data.loc[dataset].loc[model][(metric, 'mean')]
-                values.append(mean)
-            except:
-                values.append(np.nan)
-        
-        best_idx, second_idx = get_ranking_indices(values, metric)
-        
         row_values = []
-        for i, model in enumerate(MODEL_ORDER):
-            try:
-                mean = pc_data.loc[dataset].loc[model][(metric, 'mean')]
-                std = pc_data.loc[dataset].loc[model][(metric, 'sem')]
-                is_best = (i == best_idx)
-                is_second = (i == second_idx)
-                formatted = format_mean_std(mean, std, is_best, is_second)
-                row_values.append(formatted)
-            except Exception as e:
-                print(f"    Error for {model}: {str(e)}")
-                row_values.append("---")
+        
+        # Process each percentage
+        for pc in PERCENTAGES:
+            if pc not in tissue_data or dataset not in tissue_data[pc].index.get_level_values(0).unique():
+                # If this dataset doesn't exist for this percentage, add empty cells
+                row_values.extend(["---"] * len(MODEL_ORDER))
+                continue
+                
+            pc_data = tissue_data[pc]
+            
+            # Get values for ranking
+            values = []
+            for model in MODEL_ORDER:
+                try:
+                    mean = pc_data.loc[dataset].loc[model][(metric, 'mean')]
+                    values.append(mean)
+                except:
+                    values.append(np.nan)
+            
+            best_idx, second_idx = get_ranking_indices(values, metric)
+            
+            # Format values for this percentage
+            for i, model in enumerate(MODEL_ORDER):
+                try:
+                    mean = pc_data.loc[dataset].loc[model][(metric, 'mean')]
+                    std = pc_data.loc[dataset].loc[model][(metric, 'sem')]
+                    is_best = (i == best_idx)
+                    is_second = (i == second_idx)
+                    formatted = format_mean_std(mean, std, is_best, is_second)
+                    row_values.append(formatted)
+                except Exception as e:
+                    print(f"    Error for {model} in {pc}: {str(e)}")
+                    row_values.append("---")
                 
         latex_lines.append(f"{bold_dataset} & " + " & ".join(row_values) + " \\\\")
 
@@ -193,8 +217,6 @@ def main():
         for tissue in DEFAULT_TISSUES:
             tissue_file = os.path.join(task_dir, pc, f"summary_statistics_{tissue.replace(' ', '_')}.csv")
             if os.path.exists(tissue_file):
-                if pc not in all_data:
-                    all_data[pc] = {}
                 print(f"\nLoading tissue-specific file: {tissue_file}")
                 df = pd.read_csv(tissue_file, header=[0,1], index_col=[0,1])
                 print("DataFrame shape:", df.shape)
@@ -238,22 +260,19 @@ def main():
     metrics = sample_data.columns.get_level_values(0).unique()
     print(f"\nMetrics found: {metrics}")
     
-    # Generate tables for each tissue, metric, and percentage
+    # Generate combined tables for each tissue and metric
     for tissue in tissues_to_process:
+        # Create a subfolder for each tissue type
         tissue_dir = os.path.join(task_dir, tissue.replace(' ', '_'))
         os.makedirs(tissue_dir, exist_ok=True)
         
         for metric in metrics:
-            for percentage in PERCENTAGES:
-                if percentage in all_data:
-                    # Extract the numeric part of the percentage (e.g., '1pc' -> '1')
-                    percentage_value = percentage.replace('pc', '')
-                    latex_table = create_tissue_table(all_data, tissue, metric, percentage_value)
-                    if latex_table:
-                        output_file = os.path.join(tissue_dir, f'{metric.lower()}_{percentage}_table.txt')
-                        with open(output_file, 'w') as f:
-                            f.write(latex_table)
-                        print(f"Generated table for {tissue} - {metric} - {percentage}")
+            latex_table = create_combined_tissue_table(all_data, tissue, metric)
+            if latex_table:
+                output_file = os.path.join(tissue_dir, f'{metric.lower()}_combined_table.txt')
+                with open(output_file, 'w') as f:
+                    f.write(latex_table)
+                print(f"Generated combined table for {tissue} - {metric}")
 
 if __name__ == "__main__":
     main() 
