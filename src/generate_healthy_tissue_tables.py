@@ -51,7 +51,11 @@ def get_ranking_indices(values, metric):
 
 def create_tissue_table(all_data, tissue, metric, percentage):
     """Create a LaTeX table for a specific tissue type"""
+    # Convert percentage to the format used in all_data keys (e.g., '1' -> '1pc')
+    pc_key = f"{percentage}pc"
+    
     print(f"\nCreating table for {tissue} tissue - {metric} - {percentage}% Training Data")
+    print(f"Looking for data with key: {pc_key}")
     
     # Filter data for the specified tissue
     tissue_data = {}
@@ -69,6 +73,10 @@ def create_tissue_table(all_data, tissue, metric, percentage):
     
     if not tissue_data:
         print(f"No data found for {tissue}")
+        return None
+    
+    if pc_key not in tissue_data:
+        print(f"No data found for percentage {percentage}% (key: {pc_key})")
         return None
     
     # Define shortened model names
@@ -113,7 +121,7 @@ def create_tissue_table(all_data, tissue, metric, percentage):
         for modality in MODALITIES:
             ordered_datasets.append(f"{site} [{modality}]")
     
-    pc_data = tissue_data[percentage]
+    pc_data = tissue_data[pc_key]  # Use the correct key format
     
     for dataset in ordered_datasets:
         if dataset not in pc_data.index.get_level_values(0).unique():
@@ -238,7 +246,9 @@ def main():
         for metric in metrics:
             for percentage in PERCENTAGES:
                 if percentage in all_data:
-                    latex_table = create_tissue_table(all_data, tissue, metric, percentage.replace('pc', ''))
+                    # Extract the numeric part of the percentage (e.g., '1pc' -> '1')
+                    percentage_value = percentage.replace('pc', '')
+                    latex_table = create_tissue_table(all_data, tissue, metric, percentage_value)
                     if latex_table:
                         output_file = os.path.join(tissue_dir, f'{metric.lower()}_{percentage}_table.txt')
                         with open(output_file, 'w') as f:
