@@ -1,17 +1,14 @@
 import os
 import pandas as pd
 import numpy as np
+import glob
 
 MODEL_ORDER = ['Baseline', 'Sequence-augmented', 'Sequence-invariant']
 SITES = ['GST', 'HH', 'IOP']
 MODALITIES = ['T1w', 'T2w', 'PDw']
 PERCENTAGES = ['1pc', '10pc', '100pc']
-# These default tissue types will be used if we can't detect them from the data
-DEFAULT_TISSUES = [
-    # 'white matter', 
-    'gray matter', 
-    # 'csf'
-]
+# These are the tissue types we'll look for in the files
+TISSUES = ['white_matter', 'gray_matter', 'csf']
 
 # Define which metrics should be minimized vs maximized
 METRIC_ORDERING = {
@@ -77,7 +74,10 @@ def create_combined_tissue_table(all_tissue_data, tissue, metric):
         'HD95': '95th percentile Hausdorff Distance in mm (lower is better)'
     }
     
-    caption = f"{tissue.title()} segmentation performance using {metric_descriptions.get(metric, metric)} across different training data percentages. "
+    # Convert underscore to space for display
+    display_tissue = tissue.replace('_', ' ')
+    
+    caption = f"{display_tissue.title()} segmentation performance using {metric_descriptions.get(metric, metric)} across different training data percentages. "
     caption += "Values show mean ± standard error, with \\textbf{bold} and \\underline{underlined} indicating best and second-best results for each dataset and percentage. "
     caption += "GST represents the training domain."
     
@@ -91,7 +91,7 @@ def create_combined_tissue_table(all_tissue_data, tissue, metric):
         "\\begin{table}[htbp]",
         "\\centering",
         f"\\caption{{{caption}}}",
-        f"\\label{{tab:healthy_{tissue.replace(' ', '_')}_{metric.lower()}_combined_results}}",
+        f"\\label{{tab:healthy_{tissue}_{metric.lower()}_combined_results}}",
         "\\resizebox{\\textwidth}{!}{",
         f"\\begin{{tabular}}{{{tabular_format}}}",
         "\\toprule"
@@ -199,72 +199,93 @@ def main():
     # Create a nested structure to store all tissue data by tissue type and percentage
     all_tissue_data = {}
     
-    # First, let's see if we have class-specific data inside the main statistics file
-    has_class_specific_data = False
+    # First, find all tissue-specific summary files
+    print("\nLooking for tissue-specific summary files:")
+    
+    # Find all tissue-specific files
+    found_tissues = set()
     for pc in PERCENTAGES:
-        stats_file = os.path.join(task_dir, pc, 'summary_statistics.csv')
-        if os.path.exists(stats_file):
-            print(f"\nChecking main statistics file: {stats_file}")
-            df = pd.read_csv(stats_file, header=[0,1], index_col=[0,1])
+        pc_dir = os.path.join(task_dir, pc)
+        if not os.path.exists(pc_dir):
+            print(f"  Directory not found: {pc_dir}")
+            continue
             
-            # Check if this has Class in the index
-            if 'Class' in df.index.names:
-                has_class_specific_data = True
-                class_values = df.index.get_level_values('Class').unique()
-                print(f"Found tissue classes in main file: {class_values}")
-                
-                # Store data for each tissue type
-                for tissue in class_values:
-                    if tissue not in all_tissue_data:
-                        all_tissue_data[tissue] = {}
-                    
-                    try:
-                        tissue_df = df.xs(tissue, level='Class', drop_level=False)
-                        all_tissue_data[tissue][pc] = tissue_df
-                        print(f"  Loaded data for {tissue} from {pc}")
-                    except Exception as e:
-                        print(f"  Error extracting {tissue} from {pc}: {e}")
-                break
+        # Use glob to find all tissue-specific summary files
+        tissue_files = glob.glob(os.path.join(pc_dir, "summary_statistics_*.csv"))
+        
+        for file_path in tissue_files:
+            file_name = os.path.basename(file_path)
+            # Extract the tissue name from the file name
+            if file_name.startswith("summary_statistics_") and file_name.endswith(".csv"):
+                tissue_name = file_name[len("summary_statistics_"):-4]  # Remove prefix and suffix
+                found_tissues.add(tissue_name)
+                print(f"  Found file for tissue: {tissue_name} in {pc}")
     
-    # If no class-specific data found in main files, look for tissue-specific files
-    if not has_class_specific_data:
-        # Try to load tissue-specific summary files
-        for tissue in DEFAULT_TISSUES:
-            tissue_name = tissue
-            found_data = False
-            
+    # If no tissue files found, check if the specified tissue types exist
+    if not found_tissues:
+        for tissue in TISSUES:
             for pc in PERCENTAGES:
-                tissue_file = os.path.join(task_dir, pc, f"summary_statistics_{tissue_name}.csv")
+                tissue_file = os.path.join(task_dir, pc, f"summary_statistics_{tissue}.csv")
                 if os.path.exists(tissue_file):
-                    if tissue not in all_tissue_data:
-                        all_tissue_data[tissue] = {}
-                    
-                    print(f"\nLoading tissue-specific file: {tissue_file}")
-                    df = pd.read_csv(tissue_file, header=[0,1], index_col=[0,1])
-                    all_tissue_data[tissue][pc] = df
-                    found_data = True
-                    print(f"  Loaded data for {tissue} from {pc}")
-            
-            if found_data:
-                print(f"Found data for tissue: {tissue}")
+                    found_tissues.add(tissue)
+                    print(f"  Found file for specified tissue: {tissue} in {pc}")
     
-    if not all_tissue_data:
-        print("No tissue-specific data found!")
+    if not found_tissues:
+        print("No tissue-specific files found!")
         return
     
-    print(f"\nFound data for {len(all_tissue_data)} tissues: {list(all_tissue_data.keys())}")
+    print(f"\nFound files for these tissues: {found_tissues}")
     
-    # Get metrics from the first available dataframe
-    sample_tissue = next(iter(all_tissue_data.keys()))
-    sample_pc = next(iter(all_tissue_data[sample_tissue].keys()))
-    sample_df = all_tissue_data[sample_tissue][sample_pc]
-    metrics = sample_df.columns.get_level_values(0).unique()
-    print(f"\nMetrics found: {metrics}")
+    # Now load the data for each tissue
+    for tissue in found_tissues:
+        all_tissue_data[tissue] = {}
+        
+        for pc in PERCENTAGES:
+            tissue_file = os.path.join(task_dir, pc, f"summary_statistics_{tissue}.csv")
+            if os.path.exists(tissue_file):
+                print(f"\nLoading file: {tissue_file}")
+                try:
+                    df = pd.read_csv(tissue_file, header=[0,1], index_col=[0,1])
+                    print(f"DataFrame shape: {df.shape}")
+                    print(f"DataFrame columns: {df.columns}")
+                    all_tissue_data[tissue][pc] = df
+                    print(f"  Successfully loaded data for {tissue} from {pc}")
+                except Exception as e:
+                    print(f"  Error loading {tissue_file}: {e}")
+    
+    # Print what we found
+    print("\nSummary of tissue data loaded:")
+    for tissue in all_tissue_data:
+        percentages_found = list(all_tissue_data[tissue].keys())
+        if percentages_found:
+            print(f"  {tissue}: Found data for percentages: {percentages_found}")
+        else:
+            print(f"  {tissue}: No data found for any percentage")
+    
+    # Get metrics from any available dataframe
+    metrics = []
+    for tissue in all_tissue_data:
+        for pc in all_tissue_data[tissue]:
+            sample_df = all_tissue_data[tissue][pc]
+            metrics = sample_df.columns.get_level_values(0).unique()
+            print(f"\nMetrics found for {tissue}: {metrics}")
+            break
+        if metrics:
+            break
+    
+    if not metrics:
+        print("No metrics found in any dataframe!")
+        return
     
     # Generate combined tables for each tissue and metric
     for tissue in all_tissue_data:
+        # Skip tissues with no data
+        if not all_tissue_data[tissue]:
+            print(f"No data found for {tissue}, skipping...")
+            continue
+        
         # Create a subfolder for each tissue type
-        tissue_dir = os.path.join(task_dir, tissue.replace(' ', '_'))
+        tissue_dir = os.path.join(task_dir, tissue)
         os.makedirs(tissue_dir, exist_ok=True)
         
         for metric in metrics:
