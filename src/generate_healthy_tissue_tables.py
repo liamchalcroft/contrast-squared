@@ -269,21 +269,9 @@ def main():
             sample_df = all_tissue_data[tissue][pc]
             metrics = sample_df.columns.get_level_values(0).unique()
             print(f"\nMetrics found for {tissue}: {metrics}")
-            break
-        if metrics != []:
-            break
-    
-    if metrics == []:
-        print("No metrics found in any dataframe!")
-        return
     
     # Generate combined tables for each tissue and metric
-    for tissue in all_tissue_data:
-        # Skip tissues with no data
-        if not all_tissue_data[tissue]:
-            print(f"No data found for {tissue}, skipping...")
-            continue
-        
+    for tissue in all_tissue_data:        
         # Create a subfolder for each tissue type
         tissue_dir = os.path.join(task_dir, tissue)
         os.makedirs(tissue_dir, exist_ok=True)
