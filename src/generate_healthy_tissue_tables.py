@@ -6,7 +6,8 @@ MODEL_ORDER = ['Baseline', 'Sequence-augmented', 'Sequence-invariant']
 SITES = ['GST', 'HH', 'IOP']
 MODALITIES = ['T1w', 'T2w', 'PDw']
 PERCENTAGES = ['1pc', '10pc', '100pc']
-TISSUES = ['white matter', 'gray matter', 'csf']  # These names should match your class names in the results
+# These default tissue types will be used if we can't detect them from the data
+DEFAULT_TISSUES = ['white matter', 'gray matter', 'csf']
 
 # Define which metrics should be minimized vs maximized
 METRIC_ORDERING = {
@@ -57,9 +58,13 @@ def create_tissue_table(all_data, tissue, metric, percentage):
     for pc in all_data:
         try:
             # Try to find the tissue-specific results
-            tissue_data[pc] = all_data[pc].xs(tissue, level='Class', drop_level=False)
-        except:
-            print(f"No data for {tissue} in {pc}")
+            if 'Class' in all_data[pc].index.names:
+                tissue_data[pc] = all_data[pc].xs(tissue, level='Class', drop_level=False)
+            else:
+                # If there's no Class level, this might be a tissue-specific file
+                tissue_data[pc] = all_data[pc]
+        except Exception as e:
+            print(f"No data for {tissue} in {pc}: {e}")
             continue
     
     if not tissue_data:
@@ -172,52 +177,61 @@ def main():
 
     # Load data for each percentage
     all_data = {}
+    tissues_in_data = set()
+    
     for pc in PERCENTAGES:
-        # Check for tissue-specific statistics
-        for tissue in TISSUES:
+        # First try loading tissue-specific files
+        tissue_files_found = False
+        for tissue in DEFAULT_TISSUES:
             tissue_file = os.path.join(task_dir, pc, f"summary_statistics_{tissue.replace(' ', '_')}.csv")
             if os.path.exists(tissue_file):
                 if pc not in all_data:
                     all_data[pc] = {}
-                print(f"\nLoading {tissue_file}")
+                print(f"\nLoading tissue-specific file: {tissue_file}")
                 df = pd.read_csv(tissue_file, header=[0,1], index_col=[0,1])
                 print("DataFrame shape:", df.shape)
                 print("DataFrame columns:", df.columns)
                 all_data[pc] = df
-                break  # Found a file with tissue info
+                tissues_in_data.add(tissue)
+                tissue_files_found = True
+                break  # Found tissue-specific file
         
-        # If no tissue-specific files, try the main statistics file
-        if pc not in all_data:
+        # If no tissue-specific files found, try the main summary file
+        if not tissue_files_found:
             stats_file = os.path.join(task_dir, pc, 'summary_statistics.csv')
             if os.path.exists(stats_file):
-                print(f"\nLoading {stats_file}")
+                print(f"\nLoading general statistics file: {stats_file}")
                 df = pd.read_csv(stats_file, header=[0,1], index_col=[0,1])
                 print("DataFrame shape:", df.shape)
                 print("DataFrame columns:", df.columns)
+                
+                # Check if this file has tissue information
+                if 'Class' in df.index.names:
+                    class_values = df.index.get_level_values('Class').unique()
+                    print(f"Tissue classes found in file: {class_values}")
+                    tissues_in_data.update(class_values)
+                
                 all_data[pc] = df
     
     if not all_data:
         print("No data found!")
         return
 
+    # Determine which tissues to process
+    if tissues_in_data:
+        print(f"\nTissue classes found in data: {tissues_in_data}")
+        tissues_to_process = list(tissues_in_data)
+    else:
+        print(f"\nNo specific tissue classes found, using defaults: {DEFAULT_TISSUES}")
+        tissues_to_process = DEFAULT_TISSUES
+
     # Check the first dataframe to see what metrics are available
     sample_data = next(iter(all_data.values()))
     metrics = sample_data.columns.get_level_values(0).unique()
     print(f"\nMetrics found: {metrics}")
     
-    # Check if we have tissue information in the data
-    all_tissues = set()
-    for pc, data in all_data.items():
-        if 'Class' in data.index.names:
-            tissues = data.index.get_level_values('Class').unique()
-            all_tissues.update(tissues)
-    
-    if all_tissues:
-        print(f"\nTissue classes found: {all_tissues}")
-        TISSUES = list(all_tissues)  # Update with actual tissues found
-    
     # Generate tables for each tissue, metric, and percentage
-    for tissue in TISSUES:
+    for tissue in tissues_to_process:
         tissue_dir = os.path.join(task_dir, tissue.replace(' ', '_'))
         os.makedirs(tissue_dir, exist_ok=True)
         
