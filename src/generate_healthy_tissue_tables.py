@@ -7,7 +7,7 @@ SITES = ['GST', 'HH', 'IOP']
 MODALITIES = ['T1w', 'T2w', 'PDw']
 PERCENTAGES = ['1pc', '10pc', '100pc']
 # These default tissue types will be used if we can't detect them from the data
-DEFAULT_TISSUES = ['white matter', 'gray matter', 'csf']
+DEFAULT_TISSUES = ['white_matter', 'gray_matter', 'csf']
 
 # Define which metrics should be minimized vs maximized
 METRIC_ORDERING = {
