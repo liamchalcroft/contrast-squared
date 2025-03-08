@@ -270,10 +270,10 @@ def main():
             metrics = sample_df.columns.get_level_values(0).unique()
             print(f"\nMetrics found for {tissue}: {metrics}")
             break
-        if metrics:
+        if metrics != []:
             break
     
-    if not metrics:
+    if metrics == []:
         print("No metrics found in any dataframe!")
         return
     
