@@ -226,7 +226,7 @@ def main():
     if not has_class_specific_data:
         # Try to load tissue-specific summary files
         for tissue in DEFAULT_TISSUES:
-            tissue_name = tissue.replace(' ', '_')
+            tissue_name = tissue
             found_data = False
             
             for pc in PERCENTAGES:
