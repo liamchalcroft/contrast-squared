@@ -216,6 +216,7 @@ def main():
         tissue_files_found = False
         for tissue in DEFAULT_TISSUES:
             tissue_file = os.path.join(task_dir, pc, f"summary_statistics_{tissue}.csv")
+            print(f"Looking for tissue-specific file: {tissue_file}")
             if os.path.exists(tissue_file):
                 print(f"\nLoading tissue-specific file: {tissue_file}")
                 df = pd.read_csv(tissue_file, header=[0,1], index_col=[0,1])
